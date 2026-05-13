@@ -2,6 +2,8 @@
 
 `Franchise Ice` is a browser-based vertical-slice prototype for a fictional third-person 3D hockey management game. You are both general manager and head coach: walk through a hockey operations facility, manage the roster, set lines and tactics, simulate games, read the fallout, check the standings, and save locally.
 
+For a full map of the repository, see [PROJECT_INDEX.md](PROJECT_INDEX.md).
+
 ## Run
 
 ```bash

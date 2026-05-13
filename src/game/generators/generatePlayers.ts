@@ -9,6 +9,7 @@ import type {
 } from "../types";
 import { SeededRng, clamp } from "../rng";
 import { generateDisplayName, generateNationality } from "./generateNames";
+import { contractSummary, createContractForPlayer } from "../systems/contracts";
 
 const FORWARD_ARCHETYPES: PlayerArchetype[] = [
   "Sniper",
@@ -98,6 +99,7 @@ function createPlayer(teamId: string, teamIndex: number, index: number, position
   const archetype = pickArchetype(position, rng);
   const roleExpectation = inferRole(position, overall, index);
   const id = `${teamId}-p${index + 1}`;
+  const contract = createContractForPlayer({ age, overall, potential, position, roleExpectation }, rng);
 
   return {
     id,
@@ -121,7 +123,8 @@ function createPlayer(teamId: string, teamIndex: number, index: number, position
     injuryGamesRemaining: 0,
     attributes: position === "G" ? generateGoalieAttributes(overall, rng) : generateSkaterAttributes(overall, rng),
     stats: emptyStats(),
-    contractSummary: `${rng.int(1, 4)} yr / ${formatMoney(overall, rng)} AAV`
+    contract,
+    contractSummary: contractSummary(contract)
   };
 }
 
@@ -203,9 +206,4 @@ function generateGoalieAttributes(overall: number, rng: SeededRng): GoalieAttrib
     consistency: attr(),
     stamina: attr()
   };
-}
-
-function formatMoney(overall: number, rng: SeededRng): string {
-  const value = Math.max(0.75, (overall - 55) * 0.19 + rng.float(-0.4, 0.6));
-  return `$${value.toFixed(1)}M`;
 }

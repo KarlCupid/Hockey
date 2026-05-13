@@ -7,7 +7,11 @@ const ROOM_LABELS: Record<RoomId, string> = {
   medical: "Medical Room",
   arena: "Arena Bowl",
   standings: "Standings Hall",
-  saves: "Save Desk"
+  saves: "Save Desk",
+  contracts: "Contract & Cap Office",
+  trades: "Trade War Room",
+  scouting: "Scouting Department",
+  development: "Development Office"
 };
 
 export function roomLabel(room?: RoomId): string {

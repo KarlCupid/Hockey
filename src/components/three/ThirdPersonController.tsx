@@ -43,8 +43,8 @@ export function ThirdPersonController({
     const move = new THREE.Vector3();
     if (keys.current.has("w")) move.add(forward);
     if (keys.current.has("s")) move.sub(forward);
-    if (keys.current.has("a")) move.add(right);
-    if (keys.current.has("d")) move.sub(right);
+    if (keys.current.has("a")) move.sub(right);
+    if (keys.current.has("d")) move.add(right);
     if (move.lengthSq() > 0) {
       move.normalize().multiplyScalar(delta * 4.2);
       position.current.add(move);

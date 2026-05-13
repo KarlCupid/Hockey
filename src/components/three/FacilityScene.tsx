@@ -8,10 +8,14 @@ import { ThirdPersonController } from "./ThirdPersonController";
 
 const ZONES: RoomZoneConfig[] = [
   { id: "gm", label: "GM OFFICE", position: [-6.8, 0, -5.2], color: "#6ecbff" },
+  { id: "contracts", label: "CAP OFFICE", position: [-3.8, 0, -5.2], color: "#f5c65b" },
   { id: "coach", label: "COACH OFFICE", position: [0, 0, -6.5], color: "#8ee7d1" },
+  { id: "trades", label: "TRADE WAR ROOM", position: [3.8, 0, -5.2], color: "#ff9f6e" },
   { id: "locker", label: "LOCKER ROOM", position: [6.8, 0, -5.2], color: "#c8e9ff" },
   { id: "medical", label: "MEDICAL", position: [-7.2, 0, 4.2], color: "#ff7e8a" },
+  { id: "development", label: "DEVELOPMENT", position: [-4.2, 0, 4.1], color: "#76e3a5" },
   { id: "arena", label: "ARENA BOWL", position: [0, 0, 6.2], color: "#ffffff" },
+  { id: "scouting", label: "SCOUTING", position: [4.2, 0, 4.1], color: "#a9c6ff" },
   { id: "standings", label: "TROPHY HALL", position: [7.2, 0, 4.2], color: "#f5c65b" },
   { id: "saves", label: "SAVE DESK", position: [0, 0, 0], color: "#b58cff" }
 ];
@@ -74,12 +78,16 @@ function FacilityGeometry() {
       </mesh>
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
       <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
+      <ContractOfficeProps />
       <Desk position={[0, 0, -7.6]} color="#183b3e" />
       <CoachBoard />
+      <TradeRoomProps />
       <Lockers />
       <MedicalTable />
+      <DevelopmentProps />
       <MiniRink />
       <ArenaTunnel />
+      <ScoutingProps />
       <TrophyCases />
       <SaveDesk />
     </group>
@@ -135,6 +143,54 @@ function CoachBoard() {
   );
 }
 
+function ContractOfficeProps() {
+  return (
+    <group position={[-3.8, 0, -6.8]}>
+      <Desk position={[0, 0, 0]} color="#3a3420" />
+      <mesh position={[1.35, 1.05, -0.08]}>
+        <boxGeometry args={[1.2, 0.9, 0.08]} />
+        <meshStandardMaterial color="#f7e6a6" emissive="#f5c65b" emissiveIntensity={0.16} />
+      </mesh>
+      {[-0.32, 0, 0.32].map((x, index) => (
+        <mesh key={x} position={[1.35 + x, 1.12 - index * 0.12, 0]}>
+          <boxGeometry args={[0.22, 0.05, 0.05]} />
+          <meshStandardMaterial color={index === 0 ? "#ff7e8a" : "#76e3a5"} />
+        </mesh>
+      ))}
+      {[-0.45, -0.15, 0.15, 0.45].map((x) => (
+        <mesh key={x} position={[x, 0.92, 0.34]}>
+          <boxGeometry args={[0.22, 0.1, 0.32]} />
+          <meshStandardMaterial color="#d7b75c" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function TradeRoomProps() {
+  return (
+    <group position={[3.8, 0, -6.75]}>
+      <Desk position={[0, 0, 0]} color="#3b2a22" />
+      <mesh position={[1.45, 1.12, -0.06]}>
+        <boxGeometry args={[1.65, 1.0, 0.08]} />
+        <meshStandardMaterial color="#263548" emissive="#ff9f6e" emissiveIntensity={0.12} />
+      </mesh>
+      {[-0.52, -0.18, 0.18, 0.52].map((x, index) => (
+        <mesh key={x} position={[1.45 + x, 1.12, 0.04]}>
+          <boxGeometry args={[0.24, 0.56, 0.04]} />
+          <meshStandardMaterial color={index % 2 ? "#61c9ff" : "#ff9f6e"} />
+        </mesh>
+      ))}
+      {[-0.45, 0.45].map((x) => (
+        <mesh key={x} position={[x, 0.94, 0.36]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.26, 12]} />
+          <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function Lockers() {
   return (
     <group position={[7.4, 0, -7.2]}>
@@ -159,6 +215,33 @@ function MedicalTable() {
         <boxGeometry args={[1.8, 0.42, 0.62]} />
         <meshStandardMaterial color="#28445c" />
       </mesh>
+    </group>
+  );
+}
+
+function DevelopmentProps() {
+  return (
+    <group position={[-4.3, 0, 5.45]}>
+      <mesh position={[0, 0.22, 0]}>
+        <boxGeometry args={[2.2, 0.12, 0.9]} />
+        <meshStandardMaterial color="#203a2f" />
+      </mesh>
+      <mesh position={[0, 1.05, -0.3]}>
+        <boxGeometry args={[1.75, 0.95, 0.08]} />
+        <meshStandardMaterial color="#e9fff5" emissive="#76e3a5" emissiveIntensity={0.12} />
+      </mesh>
+      {[0.25, 0.5, 0.78].map((height, index) => (
+        <mesh key={height} position={[-0.55 + index * 0.5, 0.52 + height / 2, -0.2]}>
+          <boxGeometry args={[0.18, height, 0.08]} />
+          <meshStandardMaterial color="#76e3a5" />
+        </mesh>
+      ))}
+      {[-0.65, 0, 0.65].map((x) => (
+        <mesh key={x} position={[x, 0.18, 0.42]}>
+          <coneGeometry args={[0.16, 0.34, 16]} />
+          <meshStandardMaterial color="#f5c65b" />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -195,6 +278,29 @@ function ArenaTunnel() {
         <boxGeometry args={[3.2, 0.08, 1.2]} />
         <meshStandardMaterial color="#eefcff" emissive="#ffffff" emissiveIntensity={0.22} />
       </mesh>
+    </group>
+  );
+}
+
+function ScoutingProps() {
+  return (
+    <group position={[4.35, 0, 5.45]}>
+      <mesh position={[0, 1.05, -0.25]}>
+        <boxGeometry args={[2.0, 1.05, 0.08]} />
+        <meshStandardMaterial color="#dfe9ff" emissive="#a9c6ff" emissiveIntensity={0.13} />
+      </mesh>
+      {[-0.55, 0, 0.55].map((x, index) => (
+        <mesh key={x} position={[x, 1.12, -0.17]}>
+          <sphereGeometry args={[0.08 + index * 0.015, 12, 12]} />
+          <meshStandardMaterial color={index === 1 ? "#ff7e8a" : "#61c9ff"} />
+        </mesh>
+      ))}
+      {[-0.75, -0.25, 0.25, 0.75].map((x) => (
+        <mesh key={x} position={[x, 0.48, 0.34]}>
+          <boxGeometry args={[0.34, 0.56, 0.06]} />
+          <meshStandardMaterial color="#273a58" emissive="#a9c6ff" emissiveIntensity={0.08} />
+        </mesh>
+      ))}
     </group>
   );
 }

@@ -104,6 +104,30 @@ export function GMOfficePanel() {
           ) : (
             <p className="empty-state">No results yet. The room is quiet before puck drop.</p>
           )}
+          <h4>Front Office Expansion</h4>
+          <p className="muted">Contracts, trades, scouting, and development now feed the same inbox and local save.</p>
+          <div className="button-row">
+            <button type="button" onClick={() => setActiveRoom("contracts")}>Cap Office</button>
+            <button type="button" onClick={() => setActiveRoom("trades")}>Trade Room</button>
+            <button type="button" onClick={() => setActiveRoom("scouting")}>Scouting</button>
+            <button type="button" onClick={() => setActiveRoom("development")}>Development</button>
+          </div>
+          <h4>Transaction Log</h4>
+          {franchise.transactionLog.length ? (
+            <div className="asset-list asset-list--compact">
+              {franchise.transactionLog.slice(0, 8).map((item) => (
+                <article key={item.id}>
+                  <strong>{item.headline}</strong>
+                  <span>
+                    {item.date} | {item.type}
+                  </span>
+                  <small>{item.details}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-state">No front-office transactions logged yet.</p>
+          )}
           <h4>Local Save</h4>
           <SaveLoadPanel />
         </section>

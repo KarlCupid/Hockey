@@ -6,7 +6,18 @@ export type MoraleBand = "unhappy" | "concerned" | "stable" | "positive" | "thri
 export type FormBand = "cold" | "struggling" | "steady" | "hot" | "excellent";
 export type FatigueBand = "fresh" | "normal" | "tired" | "exhausted";
 export type SimulationMode = "instant" | "period" | "broadcast";
-export type RoomId = "gm" | "coach" | "locker" | "medical" | "arena" | "standings" | "saves";
+export type RoomId =
+  | "gm"
+  | "coach"
+  | "locker"
+  | "medical"
+  | "arena"
+  | "standings"
+  | "saves"
+  | "contracts"
+  | "trades"
+  | "scouting"
+  | "development";
 
 export type PlayerArchetype =
   | "Sniper"
@@ -45,6 +56,160 @@ export type RoleExpectation =
   | "Starter"
   | "Backup"
   | "Depth";
+
+export interface Contract {
+  salary: number;
+  capHit: number;
+  yearsRemaining: number;
+  expiryStatus: "UFA" | "RFA" | "Prospect";
+  rolePromise?: RoleExpectation;
+  signedAtAge?: number;
+}
+
+export interface DraftPick {
+  id: string;
+  originalTeamId: string;
+  ownerTeamId: string;
+  seasonYear: number;
+  round: number;
+  label: string;
+  projectedValue: number;
+}
+
+export interface TeamNeed {
+  position: Position;
+  urgency: number;
+  description: string;
+}
+
+export type ScoutingRegion = "Domestic" | "Nordic" | "Central Europe" | "Eastern Europe" | "US College" | "Junior";
+export type ScoutingPriority = "Balanced" | "High Upside" | "Goalies" | "Defense" | "Forwards" | "Safe Picks";
+export type ProspectRisk = "Low" | "Medium" | "High" | "Boom/Bust";
+export type DraftBoardStrategy = "Best Player Available" | "High Upside" | "Safe Floor" | "Need: Forwards" | "Need: Defense" | "Need: Goalies";
+
+export interface ProspectScoutingInfo {
+  viewings: number;
+  certainty: number;
+  estimatedOverallLow: number;
+  estimatedOverallHigh: number;
+  estimatedPotentialLow: number;
+  estimatedPotentialHigh: number;
+  scoutNotes: string[];
+  lastUpdatedDayIndex?: number;
+}
+
+export interface Prospect {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  age: number;
+  position: Position;
+  handedness: Handedness;
+  nationality: string;
+  archetype: PlayerArchetype;
+  league: string;
+  publicRank: number;
+  projectedRound: number;
+  actualOverall: number;
+  actualPotential: number;
+  risk: ProspectRisk;
+  personality: Personality;
+  strengths: string[];
+  weaknesses: string[];
+  combineScore: number;
+  scouting: ProspectScoutingInfo;
+}
+
+export interface ScoutingAssignment {
+  id: string;
+  region: ScoutingRegion;
+  priority: ScoutingPriority;
+  assignedProspectId?: string;
+  progress: number;
+  active: boolean;
+}
+
+export interface ScoutingState {
+  draftClass: Prospect[];
+  assignments: ScoutingAssignment[];
+  watchlist: string[];
+  teamDraftBoard: string[];
+  lastScoutingTickDayIndex: number;
+}
+
+export type DevelopmentFocus =
+  | "Offensive Skill"
+  | "Defensive Reliability"
+  | "Skating"
+  | "Strength & Physicality"
+  | "Hockey IQ"
+  | "Special Teams"
+  | "Goalie Technique"
+  | "Leadership";
+
+export type DevelopmentIntensity = "Light" | "Normal" | "Aggressive";
+
+export interface DevelopmentPlan {
+  playerId: string;
+  focus: DevelopmentFocus;
+  intensity: DevelopmentIntensity;
+  progress: number;
+  lastUpdatedDayIndex: number;
+  note: string;
+}
+
+export interface DevelopmentUpdate {
+  id: string;
+  playerId: string;
+  date: string;
+  headline: string;
+  body: string;
+  attributeChanged?: string;
+  amount?: number;
+}
+
+export interface DevelopmentState {
+  plans: DevelopmentPlan[];
+  recentUpdates: DevelopmentUpdate[];
+}
+
+export interface TradeAsset {
+  type: "player" | "pick";
+  teamId: string;
+  assetId: string;
+}
+
+export interface TradeProposal {
+  id: string;
+  fromTeamId: string;
+  toTeamId: string;
+  assetsFrom: TradeAsset[];
+  assetsTo: TradeAsset[];
+  createdDayIndex: number;
+  status: "draft" | "accepted" | "rejected";
+}
+
+export interface TradeEvaluation {
+  accepted: boolean;
+  scoreForOtherTeam: number;
+  scoreForUserTeam: number;
+  otherTeamNeedFit: number;
+  capValid: boolean;
+  reasons: string[];
+  warnings: string[];
+}
+
+export interface TransactionLogItem {
+  id: string;
+  date: string;
+  type: "trade" | "contract" | "scouting" | "development";
+  headline: string;
+  details: string;
+  teamIds?: string[];
+  playerIds?: string[];
+  pickIds?: string[];
+}
 
 export interface SkaterAttributes {
   skating: number;
@@ -110,6 +275,7 @@ export interface Player {
   injuryGamesRemaining: number;
   attributes: SkaterAttributes | GoalieAttributes;
   stats: PlayerStats;
+  contract: Contract;
   contractSummary: string;
 }
 
@@ -182,6 +348,12 @@ export interface Team {
   tactics: Tactics;
   record: TeamRecord;
   stats: TeamStats;
+  capCeiling: number;
+  capFloor: number;
+  draftPicks: DraftPick[];
+  tradeBlock: string[];
+  untouchables: string[];
+  teamNeeds: TeamNeed[];
 }
 
 export interface ScheduleGame {
@@ -220,7 +392,12 @@ export type NewsType =
   | "goalie"
   | "breakout"
   | "pressure"
-  | "excitement";
+  | "excitement"
+  | "trade"
+  | "contract"
+  | "scouting"
+  | "development"
+  | "cap";
 
 export interface NewsItem {
   id: string;
@@ -392,6 +569,10 @@ export interface FranchiseState {
   selectedTeamId: string;
   league: LeagueState;
   inbox: NewsItem[];
+  scouting: ScoutingState;
+  development: DevelopmentState;
+  tradeHistory: TradeProposal[];
+  transactionLog: TransactionLogItem[];
   lastResult?: GameResult;
   saveStatus: "idle" | "saving" | "saved" | "error";
   createdAt: string;

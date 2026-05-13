@@ -1,7 +1,11 @@
-import { DEFAULT_TACTICS, FICTIONAL_TEAMS, SCHEMA_VERSION, START_DATE } from "../constants";
+import { DEFAULT_TACTICS, FICTIONAL_TEAMS, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SCHEMA_VERSION, START_DATE } from "../constants";
 import { SeededRng } from "../rng";
 import type { FranchiseState, LeagueState, Team, TeamRecord, TeamStats } from "../types";
 import { autoFillBestLineup } from "../systems/lineupValidation";
+import { generateInitialDraftPicks } from "../systems/draftPicks";
+import { generateScoutingAssignments, rankDraftBoard } from "../systems/scouting";
+import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../systems/trades";
+import { generateDraftClass } from "./generateDraftClass";
 import { generateRoster } from "./generatePlayers";
 import { generateSchedule } from "./generateSchedule";
 
@@ -30,10 +34,30 @@ export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueSta
       },
       tactics: { ...DEFAULT_TACTICS },
       record: emptyRecord(),
-      stats: emptyTeamStats()
+      stats: emptyTeamStats(),
+      capCeiling: SALARY_CAP_CEILING,
+      capFloor: SALARY_CAP_FLOOR,
+      draftPicks: [],
+      tradeBlock: [],
+      untouchables: [],
+      teamNeeds: []
     };
     team.lines = autoFillBestLineup(team).lineup;
     return team;
+  });
+  const picks = generateInitialDraftPicks(teams, 2026);
+  const teamsWithFrontOffice = teams.map((team) => {
+    const withPicks = {
+      ...team,
+      draftPicks: picks.filter((pick) => pick.ownerTeamId === team.id),
+      teamNeeds: inferTeamNeeds(team)
+    };
+    const untouchables = generateUntouchables(withPicks);
+    return {
+      ...withPicks,
+      untouchables,
+      tradeBlock: generateTradeBlock({ ...withPicks, untouchables })
+    };
   });
 
   return {
@@ -41,8 +65,8 @@ export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueSta
     seasonYear: 2026,
     currentDayIndex: 0,
     currentDate: START_DATE,
-    teams,
-    schedule: generateSchedule(teams),
+    teams: teamsWithFrontOffice,
+    schedule: generateSchedule(teamsWithFrontOffice),
     recentResults: [],
     completed: false
   };
@@ -52,6 +76,7 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
   const league = generateLeague(seed);
   const selectedTeam = league.teams.find((team) => team.id === selectedTeamId) ?? league.teams[0];
   const now = new Date().toISOString();
+  const draftClass = generateDraftClass(`${seed}-draft`);
   return {
     schemaVersion: SCHEMA_VERSION,
     franchiseId: `franchise-${seed}`,
@@ -75,6 +100,28 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
         body: "The front office says one voice will run hockey decisions and the room. The first week will tell us plenty.",
         severity: "low",
         teamId: selectedTeam.id
+      }
+    ],
+    scouting: {
+      draftClass,
+      assignments: generateScoutingAssignments(),
+      watchlist: [],
+      teamDraftBoard: rankDraftBoard(draftClass, "Best Player Available"),
+      lastScoutingTickDayIndex: league.currentDayIndex
+    },
+    development: {
+      plans: [],
+      recentUpdates: []
+    },
+    tradeHistory: [],
+    transactionLog: [
+      {
+        id: `transaction-open-${selectedTeam.id}`,
+        date: league.currentDate,
+        type: "contract",
+        headline: "Front office files opened",
+        details: "Contracts, draft assets, scouting, trades, and development are now tracked locally.",
+        teamIds: [selectedTeam.id]
       }
     ],
     saveStatus: "idle",

@@ -62,7 +62,7 @@ export function StandingsPanel() {
           <span>Biggest concern <strong>{pulse.biggestConcern}</strong></span>
         </div>
         <h3>Current Playoff Picture</h3>
-        <p className="muted">Placeholder projection only. Playoffs arrive in Phase 2.</p>
+        <p className="muted">Placeholder projection only. Full playoffs arrive later.</p>
         <div className="hunt-list">
           {standings.slice(0, 4).map((team, index) => (
             <article className={team.id === selectedTeam.id ? "is-selected" : ""} key={team.id}>

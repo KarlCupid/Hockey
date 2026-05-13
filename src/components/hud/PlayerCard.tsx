@@ -1,4 +1,5 @@
 import { createPlayerCoachRead, createPlayerManagementRisk, getFatigueBand, getFormBand, getMoraleBand } from "../../game/systems/playerNotes";
+import { contractSummary } from "../../game/systems/contracts";
 import type { Player } from "../../game/types";
 import { StatBadge } from "./StatBadge";
 
@@ -37,7 +38,7 @@ export function PlayerCard({ player }: { player: Player }) {
         </div>
         <div>
           <dt>Contract</dt>
-          <dd>{player.contractSummary}</dd>
+          <dd>{contractSummary(player.contract)}</dd>
         </div>
         <div>
           <dt>Injury</dt>

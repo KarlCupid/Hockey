@@ -277,6 +277,10 @@ tr.is-selected {
   padding: 0.8rem;
 }
 
+.command-strip--front-office {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
 .command-strip small,
 .command-strip strong {
   display: block;
@@ -296,7 +300,10 @@ tr.is-selected {
 .period-summary,
 .compact-list,
 .season-summary,
-.schedule-list {
+.schedule-list,
+.asset-list,
+.asset-picker,
+.needs-grid {
   display: grid;
   gap: 0.6rem;
 }
@@ -309,11 +316,87 @@ tr.is-selected {
 .scoreboard-card,
 .period-summary article,
 .season-summary,
-.schedule-row {
+.schedule-row,
+.asset-list article,
+.evaluation-card,
+.prospect-detail {
   border: 1px solid var(--line);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.045);
   padding: 0.75rem;
+}
+
+.asset-list--compact {
+  gap: 0.4rem;
+}
+
+.asset-list article {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.asset-list span,
+.asset-list small,
+.prospect-detail span,
+.prospect-detail p,
+.evaluation-card span {
+  color: var(--muted);
+}
+
+.asset-list button {
+  justify-self: start;
+  padding: 0.42rem 0.62rem;
+  font-size: 0.78rem;
+}
+
+.needs-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-bottom: 1rem;
+}
+
+.evaluation-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+  border-color: rgba(142, 231, 209, 0.32);
+  background: rgba(142, 231, 209, 0.07);
+}
+
+.evaluation-card strong,
+.prospect-detail strong {
+  display: block;
+  color: var(--text);
+}
+
+.prospect-detail {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+.prospect-detail header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.checkbox-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.panel-section--warning {
+  border-color: rgba(245, 198, 91, 0.5);
+  background: rgba(245, 198, 91, 0.08);
+}
+
+button.is-active {
+  border-color: var(--accent-2);
+  background: rgba(142, 231, 209, 0.22);
 }
 
 .schedule-row {
@@ -1230,7 +1313,9 @@ meter {
   .toolbar-row,
   .broadcast-score,
   .comparison-table div,
-  .hunt-list article {
+  .hunt-list article,
+  .needs-grid,
+  .evaluation-card {
     grid-template-columns: 1fr;
   }
 

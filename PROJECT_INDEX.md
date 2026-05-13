@@ -50,6 +50,12 @@ npm run build
 - `src/game/systems/injuries.ts`: injury and fatigue risk selectors
 - `src/game/systems/news.ts`: inbox/news generation from game state
 - `src/game/systems/saves.ts`: localForage save serialization, metadata, load/delete helpers
+- `src/game/systems/contracts.ts`: structured contracts, cap calculations, expiry/risk helpers
+- `src/game/systems/draftPicks.ts`: initial pick generation, labels, values, and transfer helpers
+- `src/game/systems/trades.ts`: team needs, trade block logic, package valuation, cap validation, AI evaluation, and trade application
+- `src/game/systems/scouting.ts`: scouting assignments, certainty ticks, visible prospect reports, watchlist, and draft-board ordering
+- `src/game/systems/development.ts`: development plan assignment, progress ticks, attribute growth, veteran decline, and workload risk
+- `src/game/generators/generateDraftClass.ts`: fictional 72-player draft-class generation
 - `src/game/simulation/simulatePeriod.ts`: deterministic period simulation
 - `src/game/simulation/simulateGame.ts`: full-game assembly, overtime, stars, coach notes, result shape
 - `src/game/simulation/eventTimeline.ts`: timeline ordering and clock helpers
@@ -69,6 +75,10 @@ npm run build
 - `src/components/rooms/CoachOfficePanel.tsx`: lineup editor, auto-fill, validation, tactic sliders
 - `src/components/rooms/LockerRoomPanel.tsx`: roster table, player cards, morale/form/fatigue/status
 - `src/components/rooms/MedicalRoomPanel.tsx`: injury board and fatigue risk list
+- `src/components/rooms/ContractCapOfficePanel.tsx`: cap summary, contracts, expiring deals, risk notes, and pick inventory
+- `src/components/rooms/TradeWarRoomPanel.tsx`: player/pick trade builder, AI evaluation, trade block, and submit flow
+- `src/components/rooms/ScoutingDepartmentPanel.tsx`: draft board, prospect reports, assignment controls, strategy presets, and watchlist
+- `src/components/rooms/DevelopmentOfficePanel.tsx`: development plans, candidate ranking, selected-player notes, and recent updates
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
 - `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, consequences, and filtered event feed
 - `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary
@@ -89,6 +99,7 @@ npm run build
 - `src/tests/lineupValidation.test.ts`: duplicate assignment and injured player validation
 - `src/tests/saves.test.ts`: save serialization/deserialization roundtrip
 - `src/tests/v11Systems.test.ts`: V1.1 pure helper coverage for player notes, line identity, tactics, result presentation, bench reports, broadcast score, news, and season pulse
+- `src/tests/phase2Systems.test.ts`: Phase 2 coverage for contracts, picks, trades, scouting, development, migration, and serialization
 
 ## Styles
 
@@ -110,26 +121,29 @@ npm run build
 3. Enter the 3D hockey operations facility.
 4. Walk with `WASD`, approach room markers, and press `E`.
 5. Read GM Office inbox/schedule.
-6. Review Locker Room roster and player cards.
-7. Auto-fill or edit lines in Coach's Office.
-8. Adjust tactics.
-9. Enter Arena Bowl.
-10. Simulate the next game instantly, period-by-period, or through broadcast mode.
-11. Review score, events, box score, three stars, injuries, and coach notes.
-12. Check standings/news/player status changes.
-13. Save locally and load later.
+6. Review cap/contracts, draft picks, trade options, scouting assignments, and development plans in the new Phase 2 rooms.
+7. Review Locker Room roster and player cards.
+8. Auto-fill or edit lines in Coach's Office.
+9. Adjust tactics.
+10. Enter Arena Bowl.
+11. Simulate the next game instantly, period-by-period, or through broadcast mode.
+12. Review score, events, box score, three stars, injuries, and coach notes.
+13. Check standings/news/player status/front-office changes.
+14. Save locally and load later.
 
 ## Useful Change Targets
 
 - Add a new room: update `RoomId` in `src/game/types.ts`, add a marker in `FacilityScene.tsx`, add modal routing in `AppShell.tsx`, then create a panel under `src/components/rooms`.
 - Tune simulation: start with `src/game/constants.ts`, `src/game/simulation/simulatePeriod.ts`, and `src/game/simulation/simulateGame.ts`.
 - Add player or team fields: update `src/game/types.ts`, then generation, save validation, and affected UI tables/cards.
+- Add front-office behavior: start with a pure helper in `src/game/systems`, then wire it through `src/store/franchiseStore.ts` and room panels.
 - Add save metadata: update `src/game/systems/saves.ts` and `SaveLoadPanel.tsx`.
 - Add tests for pure logic: place new `.test.ts` files under `src/tests`.
 
-## V1 Guardrails
+## Guardrails
 
 - Keep all teams, players, brands, and headlines fictional.
 - Keep the app client-only.
 - Keep simulation logic pure and testable.
-- Do not add trades, draft, scouting, free agency, staff hiring, auth, backend, cloud saves, or real licensed hockey content in v1.
+- Do not add backend, auth, cloud saves, real licensed hockey content, or non-serializable renderer/browser objects to franchise state.
+- Free agency, full contract negotiation, full draft execution, playoffs, staff hiring, waivers, buyouts, and retained salary remain out of scope.

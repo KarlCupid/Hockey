@@ -6,11 +6,15 @@ import { RoomPrompt, roomLabel } from "../components/hud/RoomPrompt";
 import { TopBar } from "../components/hud/TopBar";
 import { ArenaPanel } from "../components/rooms/ArenaPanel";
 import { CoachOfficePanel } from "../components/rooms/CoachOfficePanel";
+import { ContractCapOfficePanel } from "../components/rooms/ContractCapOfficePanel";
+import { DevelopmentOfficePanel } from "../components/rooms/DevelopmentOfficePanel";
 import { GMOfficePanel } from "../components/rooms/GMOfficePanel";
 import { LockerRoomPanel } from "../components/rooms/LockerRoomPanel";
 import { MedicalRoomPanel } from "../components/rooms/MedicalRoomPanel";
 import { SaveLoadPanel } from "../components/rooms/SaveLoadPanel";
+import { ScoutingDepartmentPanel } from "../components/rooms/ScoutingDepartmentPanel";
 import { StandingsPanel } from "../components/rooms/StandingsPanel";
+import { TradeWarRoomPanel } from "../components/rooms/TradeWarRoomPanel";
 import { FacilityScene } from "../components/three/FacilityScene";
 import type { RoomId } from "../game/types";
 import { useUiStore } from "../store/uiStore";
@@ -63,6 +67,14 @@ function panelFor(room: RoomId) {
       return <StandingsPanel />;
     case "saves":
       return <SaveLoadPanel />;
+    case "contracts":
+      return <ContractCapOfficePanel />;
+    case "trades":
+      return <TradeWarRoomPanel />;
+    case "scouting":
+      return <ScoutingDepartmentPanel />;
+    case "development":
+      return <DevelopmentOfficePanel />;
   }
 }
 
@@ -74,7 +86,11 @@ function subtitleFor(room: RoomId): string {
     medical: "Injuries, day-to-day notes, and workload warnings.",
     arena: "Preview the matchup and choose a simulation mode.",
     standings: "League table, recent results, and season context.",
-    saves: "Manual local saves, autosave, load, and delete."
+    saves: "Manual local saves, autosave, load, and delete.",
+    contracts: "Salary cap, contracts, expiry pressure, and pick inventory.",
+    trades: "Build trade packages with players, picks, needs, cap math, and AI evaluation.",
+    scouting: "Draft board, scouting assignments, prospect certainty, and watchlist.",
+    development: "Development plans, progress notes, workload risk, and player growth."
   };
   return subtitles[room];
 }

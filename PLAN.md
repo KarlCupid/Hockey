@@ -40,3 +40,12 @@
 - Improve Locker Room, Coach's Office, Arena Bowl, broadcast mode, Standings Hall, Save Desk, and the 3D facility navigation while preserving the existing client-only architecture.
 - Add focused Vitest coverage for the new pure systems and expanded validation behavior.
 - Run `npm test`, `npm run build`, and a browser smoke flow covering franchise start, rooms, simulations, result review, standings/news effects, and save/load.
+
+## Milestone 8: Phase 2 Front Office Expansion
+
+- Add structured contracts, salary-cap summaries, draft-pick inventories, and save hydration for older V1.1 saves.
+- Build pure systems for trade valuation/application, scouting assignments/draft-board certainty, and player development plans.
+- Add Contract & Cap Office, Trade War Room, Scouting Department, and Development Office rooms without rebuilding the V1.1 facility flow.
+- Thread front-office ticks into game advancement so scouting and development evolve after simulated games.
+- Add focused Vitest coverage for contracts, picks, trades, scouting, development, migration, and serialization.
+- Keep Phase 2 client-only with fictional teams/players and document the remaining limitations around free agency, draft execution, playoffs, and contract negotiation.

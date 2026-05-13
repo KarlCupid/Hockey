@@ -1,0 +1,353 @@
+import { create } from "zustand";
+import { AUTOSAVE_SLOT_ID } from "../game/constants";
+import { createFranchise } from "../game/generators/generateLeague";
+import { clamp } from "../game/rng";
+import { createGameNews } from "../game/systems/news";
+import { autoFillBestLineup, validateLineup } from "../game/systems/lineupValidation";
+import { applyGameToStandings, recordString } from "../game/systems/standings";
+import { deleteSave, listSaveMetadata, readSave, writeSave } from "../game/systems/saves";
+import { assembleGameResult, nextGameForTeam, simulateGame } from "../game/simulation/simulateGame";
+import type { TacticKey } from "../game/systems/tactics";
+import type {
+  FranchiseState,
+  GameResult,
+  LeagueState,
+  Lineup,
+  NewsItem,
+  PeriodSimulationResult,
+  Player,
+  PlayerStatUpdate,
+  SaveSlotMetadata,
+  Tactics,
+  Team
+} from "../game/types";
+
+interface FranchiseStore {
+  franchise: FranchiseState | null;
+  saves: SaveSlotMetadata[];
+  loadError?: string;
+  startNewFranchise: (teamId: string) => void;
+  refreshSaves: () => Promise<void>;
+  saveToSlot: (slotId: string) => Promise<void>;
+  loadFromSlot: (slotId: string) => Promise<void>;
+  deleteSlot: (slotId: string) => Promise<void>;
+  autoFillLineup: () => void;
+  setLineupSlot: (path: string, playerId: string) => void;
+  setTactic: (key: TacticKey, value: number) => void;
+  applyGameResult: (result: GameResult, autosave?: boolean) => Promise<void>;
+  simulateInstantNextGame: () => Promise<GameResult | undefined>;
+  applyPeriodGame: (periods: PeriodSimulationResult[], seed: string) => Promise<GameResult | undefined>;
+}
+
+export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
+  franchise: null,
+  saves: [],
+  loadError: undefined,
+  startNewFranchise: (teamId) => {
+    set({ franchise: createFranchise(teamId), loadError: undefined });
+  },
+  refreshSaves: async () => {
+    const saves = await listSaveMetadata().catch(() => []);
+    set({ saves });
+  },
+  saveToSlot: async (slotId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: { ...franchise, saveStatus: "saving" } });
+    try {
+      await writeSave(slotId, { ...franchise, updatedAt: new Date().toISOString() });
+      const saves = await listSaveMetadata();
+      set({ franchise: { ...franchise, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves });
+    } catch (error) {
+      set({ franchise: { ...franchise, saveStatus: "error" }, loadError: error instanceof Error ? error.message : "Save failed" });
+    }
+  },
+  loadFromSlot: async (slotId) => {
+    try {
+      const save = await readSave(slotId);
+      if (!save) {
+        set({ loadError: "No save exists in that slot." });
+        return;
+      }
+      set({ franchise: save, loadError: undefined });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Save could not be loaded." });
+    }
+  },
+  deleteSlot: async (slotId) => {
+    await deleteSave(slotId);
+    await get().refreshSaves();
+  },
+  autoFillLineup: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: updateSelectedTeam(franchise, (team) => ({ ...team, lines: autoFillBestLineup(team).lineup })) });
+  },
+  setLineupSlot: (path, playerId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const team = selectedTeam(franchise);
+    const player = team.roster.find((candidate) => candidate.id === playerId);
+    if (!player || player.injuryStatus !== "healthy") return;
+    const nextLineup = structuredClone(team.lines) as Lineup;
+    const [section, indexRaw, slot] = path.split(".");
+    const index = Number(indexRaw);
+    const assigned = new Set(
+      [
+        ...nextLineup.forwardLines.flatMap((line) => [line.lw, line.c, line.rw]),
+        ...nextLineup.defensePairs.flatMap((pair) => [pair.ld, pair.rd]),
+        nextLineup.goalies.starter,
+        nextLineup.goalies.backup
+      ].filter(Boolean)
+    );
+    const currentValue =
+      section === "forwardLines"
+        ? nextLineup.forwardLines[index]?.[slot as keyof (typeof nextLineup.forwardLines)[number]]
+        : section === "defensePairs"
+          ? nextLineup.defensePairs[index]?.[slot as keyof (typeof nextLineup.defensePairs)[number]]
+          : nextLineup.goalies[slot as keyof typeof nextLineup.goalies];
+    if (assigned.has(playerId) && currentValue !== playerId) return;
+    if (section === "forwardLines") {
+      nextLineup.forwardLines[index] = { ...nextLineup.forwardLines[index], [slot]: playerId };
+    } else if (section === "defensePairs") {
+      nextLineup.defensePairs[index] = { ...nextLineup.defensePairs[index], [slot]: playerId };
+    } else if (section === "goalies") {
+      nextLineup.goalies = { ...nextLineup.goalies, [slot]: playerId };
+    }
+    set({ franchise: updateSelectedTeam(franchise, (candidate) => ({ ...candidate, lines: nextLineup })) });
+  },
+  setTactic: (key, value) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({
+      franchise: updateSelectedTeam(franchise, (team) => ({
+        ...team,
+        tactics: { ...team.tactics, [key]: clamp(value) }
+      }))
+    });
+  },
+  simulateInstantNextGame: async () => {
+    const franchise = get().franchise;
+    if (!franchise) return undefined;
+    const game = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
+    if (!game) return undefined;
+    const homeTeam = findTeam(franchise.league, game.homeTeamId);
+    const awayTeam = findTeam(franchise.league, game.awayTeamId);
+    if (validateLineup(selectedTeam(franchise)).errors.length) return undefined;
+    const result = simulateGame({
+      game,
+      homeTeam,
+      awayTeam,
+      seed: `${franchise.franchiseId}-${game.id}-${franchise.league.currentDayIndex}`
+    });
+    await get().applyGameResult(result, true);
+    return result;
+  },
+  applyPeriodGame: async (periods, seed) => {
+    const franchise = get().franchise;
+    if (!franchise) return undefined;
+    const game = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
+    if (!game) return undefined;
+    const result = assembleGameResult(game, findTeam(franchise.league, game.homeTeamId), findTeam(franchise.league, game.awayTeamId), seed, periods);
+    await get().applyGameResult(result, true);
+    return result;
+  },
+  applyGameResult: async (result, autosave = false) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    let next = applyDetailedResult(franchise, result);
+    next = simulateRemainingDay(next, result.gameId);
+    set({ franchise: next });
+    if (autosave) {
+      await writeSave(AUTOSAVE_SLOT_ID, next).catch(() => undefined);
+      await get().refreshSaves();
+    }
+  }
+}));
+
+export function selectedTeam(franchise: FranchiseState): Team {
+  return findTeam(franchise.league, franchise.selectedTeamId);
+}
+
+export function findTeam(league: LeagueState, teamId: string): Team {
+  const team = league.teams.find((candidate) => candidate.id === teamId);
+  if (!team) throw new Error(`Team not found: ${teamId}`);
+  return team;
+}
+
+export function upcomingOpponent(franchise: FranchiseState): Team | undefined {
+  const next = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
+  if (!next) return undefined;
+  const opponentId = next.homeTeamId === franchise.selectedTeamId ? next.awayTeamId : next.homeTeamId;
+  return findTeam(franchise.league, opponentId);
+}
+
+function updateSelectedTeam(franchise: FranchiseState, updater: (team: Team) => Team): FranchiseState {
+  return {
+    ...franchise,
+    league: {
+      ...franchise.league,
+      teams: franchise.league.teams.map((team) => (team.id === franchise.selectedTeamId ? updater(team) : team))
+    },
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function applyDetailedResult(franchise: FranchiseState, result: GameResult): FranchiseState {
+  const leagueWithRecords = applyGameToStandings(franchise.league, result);
+  const teamsWithStats = leagueWithRecords.teams.map((team) => applyResultToTeam(team, result, franchise.selectedTeamId));
+  const schedule = leagueWithRecords.schedule.map((game) =>
+    game.id === result.gameId
+      ? {
+          ...game,
+          played: true,
+          result: {
+            homeGoals: result.finalScore.home,
+            awayGoals: result.finalScore.away,
+            overtime: result.finalScore.overtime
+          }
+        }
+      : game
+  );
+  const userTeam = teamsWithStats.find((team) => team.id === franchise.selectedTeamId)!;
+  const opponent = teamsWithStats.find((team) => team.id === (result.homeTeamId === userTeam.id ? result.awayTeamId : result.homeTeamId))!;
+  const news = createGameNews(result, userTeam, opponent, franchise.league.currentDate);
+  const recent = `${findTeam(franchise.league, result.awayTeamId).abbreviation} ${result.finalScore.away} @ ${findTeam(franchise.league, result.homeTeamId).abbreviation} ${result.finalScore.home}`;
+
+  return {
+    ...franchise,
+    league: {
+      ...leagueWithRecords,
+      teams: teamsWithStats,
+      schedule,
+      recentResults: [recent, ...leagueWithRecords.recentResults].slice(0, 10)
+    },
+    inbox: [...news, ...franchise.inbox].slice(0, 40),
+    lastResult: { ...result, newsEvents: news },
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function simulateRemainingDay(franchise: FranchiseState, userGameId: string): FranchiseState {
+  const day = franchise.league.currentDayIndex;
+  const games = franchise.league.schedule.filter((game) => game.dayIndex === day && !game.played && game.id !== userGameId);
+  let next = franchise;
+  games.forEach((game) => {
+    const result = simulateGame({
+      game,
+      homeTeam: findTeam(next.league, game.homeTeamId),
+      awayTeam: findTeam(next.league, game.awayTeamId),
+      seed: `${next.league.id}-${game.id}-ai`
+    });
+    const league = applyGameToStandings(next.league, result);
+    next = {
+      ...next,
+      league: {
+        ...league,
+        schedule: league.schedule.map((candidate) =>
+          candidate.id === game.id
+            ? {
+                ...candidate,
+                played: true,
+                result: {
+                  homeGoals: result.finalScore.home,
+                  awayGoals: result.finalScore.away,
+                  overtime: result.finalScore.overtime
+                }
+              }
+            : candidate
+        ),
+        recentResults: [
+          `${findTeam(league, game.awayTeamId).abbreviation} ${result.finalScore.away} @ ${findTeam(league, game.homeTeamId).abbreviation} ${result.finalScore.home}`,
+          ...league.recentResults
+        ].slice(0, 10)
+      }
+    };
+  });
+
+  const nextDay = day + 1;
+  const nextGame = next.league.schedule.find((game) => !game.played && game.dayIndex >= nextDay);
+  return {
+    ...next,
+    league: {
+      ...next.league,
+      currentDayIndex: nextGame?.dayIndex ?? nextDay,
+      currentDate: nextGame?.date ?? next.league.currentDate,
+      completed: !nextGame
+    }
+  };
+}
+
+function applyResultToTeam(team: Team, result: GameResult, selectedTeamId: string): Team {
+  if (team.id !== result.homeTeamId && team.id !== result.awayTeamId) return team;
+  const updates = result.playerStatUpdates.filter((update) => update.teamId === team.id);
+  const updateById = new Map(updates.map((update) => [update.playerId, update]));
+  const injuries = new Map(result.injuries.filter((injury) => injury.teamId === team.id).map((injury) => [injury.playerId, injury]));
+  const morale = new Map(result.moraleChanges.map((change) => [change.playerId, change]));
+  const fatigue = new Map(result.fatigueChanges.map((change) => [change.playerId, change]));
+
+  return {
+    ...team,
+    fanConfidence: clamp(team.fanConfidence + (team.id === selectedTeamId ? (wonTeam(team.id, result) ? 3 : -3) : 0), 0, 100),
+    roster: team.roster.map((player) => {
+      const update = updateById.get(player.id);
+      const injury = injuries.get(player.id);
+      const moraleChange = morale.get(player.id);
+      const fatigueChange = fatigue.get(player.id);
+      const remainingInjuryGames = injury?.gamesRemaining ?? Math.max(0, player.injuryGamesRemaining - 1);
+      const injuryStatus = injury
+        ? injury.gamesRemaining <= 2
+          ? "day-to-day"
+          : "out"
+        : remainingInjuryGames === 0
+          ? "healthy"
+          : remainingInjuryGames <= 2
+            ? "day-to-day"
+            : player.injuryStatus;
+      return {
+        ...player,
+        stats: update ? applyPlayerStats(player, update) : player.stats,
+        morale: clamp(player.morale + (moraleChange?.amount ?? 0), 0, 100),
+        form: clamp(player.form + formDelta(update), 0, 100),
+        fatigue: clamp(player.fatigue + (fatigueChange?.amount ?? -4), 0, 100),
+        injuryStatus,
+        injuryGamesRemaining: remainingInjuryGames
+      };
+    })
+  };
+}
+
+function applyPlayerStats(player: Player, update: PlayerStatUpdate): Player["stats"] {
+  const goals = player.stats.goals + (update.goals ?? 0);
+  const assists = player.stats.assists + (update.assists ?? 0);
+  return {
+    gamesPlayed: player.stats.gamesPlayed + (update.gamesPlayed ?? 0),
+    goals,
+    assists,
+    points: goals + assists,
+    plusMinus: player.stats.plusMinus + (update.plusMinus ?? 0),
+    penaltyMinutes: player.stats.penaltyMinutes + (update.penaltyMinutes ?? 0),
+    shots: player.stats.shots + (update.shots ?? 0),
+    hits: player.stats.hits + (update.hits ?? 0),
+    blocks: player.stats.blocks + (update.blocks ?? 0),
+    goalieWins: player.stats.goalieWins + (update.goalieWins ?? 0),
+    goalieLosses: player.stats.goalieLosses + (update.goalieLosses ?? 0),
+    saves: player.stats.saves + (update.saves ?? 0),
+    goalsAgainst: player.stats.goalsAgainst + (update.goalsAgainst ?? 0),
+    shutouts: player.stats.shutouts + (update.shutouts ?? 0)
+  };
+}
+
+function formDelta(update?: PlayerStatUpdate): number {
+  if (!update) return -1;
+  return (update.goals ?? 0) * 4 + (update.assists ?? 0) * 2 + (update.goalieWins ?? 0) * 4 - (update.goalsAgainst ?? 0);
+}
+
+function wonTeam(teamId: string, result: GameResult): boolean {
+  if (teamId === result.homeTeamId) return result.finalScore.home > result.finalScore.away;
+  return result.finalScore.away > result.finalScore.home;
+}
+
+export function recordLabel(team: Team): string {
+  return `${recordString(team)} (${team.record.points} pts)`;
+}

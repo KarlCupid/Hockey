@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { ModalShell } from "../components/hud/ModalShell";
+import { FirstDayChecklist } from "../components/hud/FirstDayChecklist";
+import { OperationsMap } from "../components/hud/OperationsMap";
 import { RoomPrompt, roomLabel } from "../components/hud/RoomPrompt";
 import { TopBar } from "../components/hud/TopBar";
 import { ArenaPanel } from "../components/rooms/ArenaPanel";
@@ -17,21 +19,25 @@ export function AppShell() {
   const activeRoom = useUiStore((state) => state.activeRoom);
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
+  const toggleOperationsMap = useUiStore((state) => state.toggleOperationsMap);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setActiveRoom(undefined);
+      if (event.key.toLowerCase() === "m") toggleOperationsMap();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [setActiveRoom]);
+  }, [setActiveRoom, toggleOperationsMap]);
 
   return (
     <main className="app-shell">
       <FacilityScene />
       <TopBar />
+      <OperationsMap />
+      <FirstDayChecklist />
       <RoomPrompt room={nearbyRoom} />
-      <div className="control-hint">WASD move | mouse orbit | E enter | Esc close</div>
+      <div className="control-hint">WASD move | mouse orbit | E enter | M map | Esc close</div>
       {activeRoom && (
         <ModalShell title={roomLabel(activeRoom)} subtitle={subtitleFor(activeRoom)} onClose={() => setActiveRoom(undefined)}>
           {panelFor(activeRoom)}

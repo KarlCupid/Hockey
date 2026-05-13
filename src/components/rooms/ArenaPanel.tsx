@@ -1,19 +1,25 @@
 import { useState } from "react";
 import { simulatePeriod } from "../../game/simulation/simulatePeriod";
-import { canSimulate, nextGameForTeam, simulateGame } from "../../game/simulation/simulateGame";
+import { assembleGameResult, canSimulate, nextGameForTeam, simulateGame } from "../../game/simulation/simulateGame";
+import { createBenchReport } from "../../game/systems/benchReport";
 import type { GameResult, PeriodSimulationResult } from "../../game/types";
 import { TACTIC_LABELS, type TacticKey } from "../../game/systems/tactics";
 import { findTeam, selectedTeam, upcomingOpponent, useFranchiseStore } from "../../store/franchiseStore";
 import { ArenaVisualization } from "../three/ArenaVisualization";
 import { StatBadge } from "../hud/StatBadge";
+import { GameResultCenter } from "./GameResultCenter";
+import { useUiStore } from "../../store/uiStore";
 
 export function ArenaPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const applyGameResult = useFranchiseStore((state) => state.applyGameResult);
   const simulateInstantNextGame = useFranchiseStore((state) => state.simulateInstantNextGame);
-  const applyPeriodGame = useFranchiseStore((state) => state.applyPeriodGame);
   const setTactic = useFranchiseStore((state) => state.setTactic);
+  const markChecklistItem = useUiStore((state) => state.markChecklistItem);
   const [periods, setPeriods] = useState<PeriodSimulationResult[]>([]);
+  const [periodFinal, setPeriodFinal] = useState<GameResult | undefined>();
+  const [applyingPeriod, setApplyingPeriod] = useState(false);
+  const [applyingBroadcast, setApplyingBroadcast] = useState(false);
   const [broadcastResult, setBroadcastResult] = useState<GameResult | undefined>();
   const [localResult, setLocalResult] = useState<GameResult | undefined>();
 
@@ -23,7 +29,7 @@ export function ArenaPanel() {
   const game = nextGameForTeam(activeFranchise.selectedTeamId, activeFranchise.league.schedule, activeFranchise.league.currentDayIndex);
   const opponent = upcomingOpponent(activeFranchise);
   const errors = canSimulate(team);
-  const result = localResult ?? activeFranchise.lastResult;
+  const result = activeFranchise.lastResult ?? localResult;
 
   const preview = game
     ? {
@@ -34,7 +40,11 @@ export function ArenaPanel() {
 
   async function instant() {
     const next = await simulateInstantNextGame();
-    if (next) setLocalResult(next);
+    if (next) {
+      setLocalResult(next);
+      markChecklistItem("simulateGame");
+      markChecklistItem("reviewResult");
+    }
   }
 
   function prepareBroadcast() {
@@ -50,13 +60,18 @@ export function ArenaPanel() {
   }
 
   async function finishBroadcast(resultToApply: GameResult) {
+    if (applyingBroadcast) return;
+    setApplyingBroadcast(true);
     await applyGameResult(resultToApply, true);
     setLocalResult(resultToApply);
     setBroadcastResult(undefined);
+    setApplyingBroadcast(false);
+    markChecklistItem("simulateGame");
+    markChecklistItem("reviewResult");
   }
 
-  async function simNextPeriod() {
-    if (!game || !preview) return;
+  function simNextPeriod() {
+    if (!game || !preview || periodFinal) return;
     const period = periods.length + 1;
     const scoreBefore = periods.reduce(
       (score, item) => ({ home: score.home + item.homeGoals, away: score.away + item.awayGoals }),
@@ -75,15 +90,51 @@ export function ArenaPanel() {
     const nextPeriods = [...periods, periodResult];
     setPeriods(nextPeriods);
     if (nextPeriods.length === 3) {
-      const final = await applyPeriodGame(nextPeriods, `${activeFranchise.franchiseId}-${game.id}-period`);
-      if (final) setLocalResult(final);
-      setPeriods([]);
+      setPeriodFinal(assembleGameResult(game, preview.home, preview.away, `${activeFranchise.franchiseId}-${game.id}-period`, nextPeriods));
     }
   }
 
-  if (broadcastResult && preview) {
-    return <ArenaVisualization result={broadcastResult} homeTeam={preview.home} awayTeam={preview.away} onFinish={() => void finishBroadcast(broadcastResult)} />;
+  async function applyPeriodFinal() {
+    if (!periodFinal || applyingPeriod) return;
+    setApplyingPeriod(true);
+    await applyGameResult(periodFinal, true);
+    setLocalResult(periodFinal);
+    setPeriods([]);
+    setPeriodFinal(undefined);
+    setApplyingPeriod(false);
+    markChecklistItem("simulateGame");
+    markChecklistItem("reviewResult");
   }
+
+  function resetPeriodSim() {
+    setPeriods([]);
+    setPeriodFinal(undefined);
+  }
+
+  if (broadcastResult && preview) {
+    return (
+      <ArenaVisualization
+        result={broadcastResult}
+        homeTeam={preview.home}
+        awayTeam={preview.away}
+        teams={activeFranchise.league.teams}
+        applying={applyingBroadcast}
+        onCancel={() => setBroadcastResult(undefined)}
+        onFinish={() => void finishBroadcast(broadcastResult)}
+      />
+    );
+  }
+
+  const latestBenchReport =
+    preview && periods.length
+      ? createBenchReport({
+          periods,
+          selectedTeamId: team.id,
+          homeTeam: preview.home,
+          awayTeam: preview.away,
+          tactics: team.tactics
+        })
+      : undefined;
 
   return (
     <div className="room-stack">
@@ -100,7 +151,7 @@ export function ArenaPanel() {
           Instant Simulation
         </button>
         <button type="button" disabled={!game || errors.length > 0 || periods.length >= 3} onClick={() => void simNextPeriod()}>
-          Simulate Period {periods.length + 1}
+          {periods.length ? `Simulate Next Period (${periods.length + 1})` : "Start Period Sim"}
         </button>
         <button type="button" disabled={!game || errors.length > 0} onClick={prepareBroadcast}>
           Arena Broadcast
@@ -146,76 +197,66 @@ export function ArenaPanel() {
               ))}
             </div>
           )}
-          {periods.length > 0 && periods.length < 3 && (
+          {latestBenchReport && (
+            <article className="bench-report">
+              <header>
+                <small>Bench Report after Period {latestBenchReport.period}</small>
+                <strong>{latestBenchReport.currentScore}</strong>
+              </header>
+              <div className="badge-row">
+                <StatBadge label="Period shots" value={latestBenchReport.periodShots} />
+                <StatBadge label="Momentum" value={latestBenchReport.momentumNote.includes("won") ? "Good" : latestBenchReport.momentumNote.includes("other") ? "Pressure" : "Even"} />
+              </div>
+              <p>{latestBenchReport.momentumNote}</p>
+              <p>{latestBenchReport.powerPlayNote}</p>
+              <p>{latestBenchReport.fatigueWarning}</p>
+              <p>{latestBenchReport.goalieConfidenceNote}</p>
+              <strong>Suggested adjustment: {latestBenchReport.suggestedAdjustment}</strong>
+            </article>
+          )}
+          {periods.length > 0 && !periodFinal && periods.length < 3 && (
             <div className="mini-tactics">
               {(Object.keys(team.tactics) as TacticKey[]).map((key) => (
                 <label key={key}>
                   <span>{TACTIC_LABELS[key]}</span>
-                  <input type="range" min="0" max="100" value={team.tactics[key]} onChange={(event) => setTactic(key, Number(event.target.value))} />
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={team.tactics[key]}
+                    onChange={(event) => {
+                      setTactic(key, Number(event.target.value));
+                      markChecklistItem("adjustTactic");
+                    }}
+                  />
                 </label>
               ))}
+            </div>
+          )}
+          {periods.length > 0 && (
+            <div className="button-row">
+              <button type="button" onClick={resetPeriodSim}>
+                Reset / Cancel Period Sim
+              </button>
+              {periodFinal && (
+                <button type="button" disabled={applyingPeriod} onClick={() => void applyPeriodFinal()}>
+                  {applyingPeriod ? "Applying..." : "Apply Period Result"}
+                </button>
+              )}
             </div>
           )}
         </section>
 
         <section className="panel-section">
-          <h3>Game Result</h3>
-          {result ? <GameResultPanel result={result} /> : <p className="empty-state">Pick a sim mode to put the plan on the ice.</p>}
+          <h3>{periodFinal ? "Final Preview" : "Game Result Center"}</h3>
+          {periodFinal ? (
+            <GameResultCenter result={periodFinal} teams={activeFranchise.league.teams} />
+          ) : result ? (
+            <GameResultCenter result={result} teams={activeFranchise.league.teams} />
+          ) : (
+            <p className="empty-state">Pick a sim mode to put the plan on the ice.</p>
+          )}
         </section>
-      </div>
-    </div>
-  );
-}
-
-export function GameResultPanel({ result }: { result: GameResult }) {
-  return (
-    <div className="result-panel">
-      <div className="scoreboard-card">
-        <strong>
-          {result.finalScore.away} - {result.finalScore.home}
-        </strong>
-        <span>{result.finalScore.overtime ? "Final / OT" : "Final"}</span>
-      </div>
-      <div className="badge-row">
-        <StatBadge label="Shots" value={`${result.shots.away}-${result.shots.home}`} />
-        <StatBadge label="PP" value={`${result.powerPlayGoals.away}/${result.powerPlayAttempts.away} | ${result.powerPlayGoals.home}/${result.powerPlayAttempts.home}`} />
-        <StatBadge label="Events" value={result.eventTimeline.length} />
-      </div>
-      <h4>Period Scores</h4>
-      <div className="period-row">
-        {result.periodScores.map((period) => (
-          <span key={period.period}>
-            P{period.period}: {period.away}-{period.home}
-          </span>
-        ))}
-      </div>
-      <h4>Three Stars</h4>
-      <ol className="compact-list">
-        {result.threeStars.map((star) => (
-          <li key={star.playerId}>{star.reason}</li>
-        ))}
-      </ol>
-      <h4>Coach Notes</h4>
-      <ul className="compact-list">
-        {result.coachNotes.map((note) => (
-          <li key={note}>{note}</li>
-        ))}
-      </ul>
-      {result.injuries.length > 0 && (
-        <>
-          <h4>Injuries</h4>
-          {result.injuries.map((injury) => (
-            <p className="warning-text" key={injury.playerId}>{injury.note}</p>
-          ))}
-        </>
-      )}
-      <h4>Event Feed</h4>
-      <div className="event-feed">
-        {result.eventTimeline.slice(0, 12).map((event) => (
-          <p key={event.id}>
-            <strong>P{event.period} {event.time}</strong> {event.description}
-          </p>
-        ))}
       </div>
     </div>
   );

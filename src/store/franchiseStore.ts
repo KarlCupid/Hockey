@@ -34,6 +34,7 @@ interface FranchiseStore {
   autoFillLineup: () => void;
   setLineupSlot: (path: string, playerId: string) => void;
   setTactic: (key: TacticKey, value: number) => void;
+  setTactics: (tactics: Tactics) => void;
   applyGameResult: (result: GameResult, autosave?: boolean) => Promise<void>;
   simulateInstantNextGame: () => Promise<GameResult | undefined>;
   applyPeriodGame: (periods: PeriodSimulationResult[], seed: string) => Promise<GameResult | undefined>;
@@ -126,6 +127,24 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       }))
     });
   },
+  setTactics: (tactics) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({
+      franchise: updateSelectedTeam(franchise, (team) => ({
+        ...team,
+        tactics: {
+          forecheckIntensity: clamp(tactics.forecheckIntensity),
+          defensiveStructure: clamp(tactics.defensiveStructure),
+          offensiveRisk: clamp(tactics.offensiveRisk),
+          physicality: clamp(tactics.physicality),
+          pace: clamp(tactics.pace),
+          shotVolume: clamp(tactics.shotVolume),
+          specialTeamsAggression: clamp(tactics.specialTeamsAggression)
+        }
+      }))
+    });
+  },
   simulateInstantNextGame: async () => {
     const franchise = get().franchise;
     if (!franchise) return undefined;
@@ -157,10 +176,14 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     if (!franchise) return;
     let next = applyDetailedResult(franchise, result);
     next = simulateRemainingDay(next, result.gameId);
-    set({ franchise: next });
+    set({ franchise: { ...next, saveStatus: autosave ? "saving" : next.saveStatus } });
     if (autosave) {
-      await writeSave(AUTOSAVE_SLOT_ID, next).catch(() => undefined);
+      const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
+        .then(() => true)
+        .catch(() => false);
       await get().refreshSaves();
+      const latest = get().franchise;
+      if (latest?.lastResult?.id === result.id) set({ franchise: { ...latest, saveStatus: saved ? "saved" : "error" } });
     }
   }
 }));

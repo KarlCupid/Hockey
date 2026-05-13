@@ -1,24 +1,32 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
+import { getBroadcastLiveState } from "../../game/systems/broadcastPresentation";
 import type { GameEvent, GameResult, Team } from "../../game/types";
-import { GameResultPanel } from "../rooms/ArenaPanel";
+import { GameResultCenter } from "../rooms/GameResultCenter";
 
 export function ArenaVisualization({
   result,
   homeTeam,
   awayTeam,
+  teams,
+  applying,
+  onCancel,
   onFinish
 }: {
   result: GameResult;
   homeTeam: Team;
   awayTeam: Team;
+  teams: Team[];
+  applying?: boolean;
+  onCancel: () => void;
   onFinish: () => void;
 }) {
   const [index, setIndex] = useState(0);
   const [speed, setSpeed] = useState(900);
   const current = result.eventTimeline[Math.min(index, result.eventTimeline.length - 1)];
   const done = index >= result.eventTimeline.length;
+  const live = getBroadcastLiveState(result, awayTeam, homeTeam, index);
 
   useEffect(() => {
     if (done) return;
@@ -37,18 +45,23 @@ export function ArenaVisualization({
         </Canvas>
       </div>
       <div className="broadcast-overlay">
-        <div className="broadcast-score">
-          <strong>{awayTeam.abbreviation} {result.finalScore.away}</strong>
-          <span>{current ? `P${current.period} ${current.time}` : "Final"}</span>
-          <strong>{homeTeam.abbreviation} {result.finalScore.home}</strong>
+        <div className="broadcast-score" style={{ "--event-accent": live.accentColor } as React.CSSProperties}>
+          <strong>{awayTeam.abbreviation} {live.awayScore}</strong>
+          <span>{live.periodLabel} {live.timeLabel}</span>
+          <strong>{homeTeam.abbreviation} {live.homeScore}</strong>
+          <b>{live.chip}</b>
         </div>
-        <div className="button-row">
-          <button type="button" onClick={() => setSpeed(900)}>Normal</button>
-          <button type="button" onClick={() => setSpeed(260)}>Fast</button>
+        <div className={`broadcast-banner broadcast-banner--${live.chip.toLowerCase()}`} style={{ "--event-accent": live.accentColor } as React.CSSProperties}>
+          {live.banner}
+        </div>
+        <div className="button-row broadcast-controls">
+          <button type="button" className={speed === 900 ? "is-active" : ""} onClick={() => setSpeed(900)}>Normal</button>
+          <button type="button" className={speed === 260 ? "is-active" : ""} onClick={() => setSpeed(260)}>Fast</button>
           <button type="button" onClick={() => setIndex(result.eventTimeline.length)}>Skip to Final</button>
+          <button type="button" onClick={onCancel}>Return Without Applying</button>
         </div>
         <div className="event-feed event-feed--broadcast">
-          {result.eventTimeline.slice(Math.max(0, index - 7), index + 1).map((event) => (
+          {result.eventTimeline.slice(Math.max(0, index - 7), Math.min(result.eventTimeline.length, index + 1)).map((event) => (
             <p key={event.id}>
               <strong>P{event.period} {event.time}</strong> {event.description}
             </p>
@@ -56,8 +69,10 @@ export function ArenaVisualization({
         </div>
         {done && (
           <div className="broadcast-final">
-            <GameResultPanel result={result} />
-            <button type="button" onClick={onFinish}>Apply Result & Return</button>
+            <GameResultCenter result={result} teams={teams} />
+            <button type="button" disabled={applying} onClick={onFinish}>
+              {applying ? "Applying..." : "Apply Result & Return"}
+            </button>
           </div>
         )}
       </div>

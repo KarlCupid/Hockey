@@ -6,6 +6,7 @@ import { AppShell } from "./AppShell";
 export function App() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const saves = useFranchiseStore((state) => state.saves);
+  const loadError = useFranchiseStore((state) => state.loadError);
   const refreshSaves = useFranchiseStore((state) => state.refreshSaves);
   const loadFromSlot = useFranchiseStore((state) => state.loadFromSlot);
   const deleteSlot = useFranchiseStore((state) => state.deleteSlot);
@@ -46,6 +47,9 @@ export function App() {
   }
 
   const autosave = saves.find((save) => save.slotId === "autosave");
+  const confirmDelete = (slotId: string) => {
+    if (window.confirm("Delete this local save? This cannot be undone.")) void deleteSlot(slotId);
+  };
   return (
     <main className="start-screen">
       <div className="start-screen__intro">
@@ -59,6 +63,7 @@ export function App() {
       </div>
       <section className="load-card">
         <h2>Load Franchise</h2>
+        {loadError && <p className="error-text">{loadError}</p>}
         {saves.length ? (
           saves.map((save) => (
             <article className="save-row" key={save.slotId}>
@@ -70,7 +75,7 @@ export function App() {
               </div>
               <div className="button-row">
                 <button type="button" onClick={() => void loadFromSlot(save.slotId)}>Load</button>
-                <button type="button" onClick={() => void deleteSlot(save.slotId)}>Delete</button>
+                <button type="button" onClick={() => confirmDelete(save.slotId)}>Delete</button>
               </div>
             </article>
           ))

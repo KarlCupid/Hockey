@@ -38,9 +38,15 @@ npm run build
 - `src/game/generators/generatePlayers.ts`: fictional roster generation
 - `src/game/generators/generateSchedule.ts`: 22-game round-robin schedule
 - `src/game/systems/lineupValidation.ts`: lineup validation, duplicate/injury checks, auto-fill, chemistry
-- `src/game/systems/tactics.ts`: tactic labels and descriptions
+- `src/game/systems/tactics.ts`: tactic labels, descriptions, presets, and tactic identity summaries
 - `src/game/systems/standings.ts`: record and standings updates
 - `src/game/systems/morale.ts`: morale/form/fatigue bands and player notes
+- `src/game/systems/playerNotes.ts`: coach read and management risk notes from player state
+- `src/game/systems/lineIdentity.ts`: forward-line and defense-pair identity helpers plus fit notes
+- `src/game/systems/resultPresentation.ts`: readable game result presentation and event filtering
+- `src/game/systems/benchReport.ts`: period-by-period bench report and tactical recommendation helper
+- `src/game/systems/broadcastPresentation.ts`: live broadcast scoreboard and event chip helper
+- `src/game/systems/seasonSummary.ts`: selected-team season pulse and season-complete summary helper
 - `src/game/systems/injuries.ts`: injury and fatigue risk selectors
 - `src/game/systems/news.ts`: inbox/news generation from game state
 - `src/game/systems/saves.ts`: localForage save serialization, metadata, load/delete helpers
@@ -53,6 +59,8 @@ npm run build
 
 - `src/components/hud/TopBar.tsx`: team, record, date, next opponent, room/action status
 - `src/components/hud/RoomPrompt.tsx`: interactable room prompt
+- `src/components/hud/FirstDayChecklist.tsx`: first-session GM/head coach guidance checklist
+- `src/components/hud/OperationsMap.tsx`: facility map and room-directory fallback navigation
 - `src/components/hud/ModalShell.tsx`: modal shell for facility room panels
 - `src/components/hud/PlayerCard.tsx`: detailed player card
 - `src/components/hud/StatBadge.tsx`: compact stat display
@@ -62,6 +70,7 @@ npm run build
 - `src/components/rooms/LockerRoomPanel.tsx`: roster table, player cards, morale/form/fatigue/status
 - `src/components/rooms/MedicalRoomPanel.tsx`: injury board and fatigue risk list
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
+- `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, consequences, and filtered event feed
 - `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary
 - `src/components/rooms/SaveLoadPanel.tsx`: autosave/manual slot UI
 
@@ -79,6 +88,7 @@ npm run build
 - `src/tests/simulation.test.ts`: score validity, deterministic results, standings update
 - `src/tests/lineupValidation.test.ts`: duplicate assignment and injured player validation
 - `src/tests/saves.test.ts`: save serialization/deserialization roundtrip
+- `src/tests/v11Systems.test.ts`: V1.1 pure helper coverage for player notes, line identity, tactics, result presentation, bench reports, broadcast score, news, and season pulse
 
 ## Styles
 

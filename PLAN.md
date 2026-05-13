@@ -32,3 +32,11 @@
 - Add Vitest coverage for deterministic simulation, standings, lineup validation, and save serialization.
 - Run `npm test` and `npm run build`.
 - Launch the app and verify the start-to-finish vertical slice.
+
+## Milestone 7: V1.1 Playable Prototype Polish
+
+- Add first-day GM guidance that tracks real facility, roster, coaching, arena, standings, and save actions without blocking play.
+- Deepen pure helper systems for player notes, line and pair identity, tactic presets, result presentation, bench reports, broadcast score state, expanded news, and season summary.
+- Improve Locker Room, Coach's Office, Arena Bowl, broadcast mode, Standings Hall, Save Desk, and the 3D facility navigation while preserving the existing client-only architecture.
+- Add focused Vitest coverage for the new pure systems and expanded validation behavior.
+- Run `npm test`, `npm run build`, and a browser smoke flow covering franchise start, rooms, simulations, result review, standings/news effects, and save/load.

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useUiStore } from "../../store/uiStore";
 import { upcomingOpponent, recordLabel, selectedTeam } from "../../store/franchiseStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
@@ -7,6 +8,10 @@ export function GMOfficePanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const simulateInstantNextGame = useFranchiseStore((state) => state.simulateInstantNextGame);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
+  const markChecklistItem = useUiStore((state) => state.markChecklistItem);
+  useEffect(() => {
+    markChecklistItem("readInbox");
+  }, [markChecklistItem]);
   if (!franchise) return null;
   const team = selectedTeam(franchise);
   const opponent = upcomingOpponent(franchise);
@@ -38,7 +43,14 @@ export function GMOfficePanel() {
         <button type="button" onClick={() => setActiveRoom("arena")} disabled={!opponent}>
           Go to Arena
         </button>
-        <button type="button" onClick={() => void simulateInstantNextGame()} disabled={!opponent}>
+        <button
+          type="button"
+          onClick={() => {
+            markChecklistItem("simulateGame");
+            void simulateInstantNextGame();
+          }}
+          disabled={!opponent}
+        >
           Instant Sim Next Game
         </button>
       </section>
@@ -48,7 +60,7 @@ export function GMOfficePanel() {
           <div className="news-list">
             {franchise.inbox.map((item) => (
               <article className={`news-item news-item--${item.severity}`} key={item.id}>
-                <small>{item.date} | {item.type}</small>
+                <small>{item.date} | {item.type} | {item.severity} priority</small>
                 <strong>{item.headline}</strong>
                 <p>{item.body}</p>
               </article>

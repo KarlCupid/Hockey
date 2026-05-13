@@ -24,4 +24,27 @@ describe("lineup validation", () => {
     expect(result.valid).toBe(false);
     expect(result.errors.some((error) => error.includes("injured and unavailable"))).toBe(true);
   });
+
+  it("warns on buried stars, starter backups, and exhausted top-six players", () => {
+    const team = generateLeague("warnings").teams[0];
+    const starId = team.lines.forwardLines[0].lw!;
+    const lineThreeId = team.lines.forwardLines[2].lw!;
+    team.lines.forwardLines[0].lw = lineThreeId;
+    team.lines.forwardLines[2].lw = starId;
+    const starterId = team.lines.goalies.starter!;
+    const backupId = team.lines.goalies.backup!;
+    team.lines.goalies.starter = backupId;
+    team.lines.goalies.backup = starterId;
+    team.roster = team.roster.map((player) => {
+      if (player.id === starId) return { ...player, roleExpectation: "Top Line", fatigue: 84 };
+      if (player.id === lineThreeId) return { ...player, fatigue: 84 };
+      if (player.id === starterId) return { ...player, roleExpectation: "Starter" };
+      return player;
+    });
+
+    const result = validateLineup(team);
+    expect(result.warnings.some((warning) => warning.includes("expects top-six minutes"))).toBe(true);
+    expect(result.warnings.some((warning) => warning.includes("starter-level goalie"))).toBe(true);
+    expect(result.warnings.some((warning) => warning.includes("exhausted"))).toBe(true);
+  });
 });

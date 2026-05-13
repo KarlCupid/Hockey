@@ -7,6 +7,7 @@
 - Used fictional teams and fictional player name pools only.
 - Used primitive React Three Fiber geometry for the facility instead of imported assets.
 - Used localForage for three manual save slots plus autosave.
+- V1.1 kept the existing architecture and added polish through small pure helper systems plus targeted room/HUD components.
 
 ## Files Added
 
@@ -15,6 +16,19 @@
 - App/UI: `src/app`, `src/components`, `src/store`, `src/styles`
 - Game systems: `src/game`
 - Tests: `src/tests`
+
+## V1.1 Changes
+
+- Added first-day checklist, Operations Map, clearer room prompts, and stronger primitive room identity in the 3D facility.
+- Expanded Locker Room roster filtering/sorting and player card context with coach reads, management risks, status bands, stats, injuries, and contracts.
+- Added line/pair identity helpers, chemistry/fit notes, tactic presets, tactic summary cards, and expanded lineup warnings.
+- Replaced the compact post-game card with a Game Result Center covering scoreboard, story, scoring, penalties, goalie stats, stars, comparison, takeaways, consequences, and filtered events.
+- Changed period simulation to show Bench Reports and final preview before explicit one-time application.
+- Upgraded broadcast mode with live scoreboard progression, event chips/banners, speed controls, skip-to-final, cancel, and explicit apply.
+- Expanded news generation with streak pressure/excitement, injury, owner/fan, role frustration, goalie pressure, fatigue, standings, rival, and personality-driven stories.
+- Improved Standings Hall with GP/differential table columns, selected-team pulse, top-four placeholder hunt projection, recent results, and fuller season-complete summary.
+- Improved local save UX with clearer metadata, overwrite/delete confirmations, autosave status, and load error display.
+- Added V1.1 pure helper tests.
 
 ## Verification
 
@@ -32,9 +46,18 @@
   - Period-by-period simulation completed all three periods and applied a final result.
   - Arena/broadcast mode opened, skipped to final, applied the result, and advanced the schedule.
   - Console error/warning capture was clean during smoke checks.
+- Passed: `npm test` with 4 test files and 15 tests after V1.1 helper coverage.
+- Passed: `npm run build` after V1.1 changes. Vite still reports the known large Three/R3F bundle warning.
+- Passed browser smoke at `http://127.0.0.1:5173/` with the Codex in-app Browser using DOM/interaction/console checks:
+  - New Franchise, team selection, First Day checklist, and Operations Map rendered.
+  - GM Office inbox, Locker Room roster/player card, Coach Office tactic preset and auto-fill, Arena instant sim, period sim with Bench Report and explicit apply, broadcast sim with skip/apply, Standings Hall, and manual save were exercised.
+  - Initial broadcast smoke revealed React duplicate-key warnings in the final result center; fixed by using stable indexed keys and full league team data for broadcast result presentation.
+  - Rechecked broadcast apply flow after the fix with no new console errors or warnings.
+  - In-app screenshot capture timed out on the WebGL-heavy scene, so smoke evidence used DOM snapshots, visible text waits, interaction results, and console logs.
 
 ## Known Limitations
 
 - Trades, contracts, scouting, draft, free agency, staff hiring, and playoffs are represented only as Phase 2 placeholders.
 - Arena/broadcast mode visualizes events with stylized markers rather than playable hockey physics.
 - The production bundle is large because Three.js, React Three Fiber, and Drei ship in the first vertical-slice chunk; code splitting is a Phase 2 optimization.
+- Browser screenshot capture can time out on the current WebGL scene in the Codex in-app Browser; DOM and console smoke checks still passed.

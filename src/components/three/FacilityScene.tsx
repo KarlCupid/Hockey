@@ -73,11 +73,15 @@ function FacilityGeometry() {
         <meshStandardMaterial color="#101d31" />
       </mesh>
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
+      <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
       <Desk position={[0, 0, -7.6]} color="#183b3e" />
+      <CoachBoard />
       <Lockers />
       <MedicalTable />
       <MiniRink />
+      <ArenaTunnel />
       <TrophyCases />
+      <SaveDesk />
     </group>
   );
 }
@@ -93,6 +97,40 @@ function Desk({ position, color }: { position: [number, number, number]; color: 
         <boxGeometry args={[0.9, 0.45, 0.08]} />
         <meshStandardMaterial color="#bfefff" emissive="#3bb4ff" emissiveIntensity={0.18} />
       </mesh>
+    </group>
+  );
+}
+
+function WarRoomBoard({ position, color }: { position: [number, number, number]; color: string }) {
+  return (
+    <group position={position}>
+      <mesh position={[0, 1.1, 0]}>
+        <boxGeometry args={[1.7, 1.1, 0.08]} />
+        <meshStandardMaterial color="#dff6ff" emissive={color} emissiveIntensity={0.12} />
+      </mesh>
+      {[-0.45, 0, 0.45].map((x) => (
+        <mesh key={x} position={[x, 1.1, 0.06]}>
+          <boxGeometry args={[0.26, 0.62, 0.04]} />
+          <meshStandardMaterial color={color} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function CoachBoard() {
+  return (
+    <group position={[1.9, 0, -7.3]}>
+      <mesh position={[0, 1.05, 0]}>
+        <boxGeometry args={[1.9, 1.0, 0.08]} />
+        <meshStandardMaterial color="#eefcff" emissive="#8ee7d1" emissiveIntensity={0.15} />
+      </mesh>
+      {[0, 1, 2, 3].map((index) => (
+        <mesh key={index} position={[-0.52 + index * 0.34, 1.12, 0.07]}>
+          <sphereGeometry args={[0.055, 12, 12]} />
+          <meshStandardMaterial color={index % 2 ? "#d9475f" : "#1e7dd7"} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -140,6 +178,27 @@ function MiniRink() {
   );
 }
 
+function ArenaTunnel() {
+  return (
+    <group position={[0, 0, 4.6]}>
+      <mesh position={[0, 0.7, 0]}>
+        <boxGeometry args={[3.4, 1.4, 0.18]} />
+        <meshStandardMaterial color="#182a3d" emissive="#61c9ff" emissiveIntensity={0.08} />
+      </mesh>
+      {[-1.5, 1.5].map((x) => (
+        <mesh key={x} position={[x, 0.78, 0.32]}>
+          <boxGeometry args={[0.18, 1.3, 1.2]} />
+          <meshStandardMaterial color="#dff6ff" />
+        </mesh>
+      ))}
+      <mesh position={[0, 0.16, 0.66]}>
+        <boxGeometry args={[3.2, 0.08, 1.2]} />
+        <meshStandardMaterial color="#eefcff" emissive="#ffffff" emissiveIntensity={0.22} />
+      </mesh>
+    </group>
+  );
+}
+
 function TrophyCases() {
   return (
     <group position={[7.3, 0, 5.8]}>
@@ -152,6 +211,21 @@ function TrophyCases() {
       <mesh position={[0, 0.65, 0]}>
         <boxGeometry args={[2.4, 1.4, 0.18]} />
         <meshStandardMaterial color="#bfefff" transparent opacity={0.24} />
+      </mesh>
+    </group>
+  );
+}
+
+function SaveDesk() {
+  return (
+    <group position={[0, 0, 1.2]}>
+      <mesh position={[0, 0.42, 0]}>
+        <boxGeometry args={[1.8, 0.84, 0.7]} />
+        <meshStandardMaterial color="#2b2140" />
+      </mesh>
+      <mesh position={[0, 0.92, 0]}>
+        <boxGeometry args={[1.1, 0.08, 0.42]} />
+        <meshStandardMaterial color="#b58cff" emissive="#b58cff" emissiveIntensity={0.35} />
       </mesh>
     </group>
   );

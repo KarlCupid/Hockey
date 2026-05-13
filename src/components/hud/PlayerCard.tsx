@@ -1,4 +1,4 @@
-import { fatigueBand, formBand, moraleBand, playerStatusNote } from "../../game/systems/morale";
+import { createPlayerCoachRead, createPlayerManagementRisk, getFatigueBand, getFormBand, getMoraleBand } from "../../game/systems/playerNotes";
 import type { Player } from "../../game/types";
 import { StatBadge } from "./StatBadge";
 
@@ -16,9 +16,11 @@ export function PlayerCard({ player }: { player: Player }) {
         <strong className="player-card__overall">{player.overall}</strong>
       </header>
       <div className="badge-row">
-        <StatBadge label="Morale" value={moraleBand(player.morale)} tone={player.morale > 70 ? "good" : player.morale < 45 ? "bad" : "default"} />
-        <StatBadge label="Form" value={formBand(player.form)} tone={player.form > 70 ? "good" : player.form < 45 ? "warn" : "default"} />
-        <StatBadge label="Fatigue" value={fatigueBand(player.fatigue)} tone={player.fatigue > 75 ? "bad" : player.fatigue > 60 ? "warn" : "good"} />
+        <StatBadge label="Overall" value={player.overall} />
+        <StatBadge label="Potential" value={player.potential} />
+        <StatBadge label="Morale" value={getMoraleBand(player.morale)} tone={player.morale > 70 ? "good" : player.morale < 45 ? "bad" : "default"} />
+        <StatBadge label="Form" value={getFormBand(player.form)} tone={player.form > 70 ? "good" : player.form < 45 ? "warn" : "default"} />
+        <StatBadge label="Fatigue" value={getFatigueBand(player.fatigue)} tone={player.fatigue > 75 ? "bad" : player.fatigue > 60 ? "warn" : "good"} />
       </div>
       <dl className="mini-grid">
         <div>
@@ -37,15 +39,42 @@ export function PlayerCard({ player }: { player: Player }) {
           <dt>Contract</dt>
           <dd>{player.contractSummary}</dd>
         </div>
+        <div>
+          <dt>Injury</dt>
+          <dd>{player.injuryStatus === "healthy" ? "Healthy" : `${player.injuryStatus} (${player.injuryGamesRemaining} game(s))`}</dd>
+        </div>
       </dl>
-      <p className="player-note">{playerStatusNote(player)}</p>
-      <div className="player-card__stats">
-        <span>{player.stats.gamesPlayed} GP</span>
-        <span>{player.stats.goals} G</span>
-        <span>{player.stats.assists} A</span>
-        <span>{player.stats.points} P</span>
-        {player.position === "G" && <span>{player.stats.saves} SV</span>}
+      <div className="player-card__notes">
+        <article>
+          <small>Coach read</small>
+          <p>{createPlayerCoachRead(player)}</p>
+        </article>
+        <article>
+          <small>Management risk</small>
+          <p>{createPlayerManagementRisk(player)}</p>
+        </article>
       </div>
+      <section className="player-card__stats">
+        <strong>Season Stats</strong>
+        {player.position === "G" ? (
+          <>
+            <span>{player.stats.gamesPlayed} GP</span>
+            <span>{player.stats.goalieWins}-{player.stats.goalieLosses}</span>
+            <span>{player.stats.saves} saves</span>
+            <span>{player.stats.goalsAgainst} GA</span>
+            <span>{player.stats.shutouts} SO</span>
+          </>
+        ) : (
+          <>
+            <span>{player.stats.gamesPlayed} GP</span>
+            <span>{player.stats.goals} G</span>
+            <span>{player.stats.assists} A</span>
+            <span>{player.stats.points} P</span>
+            <span>{player.stats.plusMinus >= 0 ? `+${player.stats.plusMinus}` : player.stats.plusMinus}</span>
+            <span>{player.stats.shots} shots</span>
+          </>
+        )}
+      </section>
     </article>
   );
 }

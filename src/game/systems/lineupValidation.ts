@@ -27,7 +27,7 @@ export function validateLineup(team: Team, lineup: Lineup = team.lines): LineupV
   assigned.forEach((id) => {
     const player = rosterById.get(id);
     if (!player) {
-      errors.push(`Unknown player id ${id} is in the lineup.`);
+      errors.push("An unavailable player is in the lineup.");
       return;
     }
     if (player.injuryStatus !== "healthy") {
@@ -65,11 +65,25 @@ export function validateLineup(team: Team, lineup: Lineup = team.lines): LineupV
 
   team.roster.forEach((player) => {
     const lineIndex = findForwardLineIndex(lineup, player.id);
-    if ((player.roleExpectation === "Franchise Driver" || player.roleExpectation === "Top Line") && lineIndex >= 3) {
-      warnings.push(`Warning: ${player.displayName} expects top-six minutes, not Line 4.`);
+    const pairIndex = findDefensePairIndex(lineup, player.id);
+    const assignedToLineup = assigned.includes(player.id);
+    if ((player.roleExpectation === "Franchise Driver" || player.roleExpectation === "Top Line") && lineIndex >= 2) {
+      warnings.push(`Warning: ${player.displayName} expects top-six minutes, not Line ${lineIndex + 1}.`);
     }
-    if (lineIndex === 0 && player.fatigue > 80) {
-      warnings.push(`Warning: ${player.displayName} is exhausted on Line 1.`);
+    if (player.roleExpectation === "Top Six" && lineIndex >= 3) {
+      warnings.push(`Warning: ${player.displayName} expects a scoring role, not Line 4.`);
+    }
+    if (lineIndex >= 0 && lineIndex <= 1 && player.fatigue > 80) {
+      warnings.push(`Warning: ${player.displayName} is exhausted in a top-six role.`);
+    }
+    if (player.roleExpectation === "Top Pair" && pairIndex >= 2) {
+      warnings.push(`Warning: ${player.displayName} expects top-pair usage, not Pair ${pairIndex + 1}.`);
+    }
+    if (lineup.goalies.backup === player.id && player.roleExpectation === "Starter") {
+      warnings.push(`Warning: starter-level goalie ${player.displayName} is set as backup.`);
+    }
+    if (!assignedToLineup && player.injuryStatus === "healthy" && player.morale <= 35) {
+      warnings.push(`Warning: unhappy healthy player ${player.displayName} is scratched or unassigned.`);
     }
   });
 
@@ -189,6 +203,10 @@ function validateDefenseSlot(
 
 function findForwardLineIndex(lineup: Lineup, playerId: string): number {
   return lineup.forwardLines.findIndex((line: ForwardLine) => line.lw === playerId || line.c === playerId || line.rw === playerId);
+}
+
+function findDefensePairIndex(lineup: Lineup, playerId: string): number {
+  return lineup.defensePairs.findIndex((pair: DefensePair) => pair.ld === playerId || pair.rd === playerId);
 }
 
 function takeBest(players: Player[], predicate: (player: Player) => boolean, count: number): Player[] {

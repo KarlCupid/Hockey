@@ -1,15 +1,28 @@
 import { useEffect } from "react";
 import { SAVE_SLOT_COUNT } from "../../game/constants";
 import { useFranchiseStore } from "../../store/franchiseStore";
+import { useUiStore } from "../../store/uiStore";
 
 export function SaveLoadPanel() {
   const { saves, refreshSaves, saveToSlot, loadFromSlot, deleteSlot, loadError } = useFranchiseStore();
+  const markChecklistItem = useUiStore((state) => state.markChecklistItem);
 
   useEffect(() => {
     void refreshSaves();
   }, [refreshSaves]);
 
   const slots = Array.from({ length: SAVE_SLOT_COUNT }, (_, index) => `slot-${index + 1}`);
+  async function confirmSave(slotId: string, occupied: boolean) {
+    if (occupied && !window.confirm("Overwrite this manual save slot?")) return;
+    await saveToSlot(slotId);
+    markChecklistItem("saveFranchise");
+  }
+
+  async function confirmDelete(slotId: string) {
+    if (!window.confirm("Delete this local save? This cannot be undone.")) return;
+    await deleteSlot(slotId);
+  }
+
   return (
     <div className="room-grid room-grid--two">
       <section className="panel-section">
@@ -23,18 +36,19 @@ export function SaveLoadPanel() {
                 <strong>{metadata?.label ?? `Slot ${slotId.replace("slot-", "")}`}</strong>
                 <span>
                   {metadata
-                    ? `${metadata.teamName} | ${metadata.record} | Game ${metadata.gameNumber} | ${new Date(metadata.lastSaved).toLocaleString()}`
+                    ? `${metadata.teamName} | ${metadata.record} | Game ${metadata.gameNumber} | ${metadata.currentDate} | Saved ${new Date(metadata.lastSaved).toLocaleString()}`
                     : "Empty slot"}
                 </span>
+                {metadata && <small className="muted">Season {metadata.seasonYear} | schema v{metadata.schemaVersion}</small>}
               </div>
               <div className="button-row">
-                <button type="button" onClick={() => void saveToSlot(slotId)}>
-                  Save
+                <button type="button" onClick={() => void confirmSave(slotId, Boolean(metadata))}>
+                  {metadata ? "Overwrite" : "Save"}
                 </button>
                 <button type="button" disabled={!metadata} onClick={() => void loadFromSlot(slotId)}>
                   Load
                 </button>
-                <button type="button" disabled={!metadata} onClick={() => void deleteSlot(slotId)}>
+                <button type="button" disabled={!metadata} onClick={() => void confirmDelete(slotId)}>
                   Delete
                 </button>
               </div>
@@ -51,14 +65,14 @@ export function SaveLoadPanel() {
               <div>
                 <strong>{save.teamName}</strong>
                 <span>
-                  {save.record} | {save.currentDate} | {new Date(save.lastSaved).toLocaleString()}
+                  {save.record} | Game {save.gameNumber} | {save.currentDate} | Saved {new Date(save.lastSaved).toLocaleString()}
                 </span>
               </div>
               <div className="button-row">
                 <button type="button" onClick={() => void loadFromSlot(save.slotId)}>
                   Continue
                 </button>
-                <button type="button" onClick={() => void deleteSlot(save.slotId)}>
+                <button type="button" onClick={() => void confirmDelete(save.slotId)}>
                   Delete
                 </button>
               </div>

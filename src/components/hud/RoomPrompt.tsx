@@ -21,8 +21,9 @@ export function RoomPrompt({ room }: { room?: RoomId }) {
 
   return (
     <div className="room-prompt">
+      <span className="room-prompt__key">E</span>
       <strong>{ROOM_LABELS[room]}</strong>
-      <span>Press E or click the marker to enter</span>
+      <span>You are here. Press E or click the marker to enter.</span>
     </div>
   );
 }

@@ -9,12 +9,15 @@ import { ThirdPersonController } from "./ThirdPersonController";
 const ZONES: RoomZoneConfig[] = [
   { id: "gm", label: "GM OFFICE", position: [-6.8, 0, -5.2], color: "#6ecbff" },
   { id: "contracts", label: "CAP OFFICE", position: [-3.8, 0, -5.2], color: "#f5c65b" },
+  { id: "freeAgency", label: "FREE AGENCY", position: [-7.4, 0, -1.4], color: "#d7e8ff" },
   { id: "coach", label: "COACH OFFICE", position: [0, 0, -6.5], color: "#8ee7d1" },
   { id: "trades", label: "TRADE WAR ROOM", position: [3.8, 0, -5.2], color: "#ff9f6e" },
+  { id: "staff", label: "STAFF OFFICE", position: [7.4, 0, -1.4], color: "#76e3a5" },
   { id: "locker", label: "LOCKER ROOM", position: [6.8, 0, -5.2], color: "#c8e9ff" },
   { id: "medical", label: "MEDICAL", position: [-7.2, 0, 4.2], color: "#ff7e8a" },
   { id: "development", label: "DEVELOPMENT", position: [-4.2, 0, 4.1], color: "#76e3a5" },
   { id: "arena", label: "ARENA BOWL", position: [0, 0, 6.2], color: "#ffffff" },
+  { id: "draft", label: "DRAFT STAGE", position: [0, 0, 3.2], color: "#f5c65b" },
   { id: "scouting", label: "SCOUTING", position: [4.2, 0, 4.1], color: "#a9c6ff" },
   { id: "standings", label: "TROPHY HALL", position: [7.2, 0, 4.2], color: "#f5c65b" },
   { id: "saves", label: "SAVE DESK", position: [0, 0, 0], color: "#b58cff" }
@@ -79,13 +82,16 @@ function FacilityGeometry() {
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
       <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
       <ContractOfficeProps />
+      <FreeAgencyProps />
       <Desk position={[0, 0, -7.6]} color="#183b3e" />
       <CoachBoard />
       <TradeRoomProps />
+      <StaffProps />
       <Lockers />
       <MedicalTable />
       <DevelopmentProps />
       <MiniRink />
+      <DraftStageProps />
       <ArenaTunnel />
       <ScoutingProps />
       <TrophyCases />
@@ -167,6 +173,28 @@ function ContractOfficeProps() {
   );
 }
 
+function FreeAgencyProps() {
+  return (
+    <group position={[-7.6, 0, -2.55]}>
+      <Desk position={[0, 0, 0]} color="#253158" />
+      <mesh position={[1.25, 1.1, -0.08]}>
+        <boxGeometry args={[1.35, 1.0, 0.08]} />
+        <meshStandardMaterial color="#d7e8ff" emissive="#67b7ff" emissiveIntensity={0.12} />
+      </mesh>
+      {[-0.4, 0, 0.4].map((x, index) => (
+        <mesh key={x} position={[1.25 + x, 1.08 - index * 0.05, 0]}>
+          <circleGeometry args={[0.12, 18]} />
+          <meshStandardMaterial color={index === 1 ? "#ff7e8a" : "#61d6a8"} />
+        </mesh>
+      ))}
+      <mesh position={[-0.65, 0.92, 0.34]} rotation={[0, 0, 0.25]}>
+        <boxGeometry args={[0.2, 0.44, 0.08]} />
+        <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
+      </mesh>
+    </group>
+  );
+}
+
 function TradeRoomProps() {
   return (
     <group position={[3.8, 0, -6.75]}>
@@ -187,6 +215,28 @@ function TradeRoomProps() {
           <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
         </mesh>
       ))}
+    </group>
+  );
+}
+
+function StaffProps() {
+  return (
+    <group position={[7.55, 0, -2.55]}>
+      <Desk position={[0, 0, 0]} color="#1f3a2f" />
+      <mesh position={[-1.25, 1.08, -0.08]}>
+        <boxGeometry args={[1.5, 1.05, 0.08]} />
+        <meshStandardMaterial color="#e9fff5" emissive="#76e3a5" emissiveIntensity={0.12} />
+      </mesh>
+      {[-0.42, 0, 0.42].map((x) => (
+        <mesh key={x} position={[-1.25 + x, 1.15, 0]}>
+          <boxGeometry args={[0.26, 0.36, 0.04]} />
+          <meshStandardMaterial color="#76e3a5" />
+        </mesh>
+      ))}
+      <mesh position={[0.55, 0.42, 0.55]}>
+        <cylinderGeometry args={[0.42, 0.42, 0.08, 24]} />
+        <meshStandardMaterial color="#304d46" />
+      </mesh>
     </group>
   );
 }
@@ -240,6 +290,31 @@ function DevelopmentProps() {
         <mesh key={x} position={[x, 0.18, 0.42]}>
           <coneGeometry args={[0.16, 0.34, 16]} />
           <meshStandardMaterial color="#f5c65b" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function DraftStageProps() {
+  return (
+    <group position={[0, 0, 3.6]}>
+      <mesh position={[0, 0.18, 0]}>
+        <boxGeometry args={[2.8, 0.36, 1.0]} />
+        <meshStandardMaterial color="#3d3417" />
+      </mesh>
+      <mesh position={[0, 1.1, -0.3]}>
+        <boxGeometry args={[2.4, 1.0, 0.1]} />
+        <meshStandardMaterial color="#f7e6a6" emissive="#f5c65b" emissiveIntensity={0.12} />
+      </mesh>
+      <mesh position={[0, 0.65, 0.35]}>
+        <cylinderGeometry args={[0.22, 0.28, 0.9, 20]} />
+        <meshStandardMaterial color="#2b2140" />
+      </mesh>
+      {[-0.72, -0.24, 0.24, 0.72].map((x, index) => (
+        <mesh key={x} position={[x, 1.12, -0.2]}>
+          <boxGeometry args={[0.26, 0.48 + index * 0.04, 0.04]} />
+          <meshStandardMaterial color={index % 2 ? "#61c9ff" : "#f5c65b"} />
         </mesh>
       ))}
     </group>

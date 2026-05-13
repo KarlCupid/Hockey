@@ -5,12 +5,15 @@ import { roomLabel } from "./RoomPrompt";
 const ROOMS: Array<{ id: RoomId; x: number; y: number; note: string }> = [
   { id: "gm", x: 19, y: 20, note: "Inbox and ownership" },
   { id: "contracts", x: 36, y: 22, note: "Cap and contracts" },
+  { id: "freeAgency", x: 27, y: 34, note: "Open market" },
   { id: "coach", x: 50, y: 14, note: "Lines and tactics" },
   { id: "trades", x: 64, y: 22, note: "Players and picks" },
+  { id: "staff", x: 73, y: 34, note: "Hockey ops staff" },
   { id: "locker", x: 81, y: 20, note: "Roster pulse" },
   { id: "medical", x: 18, y: 76, note: "Injuries and fatigue" },
   { id: "development", x: 35, y: 72, note: "Growth plans" },
   { id: "arena", x: 50, y: 84, note: "Sim and broadcast" },
+  { id: "draft", x: 50, y: 68, note: "Draft stage" },
   { id: "scouting", x: 65, y: 72, note: "Draft board" },
   { id: "standings", x: 82, y: 76, note: "League table" },
   { id: "saves", x: 50, y: 50, note: "Local saves" }

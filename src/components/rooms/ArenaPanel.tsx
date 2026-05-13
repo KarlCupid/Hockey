@@ -2,6 +2,7 @@ import { useState } from "react";
 import { simulatePeriod } from "../../game/simulation/simulatePeriod";
 import { assembleGameResult, canSimulate, nextGameForTeam, simulateGame } from "../../game/simulation/simulateGame";
 import { createBenchReport } from "../../game/systems/benchReport";
+import { getCurrentUserPlayoffGame, playoffGameAsSchedule } from "../../game/systems/playoffs";
 import type { GameResult, PeriodSimulationResult } from "../../game/types";
 import { TACTIC_LABELS, type TacticKey } from "../../game/systems/tactics";
 import { findTeam, selectedTeam, upcomingOpponent, useFranchiseStore } from "../../store/franchiseStore";
@@ -26,8 +27,12 @@ export function ArenaPanel() {
   if (!franchise) return null;
   const activeFranchise = franchise;
   const team = selectedTeam(activeFranchise);
-  const game = nextGameForTeam(activeFranchise.selectedTeamId, activeFranchise.league.schedule, activeFranchise.league.currentDayIndex);
-  const opponent = upcomingOpponent(activeFranchise);
+  const playoffGame = activeFranchise.seasonPhase === "playoffs" ? getCurrentUserPlayoffGame(activeFranchise) : undefined;
+  const regularGame = nextGameForTeam(activeFranchise.selectedTeamId, activeFranchise.league.schedule, activeFranchise.league.currentDayIndex);
+  const game = playoffGame ? playoffGameAsSchedule(playoffGame, activeFranchise.league.currentDayIndex, activeFranchise.league.currentDate) : regularGame;
+  const opponent = playoffGame
+    ? findTeam(activeFranchise.league, playoffGame.homeTeamId === team.id ? playoffGame.awayTeamId : playoffGame.homeTeamId)
+    : upcomingOpponent(activeFranchise);
   const errors = canSimulate(team);
   const result = activeFranchise.lastResult ?? localResult;
 
@@ -140,8 +145,8 @@ export function ArenaPanel() {
     <div className="room-stack">
       <section className="command-strip">
         <div>
-          <small>Matchup</small>
-          <strong>{opponent && game ? `${preview?.away.fullName} @ ${preview?.home.fullName}` : "Season Complete"}</strong>
+          <small>{playoffGame ? `Playoffs | Game ${playoffGame.gameNumber}` : "Matchup"}</small>
+          <strong>{opponent && game ? `${preview?.away.fullName} @ ${preview?.home.fullName}` : activeFranchise.seasonPhase === "playoffs" ? "No user playoff game" : "Season Complete"}</strong>
         </div>
         <div>
           <small>Lineup</small>
@@ -180,7 +185,7 @@ export function ArenaPanel() {
               <Compare label="Form" home={avg(preview.home.roster, "form")} away={avg(preview.away.roster, "form")} />
             </div>
           ) : (
-            <p className="empty-state">The regular season is complete.</p>
+            <p className="empty-state">{activeFranchise.seasonPhase === "playoffs" ? "Your club is not on the playoff schedule right now. Sim from the GM Office or Trophy Hall." : "The regular season is complete."}</p>
           )}
           <h3>Period-by-Period Bench Controls</h3>
           {periods.length > 0 && (

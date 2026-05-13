@@ -7,4 +7,5 @@
 - Keep UI polished, readable, and grounded in the hockey-operations fantasy.
 - Run tests and build before finishing.
 - Save serializable franchise state only; never save renderer or browser objects.
-- Keep free agency, full draft execution, playoffs, waivers, buyouts, retained salary, and full contract negotiations out of scope unless a later phase explicitly asks for them.
+- Phase 3 explicitly allows simplified playoffs, draft execution, prospect signing, contract renewal, free agency, staff hiring, owner goals, and offseason/new-season progression.
+- Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

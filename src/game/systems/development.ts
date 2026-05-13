@@ -11,8 +11,10 @@ import type {
   NewsItem,
   Player,
   SkaterAttributes,
+  StaffState,
   Team
 } from "../types";
+import { calculateTeamStaffModifiers } from "./staff";
 
 export interface DevelopmentTickResult {
   league: LeagueState;
@@ -63,7 +65,7 @@ export function removeDevelopmentPlan(state: DevelopmentState, playerId: string)
   };
 }
 
-export function tickDevelopment(state: DevelopmentState, league: LeagueState, dayIndex: number, rng: SeededRng): DevelopmentTickResult {
+export function tickDevelopment(state: DevelopmentState, league: LeagueState, dayIndex: number, rng: SeededRng, staffState?: StaffState): DevelopmentTickResult {
   const updates: DevelopmentUpdate[] = [];
   const news: NewsItem[] = [];
   let plans = state.plans;
@@ -72,7 +74,8 @@ export function tickDevelopment(state: DevelopmentState, league: LeagueState, da
     const roster = team.roster.map((player) => {
       const plan = plans.find((candidate) => candidate.playerId === player.id);
       if (!plan) return maybeDeclineVeteran(player, league.currentDate, updates, rng);
-      const progressGain = calculateDevelopmentProgress(player, plan, rng);
+      const staffModifier = calculateTeamStaffModifiers(staffState, team.id).development;
+      const progressGain = calculateDevelopmentProgress(player, plan, rng, staffModifier);
       const nextProgress = clamp(plan.progress + progressGain, 0, 120);
       plans = plans.map((candidate) =>
         candidate.playerId === player.id ? { ...candidate, progress: nextProgress >= 100 ? nextProgress - 100 : nextProgress, lastUpdatedDayIndex: dayIndex } : candidate
@@ -127,14 +130,14 @@ export function tickDevelopment(state: DevelopmentState, league: LeagueState, da
   };
 }
 
-export function calculateDevelopmentProgress(player: Player, plan: DevelopmentPlan, rng: SeededRng): number {
+export function calculateDevelopmentProgress(player: Player, plan: DevelopmentPlan, rng: SeededRng, staffModifier = 0): number {
   const ageCurve = player.age <= 22 ? 10 : player.age <= 25 ? 7 : player.age <= 29 ? 3 : player.age <= 33 ? 0 : -4;
   const upside = Math.max(0, player.potential - player.overall) * 0.55;
   const morale = (player.morale - 50) * 0.05;
   const form = (player.form - 50) * 0.05;
   const fatigue = player.fatigue > 70 ? -6 : player.fatigue > 55 ? -2 : 2;
   const injury = player.injuryStatus === "healthy" ? 0 : -10;
-  return Math.max(3, Math.round(INTENSITY_PROGRESS[plan.intensity] + ageCurve + upside + morale + form + fatigue + injury + rng.int(-3, 4)));
+  return Math.max(3, Math.round(INTENSITY_PROGRESS[plan.intensity] + ageCurve + upside + morale + form + fatigue + injury + staffModifier * 2 + rng.int(-3, 4)));
 }
 
 export function developmentCandidateScore(player: Player): number {

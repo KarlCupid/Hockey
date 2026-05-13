@@ -7,8 +7,10 @@ import type {
   ScoutingAssignment,
   ScoutingPriority,
   ScoutingRegion,
-  ScoutingState
+  ScoutingState,
+  StaffState
 } from "../types";
+import { calculateTeamStaffModifiers } from "./staff";
 
 export interface VisibleProspectReport {
   id: string;
@@ -48,7 +50,14 @@ export function generateScoutingAssignments(): ScoutingAssignment[] {
   }));
 }
 
-export function tickScouting(state: ScoutingState, league: LeagueState, dayIndex: number, rng: SeededRng): ScoutingTickResult {
+export function tickScouting(
+  state: ScoutingState,
+  league: LeagueState,
+  dayIndex: number,
+  rng: SeededRng,
+  staffState?: StaffState,
+  teamId?: string
+): ScoutingTickResult {
   const news: NewsItem[] = [];
   let draftClass = state.draftClass;
   const assignments = state.assignments.map((assignment) => {
@@ -60,7 +69,8 @@ export function tickScouting(state: ScoutingState, league: LeagueState, dayIndex
     const target = selectTargetProspect(draftClass, assignment, rng);
     if (!target) return { ...assignment, progress };
     const before = target.scouting.certainty;
-    const scouted = scoutProspect(target, assignment, rng, dayIndex);
+    const staffModifier = calculateTeamStaffModifiers(staffState, teamId ?? league.teams[0]?.id ?? "").scouting;
+    const scouted = scoutProspect(target, assignment, rng, dayIndex, staffModifier);
     draftClass = draftClass.map((prospect) => (prospect.id === target.id ? scouted : prospect));
 
     if (scouted.scouting.certainty > before && news.length < 3) {
@@ -84,9 +94,9 @@ export function tickScouting(state: ScoutingState, league: LeagueState, dayIndex
   };
 }
 
-export function scoutProspect(prospect: Prospect, assignment: ScoutingAssignment, rng: SeededRng, dayIndex?: number): Prospect {
+export function scoutProspect(prospect: Prospect, assignment: ScoutingAssignment, rng: SeededRng, dayIndex?: number, staffModifier = 0): Prospect {
   const priorityBonus = priorityMatchesProspect(assignment.priority, prospect) ? 7 : 3;
-  const amount = rng.int(7, 14) + priorityBonus;
+  const amount = rng.int(7, 14) + priorityBonus + Math.max(0, Math.round(staffModifier * 1.5));
   const updated = updateProspectCertainty(prospect, amount, dayIndex);
   const note = createScoutNote(updated, assignment.priority, rng);
   return {

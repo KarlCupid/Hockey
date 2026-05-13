@@ -55,6 +55,16 @@ npm run build
 - `src/game/systems/trades.ts`: team needs, trade block logic, package valuation, cap validation, AI evaluation, and trade application
 - `src/game/systems/scouting.ts`: scouting assignments, certainty ticks, visible prospect reports, watchlist, and draft-board ordering
 - `src/game/systems/development.ts`: development plan assignment, progress ticks, attribute growth, veteran decline, and workload risk
+- `src/game/systems/seasonLifecycle.ts`: Phase 3 phase advancement, regular-season completion, offseason progression, new season setup, and dynasty validation
+- `src/game/systems/playoffs.ts`: top-eight best-of-five playoff bracket, game/series/round resolution, champion handling, and playoff news
+- `src/game/systems/draftExecution.ts`: draft lottery/order, traded-pick ownership, user/AI selections, draft grades, and draft history
+- `src/game/systems/prospects.ts`: prospect rights, pipeline summaries, and entry-contract prospect signing
+- `src/game/systems/contractNegotiation.ts`: simplified re-signing demands, offer evaluation, accepted contracts, UFA release, and RFA retention
+- `src/game/systems/freeAgency.ts`: seven-day fictional free-agent market, user offers, AI signings, and market news
+- `src/game/systems/staff.ts`: staff generation, staff market, hiring/replacing, contracts, and staff modifiers
+- `src/game/systems/owner.ts`: owner goals, job security, goal progress, and owner evaluation messages
+- `src/game/systems/playerLifecycle.ts`: aging, contract decrement, retirements, recovery, season-stat archive/reset, and offseason progression/regression
+- `src/game/systems/history.ts`: season history, champions, awards, and franchise timeline helpers
 - `src/game/generators/generateDraftClass.ts`: fictional 72-player draft-class generation
 - `src/game/simulation/simulatePeriod.ts`: deterministic period simulation
 - `src/game/simulation/simulateGame.ts`: full-game assembly, overtime, stars, coach notes, result shape
@@ -79,6 +89,8 @@ npm run build
 - `src/components/rooms/TradeWarRoomPanel.tsx`: player/pick trade builder, AI evaluation, trade block, and submit flow
 - `src/components/rooms/ScoutingDepartmentPanel.tsx`: draft board, prospect reports, assignment controls, strategy presets, and watchlist
 - `src/components/rooms/DevelopmentOfficePanel.tsx`: development plans, candidate ranking, selected-player notes, and recent updates
+- `src/components/rooms/FreeAgencyOfficePanel.tsx`: Phase 3 free-agent market, filters, offer builder, AI signings, and advance controls
+- `src/components/rooms/StaffOfficePanel.tsx`: current staff, staff market, role filters, staff modifiers, and staff moves
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
 - `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, consequences, and filtered event feed
 - `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary
@@ -100,6 +112,7 @@ npm run build
 - `src/tests/saves.test.ts`: save serialization/deserialization roundtrip
 - `src/tests/v11Systems.test.ts`: V1.1 pure helper coverage for player notes, line identity, tactics, result presentation, bench reports, broadcast score, news, and season pulse
 - `src/tests/phase2Systems.test.ts`: Phase 2 coverage for contracts, picks, trades, scouting, development, migration, and serialization
+- `src/tests/phase3Dynasty.test.ts`: Phase 3 coverage for lifecycle, playoffs, draft, prospects, contracts, free agency, staff, owner goals, history, player lifecycle, and save migration
 
 ## Styles
 
@@ -121,7 +134,7 @@ npm run build
 3. Enter the 3D hockey operations facility.
 4. Walk with `WASD`, approach room markers, and press `E`.
 5. Read GM Office inbox/schedule.
-6. Review cap/contracts, draft picks, trade options, scouting assignments, and development plans in the new Phase 2 rooms.
+6. Review cap/contracts, draft picks, trade options, scouting assignments, development plans, staff, and free agency in the front-office rooms.
 7. Review Locker Room roster and player cards.
 8. Auto-fill or edit lines in Coach's Office.
 9. Adjust tactics.
@@ -129,7 +142,8 @@ npm run build
 11. Simulate the next game instantly, period-by-period, or through broadcast mode.
 12. Review score, events, box score, three stars, injuries, and coach notes.
 13. Check standings/news/player status/front-office changes.
-14. Save locally and load later.
+14. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp, and start the next season.
+15. Save locally and load later.
 
 ## Useful Change Targets
 
@@ -137,6 +151,7 @@ npm run build
 - Tune simulation: start with `src/game/constants.ts`, `src/game/simulation/simulatePeriod.ts`, and `src/game/simulation/simulateGame.ts`.
 - Add player or team fields: update `src/game/types.ts`, then generation, save validation, and affected UI tables/cards.
 - Add front-office behavior: start with a pure helper in `src/game/systems`, then wire it through `src/store/franchiseStore.ts` and room panels.
+- Add dynasty-phase behavior: start in `src/game/systems/seasonLifecycle.ts`, keep the phase transition serializable, then expose a small store action and phase-aware GM Office control.
 - Add save metadata: update `src/game/systems/saves.ts` and `SaveLoadPanel.tsx`.
 - Add tests for pure logic: place new `.test.ts` files under `src/tests`.
 
@@ -146,4 +161,5 @@ npm run build
 - Keep the app client-only.
 - Keep simulation logic pure and testable.
 - Do not add backend, auth, cloud saves, real licensed hockey content, or non-serializable renderer/browser objects to franchise state.
-- Free agency, full contract negotiation, full draft execution, playoffs, staff hiring, waivers, buyouts, and retained salary remain out of scope.
+- Phase 3 includes simplified free agency, contract renewal, draft execution, playoffs, and staff hiring.
+- Waivers, buyouts, retained salary, contract clauses, arbitration, offer sheets, online play, backend/cloud saves, real branding, and playable on-ice hockey remain out of scope.

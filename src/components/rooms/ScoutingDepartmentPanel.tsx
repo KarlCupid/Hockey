@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { formatPickLabel, getTeamPicks } from "../../game/systems/draftPicks";
+import { getCurrentPick } from "../../game/systems/draftExecution";
+import { rankProspectPool } from "../../game/systems/prospects";
 import { getVisibleProspectReport, rankDraftBoard } from "../../game/systems/scouting";
 import type { DraftBoardStrategy, ScoutingPriority, ScoutingRegion } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
@@ -13,6 +15,9 @@ export function ScoutingDepartmentPanel() {
   const setScoutingAssignment = useFranchiseStore((state) => state.setScoutingAssignment);
   const toggleProspectWatchlist = useFranchiseStore((state) => state.toggleProspectWatchlist);
   const moveProspectOnDraftBoard = useFranchiseStore((state) => state.moveProspectOnDraftBoard);
+  const makeDraftSelection = useFranchiseStore((state) => state.makeDraftSelection);
+  const autoDraftUntilUserPick = useFranchiseStore((state) => state.autoDraftUntilUserPick);
+  const autoCompleteDraft = useFranchiseStore((state) => state.autoCompleteDraft);
   const [strategy, setStrategy] = useState<DraftBoardStrategy>("Best Player Available");
   const [selectedId, setSelectedId] = useState<string | undefined>();
 
@@ -22,9 +27,14 @@ export function ScoutingDepartmentPanel() {
   const board = boardIds
     .map((id) => franchise.scouting.draftClass.find((prospect) => prospect.id === id))
     .filter((prospect): prospect is NonNullable<typeof prospect> => Boolean(prospect));
+  const draftState = franchise.offseasonState?.draftState;
+  const draftedIds = new Set(draftState?.selections.map((selection) => selection.prospectId) ?? []);
+  const availableBoard = board.filter((prospect) => !draftedIds.has(prospect.id));
   const selected = franchise.scouting.draftClass.find((prospect) => prospect.id === selectedId) ?? board[0];
   const visible = selected ? getVisibleProspectReport(selected) : undefined;
   const picks = getTeamPicks(team, franchise.league.seasonYear);
+  const currentPick = draftState ? getCurrentPick(draftState, franchise) : undefined;
+  const pipeline = rankProspectPool(franchise, team.id);
 
   return (
     <div className="room-stack">
@@ -54,6 +64,58 @@ export function ScoutingDepartmentPanel() {
         <p className="muted">Scouting certainty improves as assignments progress after games.</p>
       </section>
 
+      {franchise.seasonPhase === "draft" && draftState && (
+        <section className="panel-section">
+          <h3>Draft Room</h3>
+          <p className="muted">Draft picks are owned assets. Traded picks draft for their current owner.</p>
+          <div className="season-pulse">
+            <span>Round <strong>{draftState.round}</strong></span>
+            <span>Pick <strong>{draftState.pickNumber}/{draftState.draftOrder.length}</strong></span>
+            <span>On clock <strong>{currentPick ? franchise.league.teams.find((candidate) => candidate.id === currentPick.ownerTeamId)?.fullName : "Complete"}</strong></span>
+            <span>Status <strong>{draftState.userPickPending ? "Your pick" : draftState.completed ? "Complete" : "AI pick"}</strong></span>
+          </div>
+          <div className="button-row">
+            <button type="button" onClick={autoDraftUntilUserPick} disabled={draftState.completed || draftState.userPickPending}>
+              Auto-draft until next user pick
+            </button>
+            <button type="button" onClick={() => window.confirm("Auto-complete the draft?") && autoCompleteDraft()} disabled={draftState.completed}>
+              Auto-complete draft
+            </button>
+          </div>
+          <h4>Drafted Players</h4>
+          {draftState.selections.length ? (
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Pick</th>
+                    <th>Team</th>
+                    <th>Prospect</th>
+                    <th>Pos</th>
+                    <th>Grade</th>
+                    <th>Actual</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {draftState.selections.slice(-12).map((selection) => (
+                    <tr key={selection.id}>
+                      <td>R{selection.round} #{selection.pickNumber}</td>
+                      <td>{franchise.league.teams.find((candidate) => candidate.id === selection.teamId)?.abbreviation}</td>
+                      <td>{selection.prospectName}</td>
+                      <td>{selection.position}</td>
+                      <td>{selection.visibleGrade}</td>
+                      <td>{selection.actualOverall}/{selection.actualPotential}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="empty-state">No selections have been made yet.</p>
+          )}
+        </section>
+      )}
+
       <div className="room-grid room-grid--two">
         <section className="panel-section">
           <h3>Draft Board</h3>
@@ -73,10 +135,11 @@ export function ScoutingDepartmentPanel() {
                   <th>Risk</th>
                   <th>Cert.</th>
                   <th>Watch</th>
+                  {franchise.seasonPhase === "draft" && <th>Pick</th>}
                 </tr>
               </thead>
               <tbody>
-                {board.map((prospect, index) => {
+                {availableBoard.map((prospect, index) => {
                   const report = getVisibleProspectReport(prospect);
                   const watched = franchise.scouting.watchlist.includes(prospect.id);
                   return (
@@ -104,6 +167,20 @@ export function ScoutingDepartmentPanel() {
                           {watched ? "Watching" : "Watch"}
                         </button>
                       </td>
+                      {franchise.seasonPhase === "draft" && (
+                        <td>
+                          <button
+                            type="button"
+                            disabled={!draftState?.userPickPending}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              makeDraftSelection(prospect.id);
+                            }}
+                          >
+                            Draft
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -215,6 +292,23 @@ export function ScoutingDepartmentPanel() {
                 <span>Projected value {pick.projectedValue}</span>
               </article>
             ))}
+          </div>
+
+          <h3>Prospect Pipeline</h3>
+          <p className="muted">Unsigned prospects stay in the pipeline. Minor league/prospect development is coming later.</p>
+          <div className="asset-list asset-list--compact">
+            {pipeline.length ? (
+              pipeline.slice(0, 10).map((rights) => (
+                <article key={rights.prospectId}>
+                  <strong>{rights.displayName}</strong>
+                  <span>
+                    {rights.position} | R{rights.acquiredRound} Pick {rights.acquiredPickNumber} | {rights.potentialRangeLabel} | {rights.signed ? "Signed" : "Unsigned"}
+                  </span>
+                </article>
+              ))
+            ) : (
+              <p className="empty-state">No prospect rights yet. The draft will stock this board.</p>
+            )}
           </div>
         </section>
       </div>

@@ -49,3 +49,13 @@
 - Thread front-office ticks into game advancement so scouting and development evolve after simulated games.
 - Add focused Vitest coverage for contracts, picks, trades, scouting, development, migration, and serialization.
 - Keep Phase 2 client-only with fictional teams/players and document the remaining limitations around free agency, draft execution, playoffs, and contract negotiation.
+
+## Milestone 9: Phase 3 Dynasty Lifecycle Expansion
+
+- Add typed serializable dynasty state for season phases, playoffs, offseason, draft execution, prospect pools, free agency, staff, owner goals, and multi-season history.
+- Build pure systems for regular-season completion, best-of-five playoffs, champion archiving, draft lottery/order, user/AI drafting, prospect signing, re-signing, free agency, staff hiring, owner evaluations, aging, retirements, training camp, and next-season generation.
+- Wire phase-aware store actions so existing regular-season simulation still works and playoff games can use instant, period, and broadcast-style simulation flows.
+- Expand GM Office, Trophy Hall, Arena Bowl, Scouting/Draft Room, Development Office, Contract & Cap Office, Free Agency Office, Staff Office, Operations Map, and the 3D facility without rebuilding the V1.1/Phase 2 architecture.
+- Add schema version 3 hydration for older V1.1/Phase 2 saves and defaults for missing staff, owner, history, prospect pools, and phase state.
+- Add Phase 3 Vitest coverage for lifecycle, playoffs, draft, prospects, contracts, free agency, staff, owner goals, history, player lifecycle, and save migration.
+- Keep the milestone client-only and fictional; leave waivers, buyouts, retained salary, clauses, arbitration, offer sheets, online play, backend/cloud saves, and playable on-ice hockey out of scope.

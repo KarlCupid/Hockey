@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { developmentCandidateScore } from "../../game/systems/development";
+import { rankProspectPool } from "../../game/systems/prospects";
 import type { DevelopmentFocus, DevelopmentIntensity, Player } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 
@@ -19,6 +20,7 @@ export function DevelopmentOfficePanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const assignDevelopmentPlan = useFranchiseStore((state) => state.assignDevelopmentPlan);
   const removeDevelopmentPlan = useFranchiseStore((state) => state.removeDevelopmentPlan);
+  const signProspect = useFranchiseStore((state) => state.signProspect);
   const [playerId, setPlayerId] = useState<string>("");
   const [focus, setFocus] = useState<DevelopmentFocus>("Skating");
   const [intensity, setIntensity] = useState<DevelopmentIntensity>("Normal");
@@ -27,6 +29,7 @@ export function DevelopmentOfficePanel() {
   const team = selectedTeam(franchise);
   const candidates = [...team.roster].sort((a, b) => developmentCandidateScore(b) - developmentCandidateScore(a)).slice(0, 10);
   const selectedPlayer = team.roster.find((player) => player.id === playerId) ?? candidates[0];
+  const pipeline = rankProspectPool(franchise, team.id);
 
   const assign = () => {
     if (!selectedPlayer) return;
@@ -183,6 +186,26 @@ export function DevelopmentOfficePanel() {
           ) : (
             <p className="empty-state">Updates appear after games once plans have time to work.</p>
           )}
+
+          <h3>Prospect Pipeline</h3>
+          <p className="muted">Unsigned prospects are draft rights, not active-roster players. Signing uses a low-cost entry deal and respects cap and the 30-player roster limit.</p>
+          <div className="asset-list">
+            {pipeline.length ? (
+              pipeline.slice(0, 8).map((rights) => (
+                <article key={rights.prospectId}>
+                  <strong>{rights.displayName}</strong>
+                  <span>
+                    {rights.position} | {rights.age} yrs | {rights.potentialRangeLabel} | rights through {rights.rightsExpireYear}
+                  </span>
+                  <button type="button" disabled={rights.signed} onClick={() => signProspect(rights.prospectId)}>
+                    {rights.signed ? "Signed" : "Sign Prospect"}
+                  </button>
+                </article>
+              ))
+            ) : (
+              <p className="empty-state">Drafted prospects will appear here after the draft.</p>
+            )}
+          </div>
         </section>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { sortStandings } from "../../game/systems/standings";
 import { createSeasonCompleteSummary, createSeasonPulse } from "../../game/systems/seasonSummary";
+import { createFranchiseTimeline } from "../../game/systems/history";
 import { useFranchiseStore } from "../../store/franchiseStore";
 
 export function StandingsPanel() {
@@ -8,6 +9,7 @@ export function StandingsPanel() {
   const standings = sortStandings(franchise.league.teams);
   const selectedTeam = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const pulse = createSeasonPulse(franchise.league, franchise.selectedTeamId);
+  const timeline = createFranchiseTimeline(franchise);
 
   return (
     <div className="room-grid room-grid--two">
@@ -62,16 +64,33 @@ export function StandingsPanel() {
           <span>Biggest concern <strong>{pulse.biggestConcern}</strong></span>
         </div>
         <h3>Current Playoff Picture</h3>
-        <p className="muted">Placeholder projection only. Full playoffs arrive later.</p>
+        <p className="muted">{franchise.seasonPhase === "playoffs" ? "Best-of-five fictional league bracket." : "Top eight qualify for the simplified best-of-five playoffs."}</p>
         <div className="hunt-list">
-          {standings.slice(0, 4).map((team, index) => (
+          {standings.slice(0, 8).map((team, index) => (
             <article className={team.id === selectedTeam.id ? "is-selected" : ""} key={team.id}>
               <span>#{index + 1}</span>
               <strong>{team.fullName}</strong>
-              <small>In the hunt | {team.record.points} pts</small>
+              <small>{index < 8 ? "Playoff line" : "In the hunt"} | {team.record.points} pts</small>
             </article>
           ))}
         </div>
+        {franchise.playoffState && (
+          <>
+            <h3>Playoff Bracket</h3>
+            <div className="asset-list">
+              {franchise.playoffState.bracket.map((series) => {
+                const high = franchise.league.teams.find((team) => team.id === series.homeSeedTeamId)!;
+                const low = franchise.league.teams.find((team) => team.id === series.awaySeedTeamId)!;
+                return (
+                  <article key={series.id}>
+                    <strong>Round {series.round}: {high.abbreviation} {series.homeWins} - {series.awayWins} {low.abbreviation}</strong>
+                    <span>{series.completed ? `Winner: ${franchise.league.teams.find((team) => team.id === series.winnerTeamId)?.fullName}` : "Series active"}</span>
+                  </article>
+                );
+              })}
+            </div>
+          </>
+        )}
         <h3>Trophy Hall Notes</h3>
         {franchise.league.completed ? (
           <SeasonSummary selectedTeamId={franchise.selectedTeamId} />
@@ -88,6 +107,42 @@ export function StandingsPanel() {
         ) : (
           <p className="empty-state">No league results yet.</p>
         )}
+        <h3>Champion History</h3>
+        <div className="asset-list asset-list--compact">
+          {franchise.history.champions.length ? (
+            franchise.history.champions.map((champion) => (
+              <article key={`${champion.seasonYear}-${champion.teamId}`}>
+                <strong>{champion.seasonYear}: {champion.teamName}</strong>
+                <span>Champion banner archived.</span>
+              </article>
+            ))
+          ) : (
+            <p className="empty-state">No champions archived yet.</p>
+          )}
+        </div>
+        <h3>Awards</h3>
+        <div className="asset-list asset-list--compact">
+          {franchise.history.awards.slice(0, 8).map((award) => (
+            <article key={award.id}>
+              <strong>{award.award}: {award.displayName}</strong>
+              <span>{award.seasonYear} | {award.reason}</span>
+            </article>
+          ))}
+          {!franchise.history.awards.length && <p className="empty-state">Award cards unlock when a season is archived.</p>}
+        </div>
+        <h3>Franchise Timeline</h3>
+        <div className="asset-list asset-list--compact">
+          {timeline.length ? (
+            timeline.map((item) => (
+              <article key={item.id}>
+                <strong>{item.date} | {item.title}</strong>
+                <span>{item.body}</span>
+              </article>
+            ))
+          ) : (
+            <p className="empty-state">Your dynasty timeline starts after the first major transaction or season archive.</p>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -8,7 +8,32 @@ import { applyGameToStandings, recordString } from "../game/systems/standings";
 import { deleteSave, listSaveMetadata, readSave, writeSave } from "../game/systems/saves";
 import { getCapWarnings } from "../game/systems/contracts";
 import { assignDevelopmentPlan as assignDevelopmentPlanPure, removeDevelopmentPlan as removeDevelopmentPlanPure, tickDevelopment } from "../game/systems/development";
+import {
+  applyAcceptedContractOffer,
+  createContractNegotiationNews,
+  evaluateContractOffer
+} from "../game/systems/contractNegotiation";
+import {
+  advanceFreeAgencyDay as advanceFreeAgencyDayPure,
+  applyFreeAgentSigning,
+  completeFreeAgency as completeFreeAgencyPure,
+  createFreeAgentMarket
+} from "../game/systems/freeAgency";
+import {
+  autoCompleteDraft as autoCompleteDraftPure,
+  autoDraftUntilUserPick as autoDraftUntilUserPickPure,
+  makeUserDraftSelection as makeUserDraftSelectionPure
+} from "../game/systems/draftExecution";
+import { signProspect as signProspectPure } from "../game/systems/prospects";
+import { advanceSeasonPhase as advanceSeasonPhasePure, completeRegularSeason as completeRegularSeasonPure } from "../game/systems/seasonLifecycle";
+import {
+  applyPlayoffGameResult,
+  getCurrentUserPlayoffGame,
+  playoffGameAsSchedule,
+  simulatePlayoffsUntil
+} from "../game/systems/playoffs";
 import { tickScouting, toggleWatchlist, moveProspectOnBoard, updateScoutingAssignment } from "../game/systems/scouting";
+import { fireStaff as fireStaffPure, hireStaff as hireStaffPure, replaceStaff as replaceStaffPure } from "../game/systems/staff";
 import { applyTrade, evaluateTrade, generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../game/systems/trades";
 import { assembleGameResult, nextGameForTeam, simulateGame } from "../game/simulation/simulateGame";
 import type { TacticKey } from "../game/systems/tactics";
@@ -23,10 +48,13 @@ import type {
   PeriodSimulationResult,
   Player,
   PlayerStatUpdate,
+  RoleExpectation,
   SaveSlotMetadata,
   ScoutingAssignment,
+  StaffRole,
   Tactics,
   Team,
+  ContractOffer,
   TradeAsset,
   TradeEvaluation,
   TradeProposal
@@ -50,6 +78,11 @@ interface FranchiseStore {
   applyGameResult: (result: GameResult, autosave?: boolean) => Promise<void>;
   simulateInstantNextGame: () => Promise<GameResult | undefined>;
   applyPeriodGame: (periods: PeriodSimulationResult[], seed: string) => Promise<GameResult | undefined>;
+  simToEndRegularSeason: () => void;
+  advanceSeasonPhase: () => void;
+  simulateNextPlayoffDay: () => void;
+  simulateCurrentPlayoffRound: () => void;
+  simulateToPlayoffChampion: () => void;
   proposeTrade: (toTeamId: string) => void;
   toggleTradeAsset: (asset: TradeAsset) => void;
   submitTradeProposal: () => Promise<TradeEvaluation | undefined>;
@@ -62,8 +95,19 @@ interface FranchiseStore {
   ) => void;
   toggleProspectWatchlist: (prospectId: string) => void;
   moveProspectOnDraftBoard: (prospectId: string, direction: "up" | "down") => void;
+  makeDraftSelection: (prospectId: string) => void;
+  autoDraftUntilUserPick: () => void;
+  autoCompleteDraft: () => void;
   assignDevelopmentPlan: (playerId: string, focus: DevelopmentFocus, intensity: DevelopmentIntensity) => void;
   removeDevelopmentPlan: (playerId: string) => void;
+  signProspect: (prospectId: string) => void;
+  submitContractOffer: (playerId: string, salary: number, years: number, rolePromise?: RoleExpectation) => void;
+  submitFreeAgentOffer: (freeAgentId: string, salary: number, years: number, rolePromise?: RoleExpectation) => void;
+  advanceFreeAgencyDay: () => void;
+  completeFreeAgency: () => void;
+  hireStaff: (staffId: string, role?: StaffRole) => void;
+  fireStaff: (staffId: string) => void;
+  replaceStaff: (outgoingStaffId: string, incomingStaffId: string) => void;
   tickFrontOfficeSystemsAfterGame: () => void;
 }
 
@@ -177,6 +221,28 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   simulateInstantNextGame: async () => {
     const franchise = get().franchise;
     if (!franchise) return undefined;
+    if (franchise.seasonPhase === "playoffs") {
+      const playoffGame = getCurrentUserPlayoffGame(franchise);
+      if (!playoffGame) return undefined;
+      const homeTeam = findTeam(franchise.league, playoffGame.homeTeamId);
+      const awayTeam = findTeam(franchise.league, playoffGame.awayTeamId);
+      if (validateLineup(selectedTeam(franchise)).errors.length) return undefined;
+      const result = simulateGame({
+        game: playoffGameAsSchedule(playoffGame, franchise.league.currentDayIndex, franchise.league.currentDate),
+        homeTeam,
+        awayTeam,
+        seed: `${franchise.franchiseId}-${playoffGame.id}-${franchise.playoffState?.currentRound ?? 1}`
+      });
+      const next = applyPlayoffGameResult(franchise, playoffGame, result);
+      set({ franchise: { ...next, saveStatus: "saving" } });
+      const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
+        .then(() => true)
+        .catch(() => false);
+      await get().refreshSaves();
+      const latest = get().franchise;
+      if (latest?.lastResult?.id === result.id) set({ franchise: { ...latest, saveStatus: saved ? "saved" : "error" } });
+      return result;
+    }
     const game = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
     if (!game) return undefined;
     const homeTeam = findTeam(franchise.league, game.homeTeamId);
@@ -194,6 +260,19 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   applyPeriodGame: async (periods, seed) => {
     const franchise = get().franchise;
     if (!franchise) return undefined;
+    if (franchise.seasonPhase === "playoffs") {
+      const playoffGame = getCurrentUserPlayoffGame(franchise);
+      if (!playoffGame) return undefined;
+      const result = assembleGameResult(
+        playoffGameAsSchedule(playoffGame, franchise.league.currentDayIndex, franchise.league.currentDate),
+        findTeam(franchise.league, playoffGame.homeTeamId),
+        findTeam(franchise.league, playoffGame.awayTeamId),
+        seed,
+        periods
+      );
+      await get().applyGameResult(result, true);
+      return result;
+    }
     const game = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
     if (!game) return undefined;
     const result = assembleGameResult(game, findTeam(franchise.league, game.homeTeamId), findTeam(franchise.league, game.awayTeamId), seed, periods);
@@ -203,9 +282,12 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   applyGameResult: async (result, autosave = false) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    let next = applyDetailedResult(franchise, result);
-    next = simulateRemainingDay(next, result.gameId);
-    next = tickFrontOfficeSystems(next);
+    const playoffGame = franchise.playoffState?.bracket.flatMap((series) => series.games).find((game) => game.id === result.gameId);
+    let next = playoffGame ? applyPlayoffGameResult(franchise, playoffGame, result) : applyDetailedResult(franchise, result);
+    if (!playoffGame) {
+      next = simulateRemainingDay(next, result.gameId);
+      next = tickFrontOfficeSystems(next);
+    }
     set({ franchise: { ...next, saveStatus: autosave ? "saving" : next.saveStatus } });
     if (autosave) {
       const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
@@ -215,6 +297,31 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       const latest = get().franchise;
       if (latest?.lastResult?.id === result.id) set({ franchise: { ...latest, saveStatus: saved ? "saved" : "error" } });
     }
+  },
+  simToEndRegularSeason: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: completeRegularSeasonPure(franchise, new SeededRng(`${franchise.franchiseId}-sim-to-end`)) });
+  },
+  advanceSeasonPhase: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: advanceSeasonPhasePure(franchise, new SeededRng(`${franchise.franchiseId}-advance-${franchise.seasonPhase}`)) });
+  },
+  simulateNextPlayoffDay: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: simulatePlayoffsUntil(franchise, "day") });
+  },
+  simulateCurrentPlayoffRound: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: simulatePlayoffsUntil(franchise, "round") });
+  },
+  simulateToPlayoffChampion: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: simulatePlayoffsUntil(franchise, "champion") });
   },
   proposeTrade: (toTeamId) => {
     const franchise = get().franchise;
@@ -327,6 +434,21 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       }
     });
   },
+  makeDraftSelection: (prospectId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: makeUserDraftSelectionPure(franchise, prospectId) });
+  },
+  autoDraftUntilUserPick: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: autoDraftUntilUserPickPure(franchise, new SeededRng(`${franchise.franchiseId}-draft-until-user`)) });
+  },
+  autoCompleteDraft: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: autoCompleteDraftPure(franchise, new SeededRng(`${franchise.franchiseId}-draft-complete`)) });
+  },
   assignDevelopmentPlan: (playerId, focus, intensity) => {
     const franchise = get().franchise;
     if (!franchise) return;
@@ -353,6 +475,85 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         updatedAt: new Date().toISOString()
       }
     });
+  },
+  signProspect: (prospectId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: signProspectPure(franchise, prospectId) });
+  },
+  submitContractOffer: (playerId, salary, years, rolePromise) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const team = selectedTeam(franchise);
+    const player = team.roster.find((candidate) => candidate.id === playerId);
+    if (!player) return;
+    const offer: ContractOffer = {
+      id: `offer-${playerId}-${franchise.league.currentDate}-${salary}-${years}`,
+      playerId,
+      teamId: team.id,
+      salary,
+      capHit: salary,
+      years,
+      rolePromise,
+      offerType: "extension",
+      status: "draft"
+    };
+    const evaluation = evaluateContractOffer(player, offer, team, franchise);
+    if (evaluation.accepted) {
+      set({ franchise: applyAcceptedContractOffer(franchise, { ...offer, status: "accepted", evaluation }) });
+      return;
+    }
+    set({
+      franchise: {
+        ...franchise,
+        inbox: [...createContractNegotiationNews(player, { ...offer, status: "rejected", evaluation }, evaluation, franchise.league.currentDate, team.id), ...franchise.inbox].slice(0, 60),
+        updatedAt: new Date().toISOString()
+      }
+    });
+  },
+  submitFreeAgentOffer: (freeAgentId, salary, years, rolePromise) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const state = franchise.freeAgencyState ?? createFreeAgentMarket(franchise, new SeededRng(`${franchise.franchiseId}-fa-market`));
+    const freeAgent = state.market.find((candidate) => candidate.player.id === freeAgentId);
+    if (!freeAgent) return;
+    const offer: ContractOffer = {
+      id: `fa-offer-${freeAgentId}-${franchise.league.currentDate}-${salary}-${years}`,
+      playerId: freeAgentId,
+      teamId: franchise.selectedTeamId,
+      salary,
+      capHit: salary,
+      years,
+      rolePromise,
+      offerType: "freeAgent",
+      status: "draft"
+    };
+    set({ franchise: applyFreeAgentSigning({ ...franchise, freeAgencyState: state }, freeAgentId, offer) });
+  },
+  advanceFreeAgencyDay: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: advanceFreeAgencyDayPure(franchise, new SeededRng(`${franchise.franchiseId}-fa-day`)) });
+  },
+  completeFreeAgency: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: completeFreeAgencyPure(franchise) });
+  },
+  hireStaff: (staffId, role) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: hireStaffPure(franchise, staffId, role) });
+  },
+  fireStaff: (staffId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: fireStaffPure(franchise, staffId) });
+  },
+  replaceStaff: (outgoingStaffId, incomingStaffId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: replaceStaffPure(franchise, outgoingStaffId, incomingStaffId) });
   },
   tickFrontOfficeSystemsAfterGame: () => {
     const franchise = get().franchise;
@@ -484,8 +685,8 @@ function tickFrontOfficeSystems(franchise: FranchiseState): FranchiseState {
   const scoutingResult =
     franchise.scouting.lastScoutingTickDayIndex === dayIndex
       ? { state: franchise.scouting, news: [] as NewsItem[] }
-      : tickScouting(franchise.scouting, refreshedLeague, dayIndex, rng);
-  const developmentResult = tickDevelopment(franchise.development, refreshedLeague, dayIndex, rng);
+      : tickScouting(franchise.scouting, refreshedLeague, dayIndex, rng, franchise.staffState, franchise.selectedTeamId);
+  const developmentResult = tickDevelopment(franchise.development, refreshedLeague, dayIndex, rng, franchise.staffState);
   const capNews = createCapAndContractNews({ ...franchise, league: developmentResult.league }, dayIndex);
   const frontOfficeNews = [...developmentResult.news, ...scoutingResult.news, ...capNews].map((item) => ({
     ...item,

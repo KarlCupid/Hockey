@@ -11,7 +11,10 @@ const ROOM_LABELS: Record<RoomId, string> = {
   contracts: "Contract & Cap Office",
   trades: "Trade War Room",
   scouting: "Scouting Department",
-  development: "Development Office"
+  development: "Development Office",
+  freeAgency: "Free Agency Office",
+  staff: "Staff Office",
+  draft: "Draft Stage"
 };
 
 export function roomLabel(room?: RoomId): string {

@@ -4,6 +4,8 @@ import type { FranchiseState, LeagueState, Team, TeamRecord, TeamStats } from ".
 import { autoFillBestLineup } from "../systems/lineupValidation";
 import { generateInitialDraftPicks } from "../systems/draftPicks";
 import { generateScoutingAssignments, rankDraftBoard } from "../systems/scouting";
+import { generateStaffForLeague } from "../systems/staff";
+import { createDefaultOwnerState } from "../systems/owner";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../systems/trades";
 import { generateDraftClass } from "./generateDraftClass";
 import { generateRoster } from "./generatePlayers";
@@ -77,11 +79,30 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
   const selectedTeam = league.teams.find((team) => team.id === selectedTeamId) ?? league.teams[0];
   const now = new Date().toISOString();
   const draftClass = generateDraftClass(`${seed}-draft`);
-  return {
+  const staffState = generateStaffForLeague(league.teams, new SeededRng(`${seed}-staff`));
+  const prospectPools = Object.fromEntries(league.teams.map((team) => [team.id, []]));
+  const base: FranchiseState = {
     schemaVersion: SCHEMA_VERSION,
     franchiseId: `franchise-${seed}`,
     selectedTeamId: selectedTeam.id,
     league,
+    seasonPhase: "regularSeason",
+    currentSeasonId: `${league.seasonYear}-${selectedTeam.id}`,
+    staffState,
+    history: {
+      seasons: [],
+      champions: [],
+      awards: [],
+      draftHistory: [],
+      transactionHistory: []
+    },
+    ownerState: {
+      jobSecurity: 65,
+      patience: selectedTeam.ownerPatience,
+      seasonGoals: [],
+      messages: []
+    },
+    prospectPools,
     inbox: [
       {
         id: `welcome-${selectedTeam.id}`,
@@ -127,6 +148,12 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     saveStatus: "idle",
     createdAt: now,
     updatedAt: now
+  };
+  const ownerState = createDefaultOwnerState(base, new SeededRng(`${seed}-owner`));
+  return {
+    ...base,
+    ownerState,
+    inbox: [...ownerState.messages, ...base.inbox]
   };
 }
 

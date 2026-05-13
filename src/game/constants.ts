@@ -1,6 +1,6 @@
 import type { Tactics } from "./types";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 export const SAVE_SLOT_COUNT = 3;
 export const AUTOSAVE_SLOT_ID = "autosave";
 export const REGULAR_SEASON_DAYS = 22;

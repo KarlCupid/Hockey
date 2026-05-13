@@ -3,10 +3,13 @@ import { z } from "zod";
 import { AUTOSAVE_SLOT_ID, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SAVE_SLOT_COUNT, SCHEMA_VERSION } from "../constants";
 import { generateDraftClass } from "../generators/generateDraftClass";
 import { SeededRng } from "../rng";
-import type { FranchiseState, Player, SaveSlotMetadata, ScoutingState, Team } from "../types";
+import type { FranchiseState, LeagueHistory, OwnerState, Player, ProspectRights, SaveSlotMetadata, ScoutingState, StaffState, Team } from "../types";
 import { contractSummary, createContractForPlayer } from "./contracts";
 import { generateInitialDraftPicks } from "./draftPicks";
+import { createDefaultOwnerState } from "./owner";
+import { createPlayoffState } from "./playoffs";
 import { generateScoutingAssignments, rankDraftBoard } from "./scouting";
+import { generateStaffForLeague } from "./staff";
 import { recordString } from "./standings";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "./trades";
 
@@ -79,20 +82,40 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     };
   });
   const scouting = hydrateScouting(input);
-
-  return {
+  const phase = hydrateSeasonPhase(input);
+  const staffState = hydrateStaffState(input, teamsWithAssets);
+  const prospectPools = hydrateProspectPools(input, teamsWithAssets);
+  const history = hydrateHistory(input);
+  const ownerBase: FranchiseState = {
     ...input,
     schemaVersion: SCHEMA_VERSION,
     league: {
       ...input.league,
       teams: teamsWithAssets,
       recentResults: input.league.recentResults ?? [],
-      completed: input.league.completed ?? false
+      completed: input.league.completed ?? input.league.schedule.every((game) => game.played)
     },
+    seasonPhase: phase,
+    currentSeasonId: input.currentSeasonId ?? `${input.league.seasonYear}-${input.selectedTeamId}`,
+    staffState,
+    history,
+    ownerState: input.ownerState ?? emptyOwnerState(input),
+    prospectPools,
     scouting,
     development: input.development ?? { plans: [], recentUpdates: [] },
     tradeHistory: input.tradeHistory ?? [],
     transactionLog: input.transactionLog ?? [],
+    saveStatus: "idle"
+  };
+  const ownerState = hydrateOwnerState(ownerBase);
+
+  return {
+    ...ownerBase,
+    ownerState,
+    playoffState: input.playoffState ?? (phase === "playoffs" ? createPlayoffState(ownerBase.league) : undefined),
+    offseasonState: input.offseasonState,
+    freeAgencyState: input.freeAgencyState,
+    scouting,
     saveStatus: "idle"
   };
 }
@@ -168,5 +191,67 @@ function hydrateScouting(input: FranchiseState): ScoutingState {
     watchlist: existing?.watchlist ?? [],
     teamDraftBoard: existing?.teamDraftBoard?.length ? existing.teamDraftBoard : rankDraftBoard(draftClass, "Best Player Available"),
     lastScoutingTickDayIndex: existing?.lastScoutingTickDayIndex ?? input.league.currentDayIndex
+  };
+}
+
+function hydrateSeasonPhase(input: FranchiseState): FranchiseState["seasonPhase"] {
+  if (input.seasonPhase) return input.seasonPhase;
+  const completed = input.league.completed ?? input.league.schedule.every((game) => game.played);
+  if (!completed) return "regularSeason";
+  if (input.playoffState?.completed) return "seasonReview";
+  return "playoffs";
+}
+
+function hydrateStaffState(input: FranchiseState, teams: Team[]): StaffState {
+  if (input.staffState?.teamStaff && input.staffState.staffMarket) {
+    const generated = generateStaffForLeague(teams, new SeededRng(`${input.franchiseId}-staff-repair`));
+    return {
+      teamStaff: Object.fromEntries(
+        teams.map((team) => {
+          const existing = input.staffState.teamStaff[team.id] ?? [];
+          const missing = generated.teamStaff[team.id].filter((member) => !existing.some((candidate) => candidate.role === member.role));
+          return [team.id, [...existing, ...missing]];
+        })
+      ),
+      staffMarket: input.staffState.staffMarket.length ? input.staffState.staffMarket : generated.staffMarket,
+      recentStaffMoves: input.staffState.recentStaffMoves ?? []
+    };
+  }
+  return generateStaffForLeague(teams, new SeededRng(`${input.franchiseId}-staff-repair`));
+}
+
+function hydrateProspectPools(input: FranchiseState, teams: Team[]): Record<string, ProspectRights[]> {
+  const existing = input.prospectPools ?? {};
+  return Object.fromEntries(teams.map((team) => [team.id, existing[team.id] ?? []]));
+}
+
+function hydrateHistory(input: FranchiseState): LeagueHistory {
+  return {
+    seasons: input.history?.seasons ?? [],
+    champions: input.history?.champions ?? [],
+    awards: input.history?.awards ?? [],
+    draftHistory: input.history?.draftHistory ?? [],
+    transactionHistory: input.history?.transactionHistory ?? []
+  };
+}
+
+function hydrateOwnerState(input: FranchiseState): OwnerState {
+  if (input.ownerState?.seasonGoals?.length) {
+    return {
+      ...input.ownerState,
+      messages: input.ownerState.messages ?? [],
+      jobSecurity: input.ownerState.jobSecurity ?? 65,
+      patience: input.ownerState.patience ?? input.league.teams.find((team) => team.id === input.selectedTeamId)?.ownerPatience ?? 60
+    };
+  }
+  return createDefaultOwnerState(input, new SeededRng(`${input.franchiseId}-owner-repair`));
+}
+
+function emptyOwnerState(input: FranchiseState): OwnerState {
+  return {
+    jobSecurity: 65,
+    patience: input.league.teams.find((team) => team.id === input.selectedTeamId)?.ownerPatience ?? 60,
+    seasonGoals: [],
+    messages: []
   };
 }

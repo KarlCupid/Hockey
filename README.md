@@ -28,6 +28,7 @@ npm run build
 - Trade War Room with player/pick proposal building, cap validation, need fit, and AI accept/reject feedback
 - Scouting Department with a 72-player fictional draft class, assignments, watchlist, fuzzy reports, and certainty growth
 - Development Office with player development plans, progress ticks, workload risk, and small attribute growth
+- Phase 3 dynasty lifecycle with playoffs, champion history, draft execution, prospect pools, re-signing, free agency, staff hiring, owner goals, retirements, aging, and new-season generation
 - GM Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -58,9 +59,23 @@ Phase 2 turns the V1.1 lineup-and-sim slice into a deeper client-only franchise-
 
 Older V1.1 saves are hydrated on load with default contracts, picks, scouting, development, trade history, and transaction-log fields.
 
+## Phase 3 Dynasty Lifecycle Expansion
+
+Phase 3 turns the one-season prototype into a client-only dynasty loop:
+
+- Finish or sim the 22-game regular season, open the top-eight best-of-five playoff bracket, and crown/archive a champion.
+- Run a simplified four-round draft that honors traded pick ownership, adds drafted players to prospect pools, and records draft history.
+- Re-sign expiring players with immediate accept/reject feedback, release unsigned UFAs to free agency, and keep RFAs controlled.
+- Use a seven-day fictional free-agent market with user offers, AI signings, cap checks, roster-limit checks, and market news.
+- Hire and replace staff across coaching, scouting, medical, analytics, and assistant-GM roles; staff ratings lightly affect related systems.
+- Advance through retirements, offseason aging/development/regression, fatigue/injury recovery, owner evaluations, owner goals, training camp, new schedules, new draft classes, and multi-season history.
+- Browse expanded Trophy Hall history with champions, awards, franchise timeline, draft history, and season records.
+
+Older V1.1/Phase 2 saves hydrate to schema version 3 with safe defaults for season phase, staff, owner goals, history, and prospect pools.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, full contract negotiations, free agency, full draft execution, staff hiring, multiplayer, cloud saves, playoffs, and playable on-ice hockey physics.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, and playoffs are simplified fictional Phase 3 systems.
 
 ## Controls
 

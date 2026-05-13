@@ -6,6 +6,19 @@ export type MoraleBand = "unhappy" | "concerned" | "stable" | "positive" | "thri
 export type FormBand = "cold" | "struggling" | "steady" | "hot" | "excellent";
 export type FatigueBand = "fresh" | "normal" | "tired" | "exhausted";
 export type SimulationMode = "instant" | "period" | "broadcast";
+export type SeasonPhase =
+  | "regularSeason"
+  | "playoffs"
+  | "seasonReview"
+  | "retirements"
+  | "draftLottery"
+  | "draft"
+  | "reSigning"
+  | "freeAgency"
+  | "staffHiring"
+  | "trainingCamp"
+  | "preseason"
+  | "completed";
 export type RoomId =
   | "gm"
   | "coach"
@@ -17,7 +30,10 @@ export type RoomId =
   | "contracts"
   | "trades"
   | "scouting"
-  | "development";
+  | "development"
+  | "freeAgency"
+  | "staff"
+  | "draft";
 
 export type PlayerArchetype =
   | "Sniper"
@@ -203,7 +219,19 @@ export interface TradeEvaluation {
 export interface TransactionLogItem {
   id: string;
   date: string;
-  type: "trade" | "contract" | "scouting" | "development";
+  type:
+    | "trade"
+    | "contract"
+    | "scouting"
+    | "development"
+    | "playoffs"
+    | "draft"
+    | "freeAgency"
+    | "staff"
+    | "retirement"
+    | "owner"
+    | "prospect"
+    | "season";
   headline: string;
   details: string;
   teamIds?: string[];
@@ -253,6 +281,14 @@ export interface PlayerStats {
   shutouts: number;
 }
 
+export interface PlayerCareerSeason {
+  seasonYear: number;
+  teamId: string;
+  stats: PlayerStats;
+  overallAtEnd: number;
+  contractSummary: string;
+}
+
 export interface Player {
   id: string;
   teamId: string;
@@ -277,6 +313,7 @@ export interface Player {
   stats: PlayerStats;
   contract: Contract;
   contractSummary: string;
+  careerHistory?: PlayerCareerSeason[];
 }
 
 export interface ForwardLine {
@@ -397,7 +434,15 @@ export type NewsType =
   | "contract"
   | "scouting"
   | "development"
-  | "cap";
+  | "cap"
+  | "playoffs"
+  | "draft"
+  | "freeAgency"
+  | "staff"
+  | "retirement"
+  | "prospect"
+  | "history"
+  | "trainingCamp";
 
 export interface NewsItem {
   id: string;
@@ -563,11 +608,286 @@ export interface PeriodSimulationResult {
   momentum: string;
 }
 
+export interface PlayoffGame {
+  id: string;
+  seriesId: string;
+  gameNumber: number;
+  homeTeamId: string;
+  awayTeamId: string;
+  played: boolean;
+  result?: {
+    homeGoals: number;
+    awayGoals: number;
+    overtime: boolean;
+  };
+}
+
+export interface PlayoffSeries {
+  id: string;
+  round: number;
+  homeSeedTeamId: string;
+  awaySeedTeamId: string;
+  homeWins: number;
+  awayWins: number;
+  bestOf: number;
+  games: PlayoffGame[];
+  winnerTeamId?: string;
+  completed: boolean;
+}
+
+export interface PlayoffState {
+  qualifiedTeamIds: string[];
+  bracket: PlayoffSeries[];
+  currentRound: number;
+  championTeamId?: string;
+  completed: boolean;
+  recentPlayoffResults: string[];
+}
+
+export interface DraftSelection {
+  id: string;
+  year: number;
+  round: number;
+  pickNumber: number;
+  teamId: string;
+  prospectId: string;
+  prospectName: string;
+  position: Position;
+  actualOverall: number;
+  actualPotential: number;
+  visibleGrade: string;
+  signed: boolean;
+}
+
+export interface DraftState {
+  year: number;
+  round: number;
+  pickNumber: number;
+  draftOrder: string[];
+  pickContexts?: DraftPickContext[];
+  selections: DraftSelection[];
+  userPickPending: boolean;
+  completed: boolean;
+}
+
+export interface DraftPickContext {
+  year: number;
+  round: number;
+  pickNumber: number;
+  teamId: string;
+  originalTeamId: string;
+  ownerTeamId: string;
+  pickId: string;
+}
+
+export interface ProspectRights {
+  prospectId: string;
+  teamId: string;
+  acquiredYear: number;
+  acquiredRound: number;
+  acquiredPickNumber: number;
+  displayName: string;
+  position: Position;
+  age: number;
+  nationality: string;
+  archetype: PlayerArchetype;
+  potentialRangeLabel: string;
+  signed: boolean;
+  rightsExpireYear: number;
+  source: "draft" | "trade" | "freeAgent";
+}
+
+export interface ContractOfferEvaluation {
+  accepted: boolean;
+  playerInterest: number;
+  demandSalary: number;
+  demandYears: number;
+  reasons: string[];
+  warnings: string[];
+}
+
+export interface ContractOffer {
+  id: string;
+  playerId: string;
+  teamId: string;
+  salary: number;
+  capHit: number;
+  years: number;
+  rolePromise?: RoleExpectation;
+  offerType: "extension" | "freeAgent" | "prospectEntry";
+  status: "draft" | "accepted" | "rejected";
+  evaluation?: ContractOfferEvaluation;
+}
+
+export interface ContractDemand {
+  playerId: string;
+  demandSalary: number;
+  demandYears: number;
+  minimumRole: RoleExpectation;
+  patience: number;
+  headline: string;
+  reasons: string[];
+}
+
+export interface FreeAgentPlayer {
+  player: Player;
+  demandSalary: number;
+  demandYears: number;
+  interestByTeam: Record<string, number>;
+  marketBuzz: string;
+  signedByTeamId?: string;
+}
+
+export interface FreeAgentState {
+  market: FreeAgentPlayer[];
+  currentDay: number;
+  maxDays: number;
+  userSignings: string[];
+  aiSignings: TransactionLogItem[];
+  completed: boolean;
+}
+
+export type StaffRole =
+  | "Assistant Coach"
+  | "Goalie Coach"
+  | "Development Coach"
+  | "Head Scout"
+  | "Medical Lead"
+  | "Analytics Director"
+  | "Assistant GM";
+
+export interface StaffMember {
+  id: string;
+  displayName: string;
+  role: StaffRole;
+  age: number;
+  nationality: string;
+  tacticalKnowledge: number;
+  development: number;
+  scouting: number;
+  medical: number;
+  analytics: number;
+  negotiation: number;
+  communication: number;
+  moraleImpact: number;
+  salary: number;
+  yearsRemaining: number;
+  reputation: number;
+  personality: string;
+  signedTeamId?: string;
+}
+
+export interface StaffState {
+  teamStaff: Record<string, StaffMember[]>;
+  staffMarket: StaffMember[];
+  recentStaffMoves: TransactionLogItem[];
+}
+
+export interface StaffModifiers {
+  tactics: number;
+  goalieDevelopment: number;
+  development: number;
+  scouting: number;
+  medical: number;
+  analytics: number;
+  negotiation: number;
+  morale: number;
+}
+
+export interface OwnerGoal {
+  id: string;
+  type: "makePlayoffs" | "winRound" | "developProspect" | "stayUnderCap" | "improveRecord" | "sellVeteran" | "buildThroughDraft";
+  label: string;
+  target: number;
+  progress: number;
+  status: "active" | "met" | "failed";
+  importance: "low" | "medium" | "high";
+}
+
+export interface OwnerState {
+  jobSecurity: number;
+  patience: number;
+  seasonGoals: OwnerGoal[];
+  messages: NewsItem[];
+  lastEvaluationDate?: string;
+}
+
+export interface SeasonHistory {
+  seasonYear: number;
+  championTeamId?: string;
+  selectedTeamRecord: string;
+  selectedTeamFinish: string;
+  selectedTeamPlayoffResult: string;
+  standingsSnapshot: Array<{
+    teamId: string;
+    rank: number;
+    wins: number;
+    losses: number;
+    overtimeLosses: number;
+    points: number;
+    goalDifferential: number;
+  }>;
+  topScorer: string;
+  bestGoalie: string;
+  majorStories: string[];
+}
+
+export interface ChampionEntry {
+  seasonYear: number;
+  teamId: string;
+  teamName: string;
+}
+
+export interface AwardEntry {
+  id: string;
+  seasonYear: number;
+  award: "Most Valuable Player" | "Top Goalie" | "Top Rookie" | "Best Defenseman" | "Coach/GM Story";
+  playerId?: string;
+  teamId?: string;
+  displayName: string;
+  reason: string;
+}
+
+export interface LeagueHistory {
+  seasons: SeasonHistory[];
+  champions: ChampionEntry[];
+  awards: AwardEntry[];
+  draftHistory: DraftSelection[];
+  transactionHistory: TransactionLogItem[];
+}
+
+export interface OffseasonState {
+  year: number;
+  draftState?: DraftState;
+  retiredPlayerIds: string[];
+  retiredPlayerNames: string[];
+  reSigningCompleted: boolean;
+  trainingCampCompleted: boolean;
+  phaseLog: string[];
+}
+
+export interface TimelineItem {
+  id: string;
+  date: string;
+  title: string;
+  body: string;
+  type: "season" | "playoffs" | "draft" | "contract" | "freeAgency" | "staff" | "retirement" | "owner";
+}
+
 export interface FranchiseState {
   schemaVersion: number;
   franchiseId: string;
   selectedTeamId: string;
   league: LeagueState;
+  seasonPhase: SeasonPhase;
+  currentSeasonId: string;
+  playoffState?: PlayoffState;
+  offseasonState?: OffseasonState;
+  freeAgencyState?: FreeAgentState;
+  staffState: StaffState;
+  history: LeagueHistory;
+  ownerState: OwnerState;
+  prospectPools: Record<string, ProspectRights[]>;
   inbox: NewsItem[];
   scouting: ScoutingState;
   development: DevelopmentState;

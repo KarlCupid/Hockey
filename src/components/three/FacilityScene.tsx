@@ -11,6 +11,7 @@ import { ThirdPersonController } from "./ThirdPersonController";
 
 const ZONES: RoomZoneConfig[] = [
   { id: "gm", label: "GM OFFICE", position: [-6.8, 0, -5.2], color: "#6ecbff" },
+  { id: "roster", label: "ROSTER OFFICE", position: [-9.1, 0, -3.4], color: "#76e3a5" },
   { id: "contracts", label: "CAP OFFICE", position: [-3.8, 0, -5.2], color: "#f5c65b" },
   { id: "freeAgency", label: "FREE AGENCY", position: [-7.4, 0, -1.4], color: "#d7e8ff" },
   { id: "coach", label: "COACH OFFICE", position: [0, 0, -6.5], color: "#8ee7d1" },
@@ -87,6 +88,7 @@ function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: s
       <TeamBrandingWall teamId={selectedTeamId} />
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
       <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
+      <RosterOfficeProps />
       <ContractOfficeProps />
       <FreeAgencyProps />
       <Desk position={[0, 0, -7.6]} color="#183b3e" />
@@ -102,6 +104,28 @@ function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: s
       <ScoutingProps />
       <TrophyCases reducedDetail={reducedDetail} />
       <SaveDesk />
+    </group>
+  );
+}
+
+function RosterOfficeProps() {
+  return (
+    <group position={[-9.15, 0, -4.7]}>
+      <Desk position={[0, 0, 0]} color="#1f3a34" />
+      <mesh position={[1.15, 1.08, -0.08]}>
+        <boxGeometry args={[1.55, 1.05, 0.08]} />
+        <meshStandardMaterial color="#e9fff5" emissive="#76e3a5" emissiveIntensity={0.14} />
+      </mesh>
+      {[-0.45, 0, 0.45].map((x, index) => (
+        <mesh key={x} position={[1.15 + x, 1.1, 0]}>
+          <boxGeometry args={[0.22, 0.7 - index * 0.1, 0.05]} />
+          <meshStandardMaterial color={index === 1 ? "#f5c65b" : "#61c9ff"} />
+        </mesh>
+      ))}
+      <mesh position={[-0.74, 0.95, 0.34]} rotation={[0, 0, -0.2]}>
+        <boxGeometry args={[0.16, 0.5, 0.08]} />
+        <meshStandardMaterial color="#d7e8ff" emissive="#76e3a5" emissiveIntensity={0.2} />
+      </mesh>
     </group>
   );
 }

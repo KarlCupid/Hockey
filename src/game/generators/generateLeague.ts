@@ -1,7 +1,10 @@
-import { DEFAULT_TACTICS, FICTIONAL_TEAMS, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SCHEMA_VERSION, START_DATE } from "../constants";
+import { ACTIVE_ROSTER_LIMIT, ACTIVE_ROSTER_MINIMUM, DEFAULT_TACTICS, FICTIONAL_TEAMS, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SCHEMA_VERSION, START_DATE } from "../constants";
 import { SeededRng } from "../rng";
 import type { FranchiseState, LeagueState, Team, TeamRecord, TeamStats } from "../types";
+import { generateAffiliateForTeam } from "../systems/affiliate";
+import { repairAllTeamRosters } from "../systems/aiRosterManagement";
 import { autoFillBestLineup } from "../systems/lineupValidation";
+import { autoSetInitialRosterStatuses } from "../systems/rosterManagement";
 import { generateInitialDraftPicks } from "../systems/draftPicks";
 import { generateScoutingAssignments, rankDraftBoard } from "../systems/scouting";
 import { generateStaffForLeague } from "../systems/staff";
@@ -42,10 +45,15 @@ export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueSta
       draftPicks: [],
       tradeBlock: [],
       untouchables: [],
-      teamNeeds: []
+      teamNeeds: [],
+      affiliate: undefined as never,
+      rosterMoveLog: [],
+      activeRosterLimit: ACTIVE_ROSTER_LIMIT,
+      activeRosterMinimum: ACTIVE_ROSTER_MINIMUM
     };
+    team.affiliate = generateAffiliateForTeam(team);
     team.lines = autoFillBestLineup(team).lineup;
-    return team;
+    return autoSetInitialRosterStatuses(team);
   });
   const picks = generateInitialDraftPicks(teams, 2026);
   const teamsWithFrontOffice = teams.map((team) => {
@@ -135,6 +143,7 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
       recentUpdates: []
     },
     tradeHistory: [],
+    rosterMoveHistory: [],
     transactionLog: [
       {
         id: `transaction-open-${selectedTeam.id}`,
@@ -150,10 +159,20 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     updatedAt: now
   };
   const ownerState = createDefaultOwnerState(base, new SeededRng(`${seed}-owner`));
-  return {
+  const repaired = repairAllTeamRosters({
     ...base,
     ownerState,
     inbox: [...ownerState.messages, ...base.inbox]
+  }, "newFranchise");
+  return {
+    ...repaired,
+    ...base,
+    ownerState,
+    league: repaired.league,
+    prospectPools: repaired.prospectPools,
+    rosterMoveHistory: repaired.rosterMoveHistory,
+    transactionLog: repaired.transactionLog,
+    inbox: [...ownerState.messages, ...repaired.inbox.filter((item) => !ownerState.messages.some((message) => message.id === item.id))].slice(0, 60)
   };
 }
 

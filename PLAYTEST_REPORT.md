@@ -1,4 +1,4 @@
-# Phase 4 Playtest Report
+# Phase 4 And Phase 5 Playtest Report
 
 ## Scope
 
@@ -55,14 +55,51 @@
 
 ## Known Issues
 
-- Multi-season roster warnings still appear by year three because simplified free agency and prospect promotion do not fully manage depth charts for every AI club.
-- Re-signing acceptance and owner goal completion remain conservative in the balance report and should be tuned with more targeted samples.
+- Multi-season roster warnings appeared by year three in the Phase 4 report because simplified free agency and prospect promotion did not fully manage depth charts for every AI club. Phase 5 addresses this with roster statuses, affiliate depth, AI repair, training-camp finalization, and emergency replacement logic.
+- Re-signing acceptance and owner goal completion were conservative in the Phase 4 balance report. Phase 5 adds focused re-signing and owner-goal balance harnesses and tunes acceptance/security movement without making outcomes automatic.
 - The React Three Fiber production chunk remains above Vite's default warning threshold even after panel-level lazy loading.
 - Minor leagues, waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, audio, and playable on-ice hockey remain out of scope.
 
 ## Recommended Next Work
 
-- Add AI roster top-up logic during training camp using existing fictional free agents and prospects.
-- Tune owner goal completion sampling so successful seasons produce more varied job-security movement.
-- Add a focused re-signing balance harness that tests realistic expiring-player offers by role and team cap state.
-- Consider a Rollup manual chunk for Three/R3F/Drei if the bundle warning becomes a release blocker.
+- Expand affiliate presentation over time with more long-form reports and history, without adding a full playable minor-league schedule yet.
+- Continue tuning replacement-player frequency across larger seed batches so emergency signings stay rare.
+- Deepen contract and owner personality later if the project enters a future CBA-focused phase.
+- Continue watching the Three/R3F/Drei chunk after the Phase 5 Rollup manual chunk split.
+
+## Phase 5 Scope
+
+- Build: Phase 5 roster ecosystem, affiliate system, AI roster management, training-camp setup, re-signing balance, and owner-goal balance.
+- Harness: `runDynastyPlaytest("phase5-five-season", 5, "harbor-city")`.
+- Tests: `src/tests/phase5RosterEcosystem.test.ts`.
+- Primary target: eliminate fatal multi-season roster collapse and materially reduce roster-short warnings by giving every team active, scratched, affiliate, IR, and prospect pathways.
+
+## Phase 5 Results
+
+- Five-season stress seeds covered in tests: `phase5-five-season`.
+- Fatal roster invariant errors: 0.
+- Save serialization after five seasons: passed.
+- Draft-pick ownership consistency after five seasons: passed.
+- Active/affiliate cap distinction: passed.
+- Affiliate/IR/retired/prospect-rights lineup exclusion: passed.
+- No-active-goalie repair: passed.
+- Below-minimum active roster repair: passed.
+- Duplicate replacement/player ID protection: passed.
+- AI training camp finalization: passed.
+- Emergency replacements: available as last resort; focused tests verify repair prefers existing depth first and uses generated replacements only when the organization cannot otherwise satisfy minimum health.
+- Roster-short warnings: materially reduced from the Phase 4 known issue by pre-game, training-camp, new-season, post-free-agency, post-trade, save-hydration, and playtest repair passes.
+
+## Phase 5 Roster Repair Outcomes
+
+- Every generated team now receives one fictional affiliate at franchise creation and during save migration.
+- Existing saves hydrate to schema version 4 with roster statuses, affiliate data, roster move logs, active roster limits, player development paths, and career-stage defaults.
+- AI clubs classify surplus players to affiliate, preserve stars on active rosters when possible, promote depth where needed, sign from free agency when available, and create low-cost fictional replacements only as a safety net.
+- Training camp finalization reduces active rosters to 23 or fewer where possible while keeping a game-valid 12F/6D/2G target.
+- The Coach Office lineup pool now excludes affiliate, injured reserve, retired, and prospect-rights players; scratched healthy players can be activated through roster actions.
+
+## Phase 5 Balance Notes
+
+- Re-signing samples now verify fair offers outperform weak offers, strong offers are usually attractive, RFAs are easier to retain than UFAs, and cap pressure still creates walk risk.
+- Owner-goal sampling now verifies successful seasons improve job security, rebuilding clubs receive at least one development/draft/cap style goal, and contenders receive at least one performance goal.
+- Affiliate development uses age, potential, morale, goalie-project pacing, and Development Coach modifiers to create reports and promotion candidates without adding playable minor-league games.
+- Cap treatment remains intentionally simplified: active, scratched, and IR players count against active cap; affiliate players are cap-exempt; retained salary and real-world CBA rules remain out of scope.

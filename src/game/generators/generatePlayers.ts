@@ -1,6 +1,8 @@
 import type {
+  CareerStage,
   GoalieAttributes,
   Player,
+  PlayerDevelopmentPath,
   PlayerArchetype,
   PlayerStats,
   Position,
@@ -124,7 +126,13 @@ function createPlayer(teamId: string, teamIndex: number, index: number, position
     attributes: position === "G" ? generateGoalieAttributes(overall, rng) : generateSkaterAttributes(overall, rng),
     stats: emptyStats(),
     contract,
-    contractSummary: contractSummary(contract)
+    contractSummary: contractSummary(contract),
+    rosterStatus: "active",
+    acquiredVia: "generated",
+    waiverEligible: false,
+    affiliateSeasons: 0,
+    developmentPath: createDefaultDevelopmentPath(position, roleExpectation, age, overall, potential),
+    careerStage: inferCareerStage(age, overall, potential)
   };
 }
 
@@ -175,6 +183,42 @@ function inferRole(position: Position, overall: number, index: number): RoleExpe
   if (overall >= 75) return "Top Six";
   if (overall >= 66 || index < 12) return "Middle Six";
   return "Depth";
+}
+
+function createDefaultDevelopmentPath(
+  position: Position,
+  roleExpectation: RoleExpectation,
+  age: number,
+  overall: number,
+  potential: number
+): PlayerDevelopmentPath {
+  const upside = potential - overall;
+  const prospect = age <= 22 || upside >= 8;
+  const track =
+    position === "G" && prospect
+      ? "Goalie Project"
+      : prospect
+        ? "Prospect Pipeline"
+        : overall >= 73
+          ? "NHL Regular"
+          : age >= 30
+            ? "Veteran Depth"
+            : "Affiliate Development";
+  return {
+    track,
+    confidence: clamp(54 + upside + (overall >= 76 ? 8 : 0), 35, 92),
+    lastReport: prospect ? "Pathway staff see runway if the role and patience line up." : "Staff see a known pro profile with clear usage needs.",
+    projectedRole: roleExpectation,
+    eta: overall >= 73 ? "Now" : prospect && overall >= 68 ? "This Season" : prospect ? "Next Season" : "Long Term"
+  };
+}
+
+function inferCareerStage(age: number, overall: number, potential: number): CareerStage {
+  if (age <= 21 || potential - overall >= 9) return "prospect";
+  if (age <= 24) return "rookie";
+  if (age <= 30) return "prime";
+  if (age <= 34) return "veteran";
+  return "decline";
 }
 
 function generateSkaterAttributes(overall: number, rng: SeededRng): SkaterAttributes {

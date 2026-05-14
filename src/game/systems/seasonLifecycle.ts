@@ -4,6 +4,7 @@ import { generateSchedule } from "../generators/generateSchedule";
 import { DRAFT_PICK_ROUNDS } from "../constants";
 import { SeededRng } from "../rng";
 import { simulateGame } from "../simulation/simulateGame";
+import { repairAllTeamRosters } from "./aiRosterManagement";
 import { keepUnsignedRFAsAsRights, releaseUnsignedUFAsToMarket } from "./contractNegotiation";
 import { generateInitialDraftPicks } from "./draftPicks";
 import { createDraftOrder, resolveDraftLottery } from "./draftExecution";
@@ -22,6 +23,7 @@ import {
 import { createPlayoffState } from "./playoffs";
 import { applyGameToStandings } from "./standings";
 import { generateStaffMarket, tickStaffContracts } from "./staff";
+import { runTrainingCampRosterSetup } from "./trainingCamp";
 import type { FranchiseState, LeagueState, ScheduleGame, SeasonHistory, SeasonPhase, Team } from "../types";
 
 export function getSeasonPhase(franchise: FranchiseState): SeasonPhase {
@@ -122,10 +124,10 @@ export function advanceSeasonPhase(franchise: FranchiseState, rng = new SeededRn
   }
   if (phase === "freeAgency") {
     if (!franchise.freeAgencyState?.completed) return franchise;
-    return { ...franchise, seasonPhase: "staffHiring", updatedAt: new Date().toISOString() };
+    return repairAllTeamRosters({ ...franchise, seasonPhase: "staffHiring", updatedAt: new Date().toISOString() }, "postFreeAgency");
   }
   if (phase === "staffHiring") {
-    return { ...franchise, seasonPhase: "trainingCamp", updatedAt: new Date().toISOString() };
+    return repairAllTeamRosters({ ...franchise, seasonPhase: "trainingCamp", updatedAt: new Date().toISOString() }, "trainingCamp");
   }
   if (phase === "trainingCamp" || phase === "preseason") {
     return prepareNextSeason(franchise, rng);
@@ -134,9 +136,10 @@ export function advanceSeasonPhase(franchise: FranchiseState, rng = new SeededRn
 }
 
 export function completeRegularSeason(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-complete-regular`)): FranchiseState {
+  const repaired = repairAllTeamRosters(franchise, "preGame");
   let league = {
-    ...franchise.league,
-    teams: franchise.league.teams.map((team) => ({ ...team, lines: autoFillBestLineup(team).lineup }))
+    ...repaired.league,
+    teams: repaired.league.teams.map((team) => ({ ...team, lines: autoFillBestLineup(team).lineup }))
   };
   league.schedule
     .filter((game) => !game.played)
@@ -172,7 +175,7 @@ export function completeRegularSeason(franchise: FranchiseState, rng = new Seede
     });
   const lastGame = [...league.schedule].sort((a, b) => b.dayIndex - a.dayIndex)[0];
   return {
-    ...franchise,
+    ...repaired,
     league: {
       ...league,
       currentDayIndex: lastGame?.dayIndex ?? league.currentDayIndex,
@@ -217,7 +220,8 @@ export function archiveSeasonHistory(franchise: FranchiseState): FranchiseState 
 
 export function prepareNextSeason(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-next-season`)): FranchiseState {
   const nextYear = franchise.league.seasonYear + 1;
-  let next = resetPlayerSeasonStats(franchise);
+  let next = runTrainingCampRosterSetup(franchise, rng);
+  next = resetPlayerSeasonStats(next);
   next = recoverFatigueAndInjuries(next);
   next = tickStaffContracts(next);
   next = generateNewSeasonSchedule(next, nextYear);
@@ -231,7 +235,7 @@ export function prepareNextSeason(franchise: FranchiseState, rng = new SeededRng
     },
     rng
   );
-  return {
+  const opened: FranchiseState = {
     ...next,
     seasonPhase: "regularSeason",
     playoffState: undefined,
@@ -253,6 +257,7 @@ export function prepareNextSeason(franchise: FranchiseState, rng = new SeededRng
     currentSeasonId: `${nextYear}-${next.selectedTeamId}`,
     updatedAt: new Date().toISOString()
   };
+  return repairAllTeamRosters(opened, "newSeason");
 }
 
 export function resetPlayerSeasonStats(franchise: FranchiseState): FranchiseState {

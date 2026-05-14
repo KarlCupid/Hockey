@@ -3,6 +3,7 @@ import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
 import { getCurrentUserPlayoffGame } from "../../game/systems/playoffs";
 import { getPhaseLabel, getRecommendedNextAction } from "../../game/systems/phaseGuidance";
+import { validateRosterForGame } from "../../game/systems/rosterRules";
 import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -22,6 +23,8 @@ export function TopBar() {
   const playoffOpponent = playoffGame ? franchise.league.teams.find((candidate) => candidate.id === (playoffGame.homeTeamId === team.id ? playoffGame.awayTeamId : playoffGame.homeTeamId)) : undefined;
   const nextGame = playoffOpponent ? `Playoffs: ${team.fullName} vs ${playoffOpponent.fullName}` : opponent ? `Next: ${team.fullName} vs ${opponent.fullName}` : `${getPhaseLabel(franchise.seasonPhase)} phase`;
   const lastSaved = [...saves].sort((a, b) => Date.parse(b.lastSaved) - Date.parse(a.lastSaved))[0];
+  const roster = validateRosterForGame(team);
+  const rosterHealth = roster.healthyGoalieCount < 2 ? "Needs goalie" : roster.activeCount > team.activeRosterLimit ? "Too many active" : roster.errors.length ? "Invalid lineup" : "Ready";
 
   return (
     <header className="top-bar">
@@ -47,6 +50,7 @@ export function TopBar() {
                   ? `Last save ${new Date(lastSaved.lastSaved).toLocaleTimeString()}`
                   : "Local"}
         </span>
+        <span>Roster: {rosterHealth}</span>
         <strong>{activeRoom ? roomLabel(activeRoom) : nearbyRoom ? roomLabel(nearbyRoom) : "Facility Hub"}</strong>
         <div className="top-bar__actions">
           <button type="button" onClick={() => setHelpOpen(true)} aria-label="Open help">?</button>

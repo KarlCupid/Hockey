@@ -1,6 +1,7 @@
 import { SCHEMA_VERSION } from "../constants";
 import { autoFillBestLineup, validateLineup } from "./lineupValidation";
-import { calculateTeamCapHit } from "./contracts";
+import { calculateActiveRosterCapHit, calculateAffiliateCommitments, calculateTeamCapHit } from "./contracts";
+import { getPlayerRosterStatus, validateRosterForGame } from "./rosterRules";
 import { TUNING } from "./tuning";
 import type { DraftSelection, FranchiseState, Player, SeasonPhase, StaffMember, Team } from "../types";
 
@@ -73,6 +74,7 @@ export function validateDynastyInvariants(franchise: FranchiseState): DynastyInv
 
     const capHit = calculateTeamCapHit(team);
     if (!Number.isFinite(capHit)) errors.push(issue("team.capNaN", `${team.fullName} cap hit is not a finite number.`, teamPath));
+    if (!Number.isFinite(calculateAffiliateCommitments(team))) errors.push(issue("team.affiliateCapNaN", `${team.fullName} affiliate commitments are not finite.`, teamPath));
   });
 
   validateSchedule(franchise, teamIds, errors);
@@ -127,6 +129,11 @@ function validateTeamRoster(
 
   const counts = countPositions(team);
   const canFillLineup = counts.forwards >= 12 && counts.defense >= 6 && counts.goalies >= 2;
+  const rosterReport = validateRosterForGame(team);
+  if (!team.affiliate) errors.push(issue("team.missingAffiliate", `${team.fullName} is missing a Phase 5 affiliate.`, `${teamPath}.affiliate`));
+  if (!Array.isArray(team.rosterMoveLog)) warnings.push(issue("team.missingRosterMoveLog", `${team.fullName} is missing roster move log.`, `${teamPath}.rosterMoveLog`));
+  if (rosterReport.activeCount > (team.activeRosterLimit ?? 23)) warnings.push(issue("team.activeRosterOverLimit", `${team.fullName} active roster is over limit.`, `${teamPath}.roster`));
+  if (rosterReport.activeCount < (team.activeRosterMinimum ?? 20)) warnings.push(issue("team.activeRosterUnderMinimum", `${team.fullName} active roster is below minimum.`, `${teamPath}.roster`));
   if (canFillLineup) {
     const autofilled = autoFillBestLineup(team);
     const lineupErrors = validateLineup({ ...team, lines: autofilled.lineup }).errors;
@@ -145,6 +152,9 @@ function validateTeamRoster(
 }
 
 function validatePlayer(player: Player, path: string, errors: DynastyInvariantIssue[]) {
+  const status = getPlayerRosterStatus(player);
+  if (!player.rosterStatus) errors.push(issue("player.missingRosterStatus", `${player.displayName} is missing roster status.`, `${path}.rosterStatus`));
+  if (status === "prospectRights") errors.push(issue("player.prospectRightsOnRoster", `${player.displayName} is a prospect-rights marker on a signed roster.`, path));
   if (player.age < 0) errors.push(issue("player.negativeAge", `${player.displayName} has a negative age.`, `${path}.age`));
   if (player.overall < 40 || player.overall > 99) errors.push(issue("player.overallBounds", `${player.displayName} overall is out of bounds.`, `${path}.overall`));
   if (player.potential < 40 || player.potential > 99) errors.push(issue("player.potentialBounds", `${player.displayName} potential is out of bounds.`, `${path}.potential`));
@@ -230,6 +240,9 @@ function validateProspectPools(franchise: FranchiseState, playerIds: Set<string>
       if (rights.signed && !playerIds.has(`player-${rights.prospectId}`)) {
         warnings.push(issue("prospect.signedMissingPlayer", `${rights.displayName} is marked signed but no active entry-contract player was found.`, path));
       }
+      if (!rights.signed && playerIds.has(`player-${rights.prospectId}`)) {
+        errors.push(issue("prospect.unsignedDuplicatePlayer", `${rights.displayName} is unsigned but also exists as a signed player.`, path));
+      }
       const selection = draftedSelections.get(`${rights.acquiredYear}:${rights.prospectId}`);
       if (selection && selection.teamId !== teamId) {
         errors.push(issue("prospect.selectionMismatch", `${rights.displayName} rights do not match draft selection team.`, path));
@@ -310,7 +323,10 @@ function validateJsonSerializable(franchise: FranchiseState, errors: DynastyInva
 }
 
 function countPositions(team: Team) {
-  const healthy = team.roster.filter((player) => player.injuryStatus !== "out");
+  const healthy = team.roster.filter((player) => {
+    const status = getPlayerRosterStatus(player);
+    return (status === "active" || status === "scratched") && player.injuryStatus === "healthy";
+  });
   return {
     forwards: healthy.filter((player) => ["LW", "C", "RW"].includes(player.position)).length,
     defense: healthy.filter((player) => player.position === "LD" || player.position === "RD").length,

@@ -11,6 +11,7 @@
 - Phase 2 keeps the app client-only and adds front-office depth through serializable state plus pure systems under `src/game/systems`.
 - Phase 3 keeps the V1.1/Phase 2 architecture intact and adds the year-to-year dynasty lifecycle as typed client-only state.
 - Phase 4 hardens the existing client-only dynasty loop through invariants, dry-run playtests, balance reporting, save repair, fictional identity, settings/help, lazy loading, and targeted visual polish instead of adding another large rule-system layer.
+- Phase 5 turns rosters into an organization-level ecosystem with active roster, scratches, affiliate, injured reserve, prospect pipeline, AI roster repair, training camp setup, and affiliate development while keeping waivers and other real-world CBA complexity out of scope.
 
 ## Files Added
 
@@ -19,6 +20,8 @@
 - App/UI: `src/app`, `src/components`, `src/store`, `src/styles`
 - Game systems: `src/game`
 - Tests: `src/tests`
+- Phase 5 roster systems: `src/game/systems/rosterRules.ts`, `src/game/systems/rosterManagement.ts`, `src/game/systems/affiliate.ts`, `src/game/systems/aiRosterManagement.ts`, `src/game/systems/trainingCamp.ts`, `src/game/systems/reSigningBalance.ts`, `src/game/systems/ownerBalance.ts`
+- Phase 5 UI/tests: `src/components/rooms/RosterOfficePanel.tsx`, `src/tests/phase5RosterEcosystem.test.ts`
 
 ## V1.1 Changes
 
@@ -78,6 +81,19 @@
 - Improved 3D facility identity with selected-team branding, trophy display scaling, reduced-detail behavior, and reduced-motion-aware broadcast presentation.
 - Removed Drei `Environment` and Troika `Text` dependencies from the facility render path after browser smoke exposed blocked external HDR/font fetches. Facility lighting and room labels now use local lights and DOM labels only.
 
+## Phase 5 Roster Ecosystem, Affiliate System, and AI Roster Management Changes
+
+- Added schema version 4 roster state: `RosterStatus`, player acquisition/pathway metadata, affiliate teams, organization depth reports, roster move logs, roster validation reports, and global roster move history.
+- Added simplified roster rules for active players, scratches, affiliate players, injured reserve, prospect rights, and retired players. Affiliate, IR, prospect-rights, and retired players are blocked from NHL lineup assignment.
+- Updated cap helpers so active, scratched, and IR players count against active cap while affiliate, retired, and prospect-rights players do not.
+- Added user roster movement actions for call-ups, send-downs, scratches, activations, IR placement/removal, and prospect signing to active or affiliate destinations, with serializable move/news/transaction records.
+- Added one fictional affiliate for every team, affiliate development ticks, development reports, promotion candidates, risk notes, and Development Coach influence.
+- Added AI roster repair for new franchises, save hydration, post-trade, post-free-agency, prospect-signing, training-camp, new-season, pre-game, and playtest contexts. Repair prioritizes existing depth, prospects, free agents, and only then low-cost fictional emergency replacements.
+- Added training camp setup/finalization helpers with bubble players, recommended cuts, promotion candidates, and AI finalization for all teams.
+- Tuned re-signing and owner-goal balance with focused sample harnesses, better RFA/UFA spread, team-context owner goals, and more reliable job-security gains after successful seasons.
+- Added the Roster Office room, facility/map routing, roster health in the GM Office and TopBar, and roster-aware integrations across Coach Office, Locker Room, Contract/Cap, Free Agency, Trade, Scouting, Development, Settings, and Dev Tools.
+- Updated dynasty invariants and playtests for five-season roster stress, duplicate ID protection, affiliate/IR lineup exclusion, prospect-rights consistency, emergency replacement tracking, owner security trend, and re-signing acceptance reporting.
+
 ## Verification
 
 - Passed: `npm install`
@@ -110,6 +126,11 @@
   - Initial broadcast smoke revealed React duplicate-key warnings in the final result center; fixed by using stable indexed keys and full league team data for broadcast result presentation.
   - Rechecked broadcast apply flow after the fix with no new console errors or warnings.
   - In-app screenshot capture timed out on the WebGL-heavy scene, so smoke evidence used DOM snapshots, visible text waits, interaction results, and console logs.
+- Passed: `npm test` with 8 test files and 109 tests after Phase 5 roster ecosystem changes.
+- Passed: `cmd /c npx tsc --noEmit` after Phase 5 changes.
+- Passed: `npm run build` after Phase 5 changes. Rollup now emits a separate `three-r3f` chunk for Three/R3F/Drei; Vite still warns because that dependency group is about 997 kB minified.
+- Ran deterministic five-season roster stress coverage through `src/tests/phase5RosterEcosystem.test.ts` with seed `phase5-five-season`; the run completed with zero fatal roster invariant errors and preserved draft-pick ownership consistency.
+- Passed in-app browser smoke for Phase 5 at `http://127.0.0.1:5173/`: new Harbor City franchise rendered the facility, Operations Map included Roster Office, Roster Office opened, roster health/depth/cap sections rendered, a scratch action updated the roster move log, and console warning/error capture was clean.
 
 ## Known Limitations
 
@@ -118,11 +139,12 @@
 - Trade AI is deterministic and simplified; it supports players/picks/cap/needs but not clauses, retained salary, waivers, or multi-team deals.
 - Scouting reveals fuzzy ranges and certainty; actual ratings are only exposed after draft selection.
 - Development effects are intentionally small prototype ticks rather than a full player-growth model.
-- Prospect rights do not include minor leagues yet; signing prospects adds them directly to the active roster when cap/roster rules allow.
+- Affiliate development is simplified and does not simulate a full playable minor-league schedule.
+- Emergency replacement players are a fictional roster-safety mechanism used only when existing depth, prospects, and free agents cannot restore minimum roster health.
+- Cap treatment is simplified: active, scratched, and IR players count against active cap while affiliate players are cap-exempt in this fictional ruleset.
 - Job security can collapse, but the prototype does not fire the user or end the save.
 - Arena/broadcast mode visualizes events with stylized markers rather than playable hockey physics.
 - The production bundle is large because Three.js, React Three Fiber, and Drei ship in the first vertical-slice chunk; code splitting is a Phase 2 optimization.
-- Phase 4 lazy-loads room panels and the facility, but Vite still reports a large React Three Fiber chunk.
-- Phase 4 roster balance is improved but not final: some multi-season dry runs still generate roster-short warnings by year three because free agency and prospect promotion are simplified.
-- Re-signing and owner goal completion rates in the balance report are still conservative and need future tuning.
+- Phase 5 adds a Rollup manual chunk for Three/R3F/Drei, but the 3D dependency group remains the largest production chunk.
+- Re-signing and owner goals are improved with focused harnesses, but they remain simplified management-game approximations.
 - Browser screenshot capture can time out on the current WebGL scene in the Codex in-app Browser; DOM and console smoke checks still passed.

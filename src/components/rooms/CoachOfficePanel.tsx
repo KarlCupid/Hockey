@@ -9,6 +9,7 @@ import {
   type TacticKey,
   type TacticPresetKey
 } from "../../game/systems/tactics";
+import { canAssignPlayerToLineup, getPlayerRosterStatus, getRosterStatusLabel, validateRosterForGame } from "../../game/systems/rosterRules";
 import type { Player, Position } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
@@ -20,9 +21,11 @@ export function CoachOfficePanel() {
   const setTactic = useFranchiseStore((state) => state.setTactic);
   const setTactics = useFranchiseStore((state) => state.setTactics);
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
+  const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   if (!franchise) return null;
   const team = selectedTeam(franchise);
   const validation = validateLineup(team);
+  const rosterValidation = validateRosterForGame(team);
   const tacticSummary = createTacticSummaryCard(team.tactics);
   const assigned = new Set([
     ...team.lines.forwardLines.flatMap((line) => [line.lw, line.c, line.rw]),
@@ -60,6 +63,9 @@ export function CoachOfficePanel() {
         </div>
         <button type="button" onClick={applyAutoFill}>
           Auto Fill Best Lineup
+        </button>
+        <button type="button" onClick={() => setActiveRoom("roster")} disabled={!rosterValidation.errors.length}>
+          Open Roster Office
         </button>
       </section>
 
@@ -165,7 +171,9 @@ function PlayerSelect({
   assigned: Set<string | undefined>;
   onChange: (id: string) => void;
 }) {
-  const options = players.filter((player) => player.position === position || (["LW", "RW"].includes(position) && ["LW", "RW"].includes(player.position)));
+  const options = players.filter(
+    (player) => canAssignPlayerToLineup(player) && (player.position === position || (["LW", "RW"].includes(position) && ["LW", "RW"].includes(player.position)))
+  );
   return (
     <label className="select-field">
       <span>{label}</span>
@@ -173,7 +181,7 @@ function PlayerSelect({
         <option value="">Select player</option>
         {options.map((player) => (
           <option key={player.id} value={player.id} disabled={(assigned.has(player.id) && player.id !== value) || player.injuryStatus !== "healthy"}>
-            {player.displayName} | {player.position} | {player.overall} OVR {player.injuryStatus !== "healthy" ? "| injured" : ""}
+            {player.displayName} | {player.position} | {player.overall} OVR | {getRosterStatusLabel(getPlayerRosterStatus(player))}
           </option>
         ))}
       </select>

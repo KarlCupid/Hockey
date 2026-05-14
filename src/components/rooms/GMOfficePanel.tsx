@@ -12,6 +12,7 @@ import {
   getPhaseLabel,
   getRecommendedNextAction
 } from "../../game/systems/phaseGuidance";
+import { validateRosterForGame } from "../../game/systems/rosterRules";
 import type { FranchiseState } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
@@ -52,6 +53,7 @@ export function GMOfficePanel() {
   const checklist = getPhaseChecklist(franchise);
   const completedChecklist = checklist.filter((item) => item.complete).length;
   const dangerWarnings = getDangerWarnings(franchise);
+  const rosterReport = validateRosterForGame(team);
   const confirmAndRun = (action: string, run: () => void) => {
     if (!confirmPhaseAdvances) {
       run();
@@ -109,11 +111,13 @@ export function GMOfficePanel() {
           <span>Date <strong>{franchise.league.currentDate}</strong></span>
           <span>Next action <strong>{getRecommendedNextAction(franchise)}</strong></span>
           <span>Owner confidence <strong>{ownerMoodLabel(franchise.ownerState)} | {franchise.ownerState.jobSecurity}/100</strong></span>
+          <span>Roster <strong>{rosterReport.errors.length ? "Needs Roster Office" : "Ready"}</strong></span>
         </div>
         <article className="phase-command-card">
           <span className="phase-badge">{phaseLabel}</span>
           <p>{getPhaseDescription(franchise)}</p>
           <strong>Recommended: {getRecommendedNextAction(franchise)}</strong>
+          {rosterReport.errors.length > 0 && <strong>Roster Office: {rosterReport.errors[0]}</strong>}
           <small>Advance preview: {getAdvancePreview(franchise)}</small>
           <ProgressBar value={completedChecklist} max={Math.max(1, checklist.length)} label={`${completedChecklist}/${checklist.length} phase checks`} />
         </article>
@@ -261,6 +265,7 @@ export function GMOfficePanel() {
           <p className="muted">Contracts, trades, scouting, development, free agency, staff, and dynasty history now feed the same inbox and local save.</p>
           <div className="button-row">
             <button type="button" onClick={() => setActiveRoom("contracts")}>Cap Office</button>
+            <button type="button" onClick={() => setActiveRoom("roster")}>Roster Office</button>
             <button type="button" onClick={() => setActiveRoom("trades")}>Trade Room</button>
             <button type="button" onClick={() => setActiveRoom("scouting")}>Scouting</button>
             <button type="button" onClick={() => setActiveRoom("development")}>Development</button>

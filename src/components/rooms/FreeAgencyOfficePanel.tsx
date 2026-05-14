@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { calculateCapSpace, formatMoney } from "../../game/systems/contracts";
+import { defaultRosterStatusForIncomingPlayer } from "../../game/systems/rosterManagement";
+import { activeRosterCount, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import type { FreeAgentPlayer, RoleExpectation } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 
@@ -40,7 +42,7 @@ export function FreeAgencyOfficePanel() {
         </div>
         <div>
           <small>Roster</small>
-          <strong>{team.roster.length}/30</strong>
+          <strong>{activeRosterCount(team)}/{team.activeRosterLimit}</strong>
         </div>
         <button type="button" onClick={advanceFreeAgencyDay} disabled={!state || state.completed}>Advance Day</button>
         <button type="button" onClick={() => window.confirm("Auto-resolve free agency?") && completeFreeAgency()} disabled={!state || state.completed}>Auto-resolve</button>
@@ -49,7 +51,7 @@ export function FreeAgencyOfficePanel() {
       <div className="room-grid room-grid--two">
         <section className="panel-section">
           <h3>Market Overview</h3>
-          <p className="muted">Free agency is a simplified seven-day fictional market. Signed players join the active roster and must fit cap and roster limits.</p>
+          <p className="muted">Free agency is a simplified seven-day fictional market. Incoming players are classified into active, scratches, or affiliate depth based on roster need and cap fit.</p>
           <div className="segmented-control">
             {FILTERS.map((item) => (
               <button className={filter === item ? "is-active" : ""} key={item} type="button" onClick={() => setFilter(item)}>
@@ -106,6 +108,7 @@ export function FreeAgencyOfficePanel() {
                 <div><dt>Potential</dt><dd>{selected.player.potential}</dd></div>
                 <div><dt>Demand</dt><dd>{formatMoney(selected.demandSalary)} / {selected.demandYears} yr</dd></div>
                 <div><dt>Interest</dt><dd>{selected.interestByTeam[team.id] ?? 50}%</dd></div>
+                <div><dt>Default destination</dt><dd>{getRosterStatusLabel(defaultRosterStatusForIncomingPlayer(team, selected.player))}</dd></div>
               </dl>
             </article>
           ) : (
@@ -131,7 +134,7 @@ export function FreeAgencyOfficePanel() {
             <p className={calculateCapSpace(team) - salary < 0 ? "error-text" : "muted"}>
               Projected cap space: {formatMoney(calculateCapSpace(team) - salary)}
             </p>
-            <button type="button" disabled={!selected || calculateCapSpace(team) < salary || team.roster.length >= 30} onClick={() => selected && submitFreeAgentOffer(selected.player.id, salary, years, role)}>
+            <button type="button" disabled={!selected || calculateCapSpace(team) < salary || (activeRosterCount(team) >= team.activeRosterLimit && (selected?.player.overall ?? 0) >= 72)} onClick={() => selected && submitFreeAgentOffer(selected.player.id, salary, years, role)}>
               Submit Offer
             </button>
           </div>

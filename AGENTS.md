@@ -9,4 +9,5 @@
 - Save serializable franchise state only; never save renderer or browser objects.
 - Phase 3 explicitly allows simplified playoffs, draft execution, prospect signing, contract renewal, free agency, staff hiring, owner goals, and offseason/new-season progression.
 - Phase 4 focuses on hardening, presentation, balance, save integrity, settings, and fictional identity rather than adding rule complexity.
+- Phase 5 explicitly allows simplified active roster, scratches, affiliate roster, injured reserve, prospect pipeline, call-ups/send-downs, AI roster repair, and affiliate development.
 - Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

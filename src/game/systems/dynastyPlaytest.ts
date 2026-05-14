@@ -1,9 +1,11 @@
 import { createFranchise } from "../generators/generateLeague";
 import { SeededRng } from "../rng";
+import { repairAllTeamRosters } from "./aiRosterManagement";
 import { applyAcceptedContractOffer, createContractDemand, evaluateContractOffer, getPendingExpiringPlayers } from "./contractNegotiation";
 import { autoCompleteDraft } from "./draftExecution";
 import { advanceFreeAgencyDay, applyFreeAgentSigning } from "./freeAgency";
 import { calculateCapSpace } from "./contracts";
+import { getPlayerRosterStatus, validateRosterForGame, activeRosterCount } from "./rosterRules";
 import { hireStaff } from "./staff";
 import { signProspect } from "./prospects";
 import { advanceSeasonPhase, completeRegularSeason } from "./seasonLifecycle";
@@ -23,6 +25,11 @@ export interface PlaytestReport {
   freeAgencyHealth: Array<{ seasonYear: number; marketRemaining: number; userSignings: number; aiSignings: number }>;
   draftHealth: Array<{ seasonYear: number; selections: number; duplicateSelections: number; userProspects: number }>;
   ownerSecurityTrend: Array<{ seasonYear: number; jobSecurity: number }>;
+  emergencyReplacementCounts: Array<{ seasonYear: number; count: number }>;
+  affiliatePromotions: Array<{ seasonYear: number; count: number }>;
+  prospectSignings: Array<{ seasonYear: number; count: number }>;
+  invalidGameRosters: Array<{ seasonYear: number; teams: number }>;
+  capOverTeams: Array<{ seasonYear: number; teams: number }>;
   invariantReports: DynastyInvariantReport[];
   finalFranchise: FranchiseState;
 }
@@ -39,6 +46,11 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
   const freeAgencyHealth: PlaytestReport["freeAgencyHealth"] = [];
   const draftHealth: PlaytestReport["draftHealth"] = [];
   const ownerSecurityTrend: PlaytestReport["ownerSecurityTrend"] = [];
+  const emergencyReplacementCounts: PlaytestReport["emergencyReplacementCounts"] = [];
+  const affiliatePromotions: PlaytestReport["affiliatePromotions"] = [];
+  const prospectSignings: PlaytestReport["prospectSignings"] = [];
+  const invalidGameRosters: PlaytestReport["invalidGameRosters"] = [];
+  const capOverTeams: PlaytestReport["capOverTeams"] = [];
 
   const check = (label: string) => {
     const report = validateDynastyInvariants(franchise);
@@ -51,6 +63,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
 
   for (let season = 0; season < seasons; season += 1) {
     const seasonYear = franchise.league.seasonYear;
+    franchise = repairAllTeamRosters(franchise, "preGame");
     franchise = completeRegularSeason(franchise, new SeededRng(`${seed}-regular-${season}`));
     check(`${seasonYear} regular season`);
     const selectedAfterRegularSeason = franchise.league.teams.find((team) => team.id === franchise.selectedTeamId);
@@ -82,6 +95,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     while (franchise.freeAgencyState && !franchise.freeAgencyState.completed) {
       franchise = advanceFreeAgencyDay(franchise, new SeededRng(`${seed}-fa-${season}-${franchise.freeAgencyState.currentDay}`));
     }
+    franchise = repairAllTeamRosters(franchise, "postFreeAgency");
     check(`${seasonYear} free agency`);
     const freeAgencySnapshot = {
       seasonYear,
@@ -98,6 +112,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     const rosterSnapshot = summarizeRosters(franchise, seasonYear, staffReport);
 
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-camp-${season}`));
+    franchise = repairAllTeamRosters(franchise, "newSeason");
     check(`${seasonYear} training camp`);
 
     selectedTeamRecords.push(selectedRecord);
@@ -112,6 +127,11 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
       userProspects: franchise.prospectPools[franchise.selectedTeamId]?.length ?? 0
     });
     ownerSecurityTrend.push({ seasonYear, jobSecurity: franchise.ownerState.jobSecurity });
+    emergencyReplacementCounts.push({ seasonYear, count: franchise.league.teams.flatMap((team) => team.roster).filter((player) => player.acquiredVia === "replacement").length });
+    affiliatePromotions.push({ seasonYear, count: franchise.rosterMoveHistory.filter((move) => move.date === franchise.league.currentDate && move.fromStatus === "affiliate").length });
+    prospectSignings.push({ seasonYear, count: franchise.rosterMoveHistory.filter((move) => move.type === "signProspect" || move.reason.includes("prospect")).length });
+    invalidGameRosters.push({ seasonYear, teams: franchise.league.teams.filter((team) => validateRosterForGame(team).errors.length > 0).length });
+    capOverTeams.push({ seasonYear, teams: franchise.league.teams.filter((team) => calculateCapSpace(team) < 0).length });
   }
 
   return {
@@ -126,6 +146,11 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     freeAgencyHealth,
     draftHealth,
     ownerSecurityTrend,
+    emergencyReplacementCounts,
+    affiliatePromotions,
+    prospectSignings,
+    invalidGameRosters,
+    capOverTeams,
     invariantReports,
     finalFranchise: franchise
   };
@@ -156,13 +181,13 @@ function maybeReSignPlayer(franchise: FranchiseState, rng: SeededRng): Franchise
 
 function maybeSignProspect(franchise: FranchiseState): FranchiseState {
   const rights = franchise.prospectPools[franchise.selectedTeamId]?.find((candidate) => !candidate.signed);
-  return rights ? signProspect(franchise, rights.prospectId) : franchise;
+  return rights ? signProspect(franchise, rights.prospectId, "affiliate") : franchise;
 }
 
 function maybeSignFreeAgent(franchise: FranchiseState): FranchiseState {
   const state = franchise.freeAgencyState;
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId);
-  if (!state || !team || team.roster.length >= 30) return franchise;
+  if (!state || !team || activeRosterCount(team) >= (team.activeRosterLimit ?? 23)) return franchise;
   const capSpace = calculateCapSpace(team);
   const target = state.market.find((item) => item.demandSalary <= capSpace && (item.interestByTeam[team.id] ?? 0) >= 48);
   if (!target) return franchise;
@@ -196,11 +221,11 @@ function summarizeCap(franchise: FranchiseState, seasonYear: number) {
 }
 
 function summarizeRosters(franchise: FranchiseState, seasonYear: number, report: DynastyInvariantReport) {
-  const sizes = franchise.league.teams.map((team) => team.roster.length);
+  const sizes = franchise.league.teams.map((team) => activeRosterCount(team));
   return {
     seasonYear,
     minRoster: Math.min(...sizes),
     maxRoster: Math.max(...sizes),
-    warnings: report.warnings.filter((warning) => warning.code === "team.rosterShort").length
+    warnings: report.warnings.filter((warning) => warning.code === "team.rosterShort" || warning.code === "team.activeRosterUnderMinimum").length
   };
 }

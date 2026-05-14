@@ -4,6 +4,7 @@ import { roomLabel } from "./RoomPrompt";
 
 const ROOMS: Array<{ id: RoomId; x: number; y: number; note: string }> = [
   { id: "gm", x: 19, y: 20, note: "Inbox and ownership" },
+  { id: "roster", x: 18, y: 34, note: "Roster ecosystem" },
   { id: "contracts", x: 36, y: 22, note: "Cap and contracts" },
   { id: "freeAgency", x: 27, y: 34, note: "Open market" },
   { id: "coach", x: 50, y: 14, note: "Lines and tactics" },

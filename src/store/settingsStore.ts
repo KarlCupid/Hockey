@@ -13,6 +13,8 @@ export interface AppSettings {
   uiScale: UiScale;
   tableDensity: TableDensity;
   soundPlaceholder: boolean;
+  autoRepairAiRosters: boolean;
+  autoFixUserRosterOnSeasonStart: boolean;
   dynastyGuideResetToken: number;
 }
 
@@ -36,6 +38,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiScale: "normal",
   tableDensity: "normal",
   soundPlaceholder: false,
+  autoRepairAiRosters: true,
+  autoFixUserRosterOnSeasonStart: false,
   dynastyGuideResetToken: 0
 };
 

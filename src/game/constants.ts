@@ -1,12 +1,15 @@
 import type { Tactics } from "./types";
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const SAVE_SLOT_COUNT = 3;
 export const AUTOSAVE_SLOT_ID = "autosave";
 export const REGULAR_SEASON_DAYS = 22;
 export const START_DATE = "2026-10-03";
 export const SALARY_CAP_CEILING = 96_000_000;
 export const SALARY_CAP_FLOOR = 58_000_000;
+export const ACTIVE_ROSTER_MINIMUM = 20;
+export const ACTIVE_ROSTER_LIMIT = 23;
+export const RESERVE_ROSTER_LIMIT = 50;
 export const DRAFT_PICK_ROUNDS = 4;
 export const DRAFT_PICK_SEASONS = 2;
 

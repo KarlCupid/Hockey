@@ -19,8 +19,12 @@ export type SeasonPhase =
   | "trainingCamp"
   | "preseason"
   | "completed";
+export type RosterStatus = "active" | "scratched" | "affiliate" | "injuredReserve" | "prospectRights" | "retired";
+export type AcquiredVia = "generated" | "draft" | "trade" | "freeAgency" | "prospectSigning" | "replacement";
+export type CareerStage = "prospect" | "rookie" | "prime" | "veteran" | "decline";
 export type RoomId =
   | "gm"
+  | "roster"
   | "coach"
   | "locker"
   | "medical"
@@ -82,6 +86,124 @@ export interface Contract {
   expiryStatus: "UFA" | "RFA" | "Prospect";
   rolePromise?: RoleExpectation;
   signedAtAge?: number;
+}
+
+export interface PlayerDevelopmentPath {
+  track: "NHL Regular" | "Affiliate Development" | "Prospect Pipeline" | "Veteran Depth" | "Goalie Project";
+  confidence: number;
+  lastReport: string;
+  projectedRole: RoleExpectation;
+  eta: "Now" | "This Season" | "Next Season" | "Long Term";
+}
+
+export interface AffiliateReport {
+  id: string;
+  date: string;
+  playerId: string;
+  headline: string;
+  body: string;
+  progress: number;
+  severity: "low" | "medium" | "high";
+}
+
+export interface AffiliateTeam {
+  id: string;
+  parentTeamId: string;
+  city: string;
+  nickname: string;
+  fullName: string;
+  abbreviation: string;
+  primaryColor: string;
+  secondaryColor: string;
+  developmentFocus: DevelopmentFocus;
+  reputation: number;
+  recentReports: AffiliateReport[];
+}
+
+export interface OrganizationDepth {
+  teamId: string;
+  activeRosterIds: string[];
+  scratchedRosterIds: string[];
+  affiliateRosterIds: string[];
+  injuredReserveIds: string[];
+  prospectRightsIds: string[];
+  positionCounts: Record<Position, number>;
+  warnings: string[];
+  validForGame: boolean;
+  validForSeason: boolean;
+}
+
+export type RosterMoveType =
+  | "callUp"
+  | "sendDown"
+  | "scratch"
+  | "activate"
+  | "placeOnIR"
+  | "removeFromIR"
+  | "signProspect"
+  | "releaseDepth"
+  | "aiTopUp";
+
+export interface RosterMove {
+  id: string;
+  date: string;
+  teamId: string;
+  playerId: string;
+  fromStatus: RosterStatus;
+  toStatus: RosterStatus;
+  type: RosterMoveType;
+  reason: string;
+  capImpact: number;
+  userInitiated: boolean;
+}
+
+export interface RosterValidationReport {
+  teamId: string;
+  activeCount: number;
+  forwardCount: number;
+  defenseCount: number;
+  goalieCount: number;
+  healthyForwardCount: number;
+  healthyDefenseCount: number;
+  healthyGoalieCount: number;
+  capHit: number;
+  capSpace: number;
+  errors: string[];
+  warnings: string[];
+  recommendations: string[];
+  autoFixAvailable: boolean;
+}
+
+export interface DepthChart {
+  forwards: Record<"LW" | "C" | "RW", Player[]>;
+  defense: Record<"LD" | "RD", Player[]>;
+  goalies: Player[];
+  active: Player[];
+  scratched: Player[];
+  affiliate: Player[];
+  injuredReserve: Player[];
+  recommendations: string[];
+}
+
+export interface TeamRosterRepairResult {
+  teamId: string;
+  team: Team;
+  prospectPool?: ProspectRights[];
+  moves: RosterMove[];
+  warnings: string[];
+  emergencyReplacementCount: number;
+  affiliatePromotions: number;
+  prospectSignings: number;
+  freeAgentSignedIds?: string[];
+}
+
+export interface TrainingCampBattle {
+  id: string;
+  teamId: string;
+  position: Position;
+  headline: string;
+  contenders: string[];
+  recommendation: string;
 }
 
 export interface DraftPick {
@@ -233,6 +355,8 @@ export interface TransactionLogItem {
     | "retirement"
     | "owner"
     | "prospect"
+    | "roster"
+    | "affiliate"
     | "season";
   headline: string;
   details: string;
@@ -316,6 +440,13 @@ export interface Player {
   contract: Contract;
   contractSummary: string;
   careerHistory?: PlayerCareerSeason[];
+  rosterStatus?: RosterStatus;
+  acquiredVia?: AcquiredVia;
+  waiverEligible?: boolean;
+  affiliateSeasons?: number;
+  lastRosterMoveDayIndex?: number;
+  developmentPath?: PlayerDevelopmentPath;
+  careerStage?: CareerStage;
 }
 
 export interface ForwardLine {
@@ -393,6 +524,11 @@ export interface Team {
   tradeBlock: string[];
   untouchables: string[];
   teamNeeds: TeamNeed[];
+  affiliate: AffiliateTeam;
+  rosterMoveLog: RosterMove[];
+  activeRosterLimit: number;
+  activeRosterMinimum: number;
+  reserveRosterLimit?: number;
 }
 
 export interface ScheduleGame {
@@ -444,6 +580,8 @@ export type NewsType =
   | "retirement"
   | "prospect"
   | "history"
+  | "roster"
+  | "affiliate"
   | "trainingCamp";
 
 export interface NewsItem {
@@ -894,6 +1032,7 @@ export interface FranchiseState {
   scouting: ScoutingState;
   development: DevelopmentState;
   tradeHistory: TradeProposal[];
+  rosterMoveHistory: RosterMove[];
   transactionLog: TransactionLogItem[];
   lastResult?: GameResult;
   saveStatus: "idle" | "saving" | "saved" | "error";

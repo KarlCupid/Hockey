@@ -1,5 +1,6 @@
 import type { DefensePair, ForwardLine, Lineup, Player, Team } from "../types";
 import { clamp } from "../rng";
+import { canAssignPlayerToLineup, getPlayerRosterStatus, getRosterStatusLabel } from "./rosterRules";
 
 export interface LineupValidationResult {
   valid: boolean;
@@ -32,6 +33,13 @@ export function validateLineup(team: Team, lineup: Lineup = team.lines): LineupV
     }
     if (player.injuryStatus !== "healthy") {
       errors.push(`${player.displayName} is injured and unavailable.`);
+    }
+    const status = getPlayerRosterStatus(player);
+    if (status === "affiliate" || status === "injuredReserve" || status === "retired" || status === "prospectRights") {
+      errors.push(`${player.displayName} is ${getRosterStatusLabel(status)} and cannot be assigned to the NHL lineup.`);
+    }
+    if (status === "scratched") {
+      warnings.push(`${player.displayName} is scratched; activating him before puck drop is recommended.`);
     }
   });
 
@@ -96,7 +104,7 @@ export function validateLineup(team: Team, lineup: Lineup = team.lines): LineupV
 
 export function autoFillBestLineup(team: Team): AutoLineupResult {
   const available = team.roster
-    .filter((player) => player.injuryStatus === "healthy")
+    .filter((player) => canAssignPlayerToLineup(player))
     .sort((a, b) => b.overall + b.form * 0.08 - b.fatigue * 0.05 - (a.overall + a.form * 0.08 - a.fatigue * 0.05));
 
   const forwards = available.filter((player) => ["LW", "C", "RW"].includes(player.position));

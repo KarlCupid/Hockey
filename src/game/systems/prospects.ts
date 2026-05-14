@@ -2,9 +2,10 @@ import { contractSummary, createContractForPlayer, calculateCapSpace } from "./c
 import { autoFillBestLineup } from "./lineupValidation";
 import { SeededRng, clamp } from "../rng";
 import type { FranchiseState, NewsItem, Player, Prospect, ProspectRights, SkaterAttributes, GoalieAttributes, Team, DraftSelection } from "../types";
+import { defaultRosterStatusForIncomingPlayer } from "./rosterManagement";
+import { activeRosterCount } from "./rosterRules";
 
 const ENTRY_CAP_HIT = 950_000;
-const ACTIVE_ROSTER_LIMIT = 30;
 
 export function convertProspectToRights(selection: DraftSelection, prospect: Prospect): ProspectRights {
   return {
@@ -70,16 +71,29 @@ export function createPlayerFromProspectRights(rights: ProspectRights, rng = new
     attributes: rights.position === "G" ? goalieAttributes(overall, rng) : skaterAttributes(overall, rng),
     stats: emptyStats(),
     contract,
-    contractSummary: contractSummary(contract)
+    contractSummary: contractSummary(contract),
+    rosterStatus: "affiliate",
+    acquiredVia: "prospectSigning",
+    waiverEligible: false,
+    affiliateSeasons: 0,
+    developmentPath: {
+      track: rights.position === "G" ? "Goalie Project" : "Prospect Pipeline",
+      confidence: clamp(50 + potential - overall, 35, 92),
+      lastReport: "Signed from the prospect pipeline and ready for an organizational pathway.",
+      projectedRole: playerBase.roleExpectation,
+      eta: overall >= 72 ? "This Season" : "Next Season"
+    },
+    careerStage: rights.age <= 21 ? "prospect" : "rookie"
   };
 }
 
-export function signProspect(franchise: FranchiseState, prospectId: string): FranchiseState {
+export function signProspect(franchise: FranchiseState, prospectId: string, destination: "active" | "affiliate" = "active"): FranchiseState {
   const teamId = franchise.selectedTeamId;
   const team = franchise.league.teams.find((candidate) => candidate.id === teamId);
   const rights = franchise.prospectPools[teamId]?.find((candidate) => candidate.prospectId === prospectId);
   if (!team || !rights || rights.signed) return franchise;
-  if (team.roster.length >= ACTIVE_ROSTER_LIMIT || calculateCapSpace(team) < ENTRY_CAP_HIT) {
+  const activeDestination = destination === "active";
+  if ((activeDestination && activeRosterCount(team) >= team.activeRosterLimit) || (activeDestination && calculateCapSpace(team) < ENTRY_CAP_HIT)) {
     return {
       ...franchise,
       inbox: [
@@ -89,9 +103,9 @@ export function signProspect(franchise: FranchiseState, prospectId: string): Fra
           date: franchise.league.currentDate,
           headline: "Pipeline Desk: Prospect signing blocked",
           body:
-            team.roster.length >= ACTIVE_ROSTER_LIMIT
-              ? "Active roster is at the 30-player prototype limit."
-              : "The entry contract would not fit under the cap.",
+            activeRosterCount(team) >= team.activeRosterLimit
+              ? `Active roster is at the ${team.activeRosterLimit}-player Phase 5 limit.`
+              : "The entry contract would not fit under the active cap.",
           severity: "medium" as const,
           teamId
         },
@@ -99,7 +113,12 @@ export function signProspect(franchise: FranchiseState, prospectId: string): Fra
       ].slice(0, 60)
     };
   }
-  const player = createPlayerFromProspectRights(rights, new SeededRng(`${franchise.franchiseId}-${prospectId}-sign`));
+  const generated = createPlayerFromProspectRights(rights, new SeededRng(`${franchise.franchiseId}-${prospectId}-sign`));
+  const player = {
+    ...generated,
+    rosterStatus: activeDestination ? defaultRosterStatusForIncomingPlayer(team, generated) : "affiliate" as const,
+    acquiredVia: "prospectSigning" as const
+  };
   const nextTeam = normalizeTeam({
     ...team,
     roster: [...team.roster, player]
@@ -123,7 +142,7 @@ export function signProspect(franchise: FranchiseState, prospectId: string): Fra
         date: franchise.league.currentDate,
         type: "prospect" as const,
         headline: "Prospect signed",
-        details: `${player.displayName} signed a three-year entry contract.`,
+        details: `${player.displayName} signed a three-year entry contract and reported to ${player.rosterStatus === "affiliate" ? team.affiliate.fullName : "the active roster"}.`,
         teamIds: [teamId],
         playerIds: [player.id]
       },
@@ -157,7 +176,10 @@ export function createProspectSigningNews(player: Player, team: Team): NewsItem[
       type: "prospect",
       date: new Date().toISOString().slice(0, 10),
       headline: `Pipeline Desk: ${player.displayName} signs with ${team.nickname}`,
-      body: `${player.position} prospect joins the active roster on a low-cost entry deal. Minor-league development remains a later system.`,
+      body:
+        player.rosterStatus === "affiliate"
+          ? `${player.position} prospect joins ${team.affiliate.fullName} on a low-cost entry deal.`
+          : `${player.position} prospect joins the active roster on a low-cost entry deal.`,
       severity: player.potential >= 84 ? "medium" : "low",
       teamId: team.id,
       playerId: player.id

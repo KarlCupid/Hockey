@@ -6,6 +6,11 @@ import type { FranchiseState, NewsItem, OwnerGoal, OwnerState } from "../types";
 export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-owner-${franchise.league.seasonYear}`)): OwnerGoal[] {
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const previous = franchise.history?.seasons?.[0];
+  const standings = sortStandings(franchise.league.teams);
+  const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
+  const averageOverall = team.roster.reduce((sum, player) => sum + player.overall, 0) / Math.max(1, team.roster.length);
+  const rebuilding = rank > 8 || averageOverall < 72 || team.record.points < Math.max(8, team.stats.gamesPlayed * 0.85);
+  const contender = rank > 0 && rank <= 4 && averageOverall >= 74;
   const performance: OwnerGoal[] = [
     {
       id: `goal-${franchise.league.seasonYear}-make-playoffs`,
@@ -24,6 +29,15 @@ export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRn
       progress: team.record.points,
       status: "active",
       importance: "medium"
+    },
+    {
+      id: `goal-${franchise.league.seasonYear}-win-round`,
+      type: "winRound",
+      label: "Win a playoff round",
+      target: 1,
+      progress: 0,
+      status: "active",
+      importance: contender ? "high" : "medium"
     }
   ];
   const frontOffice: OwnerGoal[] = [
@@ -66,6 +80,8 @@ export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRn
       importance: "low"
     }
   ];
+  if (rebuilding) return [rng.pick(frontOffice), rng.pick(development), rng.pick(development.filter((goal) => goal.type !== "sellVeteran"))];
+  if (contender) return [rng.pick(performance.filter((goal) => goal.type !== "improveRecord")), rng.pick(performance), rng.pick(frontOffice)];
   return [rng.pick(performance), rng.pick(frontOffice), rng.pick(development)];
 }
 
@@ -116,12 +132,16 @@ export function updateOwnerGoalProgress(franchise: FranchiseState): OwnerState {
 
 export function evaluateJobSecurity(franchise: FranchiseState): OwnerState {
   const owner = updateOwnerGoalProgress(franchise);
+  const standings = sortStandings(franchise.league.teams);
+  const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
+  const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
+  const pointsPace = team.stats.gamesPlayed ? team.record.points / team.stats.gamesPlayed : 1;
   const delta = owner.seasonGoals.reduce((sum, goal) => {
     const weight = goal.importance === "high" ? 9 : goal.importance === "medium" ? 6 : 3;
     if (goal.status === "met") return sum + weight;
     if (goal.status === "failed") return sum - weight;
-    return sum;
-  }, 0);
+    return sum - Math.round(weight * 0.35);
+  }, rank > 0 && rank <= 4 ? 8 : rank > 0 && rank <= 8 ? 5 : pointsPace >= 1 ? 2 : -3);
   return {
     ...owner,
     jobSecurity: clamp(owner.jobSecurity + delta, 0, 100),

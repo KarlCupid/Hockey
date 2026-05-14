@@ -3,6 +3,9 @@ import type { DraftPick, FranchiseState, LeagueState, NewsItem, Player, Team, Te
 import { autoFillBestLineup } from "./lineupValidation";
 import { calculateCapSpace, calculateTeamCapHit, contractValueRisk, formatMoney } from "./contracts";
 import { estimatePickValue, formatPickLabel } from "./draftPicks";
+import { repairAllTeamRosters } from "./aiRosterManagement";
+import { defaultRosterStatusForIncomingPlayer } from "./rosterManagement";
+import { getPlayerRosterStatus } from "./rosterRules";
 
 export function calculatePlayerTradeValue(player: Player, team: Team, league: LeagueState): number {
   const production = player.position === "G" ? player.stats.goalieWins * 2 + player.stats.saves * 0.01 : player.stats.points * 1.4 + player.stats.goals * 0.7;
@@ -190,7 +193,7 @@ export function applyTrade(proposal: TradeProposal, franchise: FranchiseState): 
     ...fromTeam,
     roster: [
       ...fromTeam.roster.filter((player) => !playersFrom.some((traded) => traded.id === player.id)),
-      ...playersTo.map((player) => ({ ...player, teamId: fromTeam.id }))
+      ...playersTo.map((player) => ({ ...player, teamId: fromTeam.id, acquiredVia: "trade" as const }))
     ],
     draftPicks: [
       ...fromTeam.draftPicks.filter((pick) => !pickIdsFrom.includes(pick.id)),
@@ -201,20 +204,20 @@ export function applyTrade(proposal: TradeProposal, franchise: FranchiseState): 
     ...toTeam,
     roster: [
       ...toTeam.roster.filter((player) => !playersTo.some((traded) => traded.id === player.id)),
-      ...playersFrom.map((player) => ({ ...player, teamId: toTeam.id }))
+      ...playersFrom.map((player) => ({ ...player, teamId: toTeam.id, acquiredVia: "trade" as const }))
     ],
     draftPicks: [
       ...toTeam.draftPicks.filter((pick) => !pickIdsTo.includes(pick.id)),
       ...fromTeam.draftPicks.filter((pick) => pickIdsFrom.includes(pick.id)).map((pick) => ({ ...pick, ownerTeamId: toTeam.id }))
     ]
   };
-  nextFrom = normalizeAfterTrade(nextFrom);
-  nextTo = normalizeAfterTrade(nextTo);
+  nextFrom = normalizeAfterTrade(classifyIncomingAfterTrade(nextFrom, playersTo.map((player) => player.id)));
+  nextTo = normalizeAfterTrade(classifyIncomingAfterTrade(nextTo, playersFrom.map((player) => player.id)));
 
   const teams = franchise.league.teams.map((team) => (team.id === nextFrom.id ? nextFrom : team.id === nextTo.id ? nextTo : team));
   const news = createTradeNews(acceptedProposal, evaluation, teams);
 
-  return {
+  const traded = {
     ...franchise,
     league: {
       ...franchise.league,
@@ -237,6 +240,7 @@ export function applyTrade(proposal: TradeProposal, franchise: FranchiseState): 
     inbox: [...news, ...franchise.inbox].slice(0, 40),
     updatedAt: new Date().toISOString()
   };
+  return repairAllTeamRosters(traded, "postTrade");
 }
 
 export function createTradeNews(proposal: TradeProposal, evaluation: TradeEvaluation, teams: Team[]): NewsItem[] {
@@ -295,8 +299,23 @@ function capForAssets(assets: TradeAsset[], team: Team): number {
   return assets.reduce((sum, asset) => {
     if (asset.type !== "player") return sum;
     const player = team.roster.find((candidate) => candidate.id === asset.assetId);
-    return sum + (player?.contract.capHit ?? 0);
+    const status = player ? getPlayerRosterStatus(player) : "active";
+    return sum + (status === "active" || status === "scratched" || status === "injuredReserve" ? player?.contract.capHit ?? 0 : 0);
   }, 0);
+}
+
+function classifyIncomingAfterTrade(team: Team, incomingIds: string[]): Team {
+  let next = team;
+  incomingIds.forEach((playerId) => {
+    const player = next.roster.find((candidate) => candidate.id === playerId);
+    if (!player) return;
+    const status = defaultRosterStatusForIncomingPlayer(next, player);
+    next = {
+      ...next,
+      roster: next.roster.map((candidate) => (candidate.id === playerId ? { ...candidate, rosterStatus: status } : candidate))
+    };
+  });
+  return next;
 }
 
 function duplicateAssetWarning(proposal: TradeProposal): string | undefined {

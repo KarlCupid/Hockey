@@ -1,6 +1,7 @@
-import type { Contract, Player, Team } from "../types";
+import type { Contract, Player, RosterStatus, Team } from "../types";
 import { clamp, type SeededRng } from "../rng";
 import { TUNING } from "./tuning";
+import { getPlayerRosterStatus } from "./rosterRules";
 
 type ContractPlayerInput = Pick<Player, "age" | "overall" | "potential" | "position" | "roleExpectation">;
 
@@ -34,11 +35,44 @@ export function formatMoney(value: number): string {
 }
 
 export function calculateTeamCapHit(team: Team): number {
-  return team.roster.reduce((sum, player) => sum + player.contract.capHit, 0);
+  return calculateOrganizationCapCommitments(team);
+}
+
+export function calculateActiveRosterCapHit(team: Team): number {
+  return team.roster.reduce((sum, player) => {
+    const status = getPlayerRosterStatus(player);
+    if (status === "active" || status === "scratched" || status === "injuredReserve") return sum + safeCapHit(player);
+    return sum;
+  }, 0);
+}
+
+export function calculateOrganizationCapCommitments(team: Team): number {
+  return team.roster.reduce((sum, player) => {
+    const status = getPlayerRosterStatus(player);
+    return status === "retired" || status === "prospectRights" ? sum : sum + safeCapHit(player);
+  }, 0);
+}
+
+export function calculateAffiliateCommitments(team: Team): number {
+  return team.roster.reduce((sum, player) => (getPlayerRosterStatus(player) === "affiliate" ? sum + safeCapHit(player) : sum), 0);
 }
 
 export function calculateCapSpace(team: Team): number {
-  return team.capCeiling - calculateTeamCapHit(team);
+  return team.capCeiling - calculateActiveRosterCapHit(team);
+}
+
+export function calculateCapSpaceForRosterStatusMove(team: Team, playerId: string, toStatus: RosterStatus): number {
+  const player = team.roster.find((candidate) => candidate.id === playerId);
+  if (!player) return calculateCapSpace(team);
+  const fromStatus = getPlayerRosterStatus(player);
+  const capImpact = getCapImpactOfRosterMove(team, player, fromStatus, toStatus);
+  return calculateCapSpace(team) - capImpact;
+}
+
+export function getCapImpactOfRosterMove(_team: Team, player: Player, fromStatus: RosterStatus, toStatus: RosterStatus): number {
+  const before = countsAgainstActiveCap(fromStatus) ? safeCapHit(player) : 0;
+  const after = countsAgainstActiveCap(toStatus) ? safeCapHit(player) : 0;
+  return after - before;
 }
 
 export function getExpiringContracts(team: Team): Player[] {
@@ -46,10 +80,13 @@ export function getExpiringContracts(team: Team): Player[] {
 }
 
 export function getCapWarnings(team: Team): string[] {
-  const hit = calculateTeamCapHit(team);
+  const hit = calculateActiveRosterCapHit(team);
+  const orgHit = calculateOrganizationCapCommitments(team);
   const warnings: string[] = [];
   if (hit > team.capCeiling) {
     warnings.push(`${team.fullName} are over the cap by ${formatMoney(hit - team.capCeiling)}.`);
+  } else if (orgHit > team.capCeiling) {
+    warnings.push(`${team.fullName} organization commitments are over the cap by ${formatMoney(orgHit - team.capCeiling)} before affiliate exemptions.`);
   } else if (team.capCeiling - hit <= 3_000_000) {
     warnings.push(`${team.fullName} have less than ${formatMoney(3_000_000)} in cap room.`);
   }
@@ -61,6 +98,14 @@ export function getCapWarnings(team: Team): string[] {
     warnings.push(`${pressure.length} key contract${pressure.length === 1 ? "" : "s"} expire within one year.`);
   }
   return warnings;
+}
+
+function countsAgainstActiveCap(status: RosterStatus): boolean {
+  return status === "active" || status === "scratched" || status === "injuredReserve";
+}
+
+function safeCapHit(player: Player): number {
+  return Number.isFinite(player.contract?.capHit) ? player.contract.capHit : 0;
 }
 
 export function estimateMarketSalary(player: ContractPlayerInput): number {

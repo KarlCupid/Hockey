@@ -1,9 +1,11 @@
 import localforage from "localforage";
 import { z } from "zod";
-import { AUTOSAVE_SLOT_ID, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SAVE_SLOT_COUNT, SCHEMA_VERSION } from "../constants";
+import { ACTIVE_ROSTER_LIMIT, ACTIVE_ROSTER_MINIMUM, AUTOSAVE_SLOT_ID, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SAVE_SLOT_COUNT, SCHEMA_VERSION } from "../constants";
 import { generateDraftClass } from "../generators/generateDraftClass";
 import { SeededRng } from "../rng";
-import type { FranchiseState, LeagueHistory, OwnerState, Player, ProspectRights, SaveSlotMetadata, ScoutingState, StaffState, Team } from "../types";
+import type { FranchiseState, LeagueHistory, OwnerState, Player, PlayerDevelopmentPath, ProspectRights, RosterStatus, SaveSlotMetadata, ScoutingState, StaffState, Team } from "../types";
+import { generateAffiliateForTeam } from "./affiliate";
+import { repairAllTeamRosters } from "./aiRosterManagement";
 import { contractSummary, createContractForPlayer } from "./contracts";
 import { validateDynastyInvariants } from "./dynastyInvariants";
 import { generateInitialDraftPicks } from "./draftPicks";
@@ -13,6 +15,7 @@ import { generateScoutingAssignments, rankDraftBoard } from "./scouting";
 import { generateStaffForLeague } from "./staff";
 import { recordString } from "./standings";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "./trades";
+import { autoSetInitialRosterStatuses } from "./rosterManagement";
 
 const saveSchema = z.object({
   schemaVersion: z.number(),
@@ -64,6 +67,9 @@ export function deserializeFranchise(payload: string): FranchiseState {
 
 export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
   const seasonYear = input.league.seasonYear;
+  const teamsNeedingStatusRepair = new Set(
+    input.league.teams.filter((team) => team.roster.some((player) => !validRosterStatus(player.rosterStatus))).map((team) => team.id)
+  );
   const teamsWithContracts = input.league.teams.map((team) => hydrateTeamPlayers(team, input.franchiseId));
   const generatedPicks = generateInitialDraftPicks(teamsWithContracts, seasonYear);
   const teamsWithAssets = teamsWithContracts.map((team) => {
@@ -73,18 +79,23 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
       ...team,
       capCeiling: team.capCeiling ?? SALARY_CAP_CEILING,
       capFloor: team.capFloor ?? SALARY_CAP_FLOOR,
+      affiliate: team.affiliate ?? generateAffiliateForTeam(team),
+      rosterMoveLog: team.rosterMoveLog ?? [],
+      activeRosterLimit: team.activeRosterLimit ?? ACTIVE_ROSTER_LIMIT,
+      activeRosterMinimum: team.activeRosterMinimum ?? ACTIVE_ROSTER_MINIMUM,
       draftPicks,
       teamNeeds: Array.isArray(team.teamNeeds) && team.teamNeeds.length ? team.teamNeeds : inferTeamNeeds({ ...team, draftPicks }),
       untouchables: Array.isArray(team.untouchables) ? team.untouchables : [],
       tradeBlock: Array.isArray(team.tradeBlock) ? team.tradeBlock : []
     };
     const untouchables = withCap.untouchables.length ? withCap.untouchables : generateUntouchables(withCap);
-    return {
+    const hydratedTeam = {
       ...withCap,
       untouchables,
       tradeBlock: withCap.tradeBlock.length ? withCap.tradeBlock : generateTradeBlock({ ...withCap, untouchables }),
       teamNeeds: inferTeamNeeds(withCap)
     };
+    return teamsNeedingStatusRepair.has(team.id) ? autoSetInitialRosterStatuses(hydratedTeam) : hydratedTeam;
   });
   const scouting = hydrateScouting(input);
   const phase = hydrateSeasonPhase(input);
@@ -109,20 +120,22 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     scouting,
     development: input.development ?? { plans: [], recentUpdates: [] },
     tradeHistory: input.tradeHistory ?? [],
+    rosterMoveHistory: input.rosterMoveHistory ?? [],
     transactionLog: input.transactionLog ?? [],
     saveStatus: "idle"
   };
   const ownerState = hydrateOwnerState(ownerBase);
 
-  return {
+  return repairAllTeamRosters({
     ...ownerBase,
     ownerState,
     playoffState: input.playoffState ?? (phase === "playoffs" ? createPlayoffState(ownerBase.league) : undefined),
     offseasonState: input.offseasonState,
     freeAgencyState: input.freeAgencyState,
     scouting,
+    rosterMoveHistory: input.rosterMoveHistory ?? [],
     saveStatus: "idle"
-  };
+  }, "playtestRepair");
 }
 
 export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityReport {
@@ -259,7 +272,13 @@ function hydratePlayerContract(player: Player, franchiseId: string): Player {
   return {
     ...player,
     contract,
-    contractSummary: contractSummary(contract)
+    contractSummary: contractSummary(contract),
+    rosterStatus: validRosterStatus(player.rosterStatus) ? player.rosterStatus : "active",
+    acquiredVia: player.acquiredVia ?? "generated",
+    waiverEligible: player.waiverEligible ?? false,
+    affiliateSeasons: player.affiliateSeasons ?? 0,
+    careerStage: player.careerStage ?? inferCareerStage(player),
+    developmentPath: player.developmentPath ?? defaultDevelopmentPath(player)
   };
 }
 
@@ -348,14 +367,44 @@ function collectMissingFieldRepairs(input: FranchiseState): string[] {
   if (!input.prospectPools) repaired.push("prospectPools");
   if (!input.scouting) repaired.push("scouting");
   if (!input.development) repaired.push("development");
+  if (!input.rosterMoveHistory) repaired.push("rosterMoveHistory");
   input.league.teams.forEach((team) => {
+    if (!team.affiliate) repaired.push(`${team.id}.affiliate`);
+    if (!team.rosterMoveLog) repaired.push(`${team.id}.rosterMoveLog`);
+    if (!team.activeRosterLimit) repaired.push(`${team.id}.activeRosterLimit`);
+    if (!team.activeRosterMinimum) repaired.push(`${team.id}.activeRosterMinimum`);
     if (!team.draftPicks) repaired.push(`${team.id}.draftPicks`);
     if (!team.teamNeeds) repaired.push(`${team.id}.teamNeeds`);
     if (!team.tradeBlock) repaired.push(`${team.id}.tradeBlock`);
     if (!team.untouchables) repaired.push(`${team.id}.untouchables`);
     team.roster.forEach((player) => {
       if (!player.contract) repaired.push(`${team.id}.${player.id}.contract`);
+      if (!player.rosterStatus) repaired.push(`${team.id}.${player.id}.rosterStatus`);
+      if (!player.developmentPath) repaired.push(`${team.id}.${player.id}.developmentPath`);
     });
   });
   return repaired;
+}
+
+function validRosterStatus(status: Player["rosterStatus"]): status is RosterStatus {
+  return Boolean(status && ["active", "scratched", "affiliate", "injuredReserve", "prospectRights", "retired"].includes(status));
+}
+
+function defaultDevelopmentPath(player: Player): PlayerDevelopmentPath {
+  const upside = Math.max(0, player.potential - player.overall);
+  return {
+    track: player.position === "G" && upside >= 6 ? "Goalie Project" : player.age <= 23 || upside >= 8 ? "Prospect Pipeline" : player.overall >= 73 ? "NHL Regular" : "Veteran Depth",
+    confidence: Math.max(35, Math.min(92, 52 + upside + (player.overall >= 75 ? 8 : 0))),
+    lastReport: "Hydrated into the Phase 5 player pathway model.",
+    projectedRole: player.roleExpectation,
+    eta: player.overall >= 73 ? "Now" : player.age <= 24 ? "Next Season" : "Long Term"
+  };
+}
+
+function inferCareerStage(player: Player): Player["careerStage"] {
+  if (player.age <= 21 || player.potential - player.overall >= 9) return "prospect";
+  if (player.age <= 24) return "rookie";
+  if (player.age <= 30) return "prime";
+  if (player.age <= 34) return "veteran";
+  return "decline";
 }

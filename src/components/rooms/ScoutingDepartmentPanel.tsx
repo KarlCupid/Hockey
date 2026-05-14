@@ -18,6 +18,7 @@ export function ScoutingDepartmentPanel() {
   const makeDraftSelection = useFranchiseStore((state) => state.makeDraftSelection);
   const autoDraftUntilUserPick = useFranchiseStore((state) => state.autoDraftUntilUserPick);
   const autoCompleteDraft = useFranchiseStore((state) => state.autoCompleteDraft);
+  const signProspectTo = useFranchiseStore((state) => state.signProspectTo);
   const [strategy, setStrategy] = useState<DraftBoardStrategy>("Best Player Available");
   const [selectedId, setSelectedId] = useState<string | undefined>();
 
@@ -295,7 +296,7 @@ export function ScoutingDepartmentPanel() {
           </div>
 
           <h3>Prospect Pipeline</h3>
-          <p className="muted">Unsigned prospects stay in the pipeline. Minor league/prospect development is coming later.</p>
+          <p className="muted">Unsigned prospects stay in the pipeline. Phase 5 lets you sign them to the active roster or the simplified affiliate path.</p>
           <div className="asset-list asset-list--compact">
             {pipeline.length ? (
               pipeline.slice(0, 10).map((rights) => (
@@ -304,6 +305,10 @@ export function ScoutingDepartmentPanel() {
                   <span>
                     {rights.position} | R{rights.acquiredRound} Pick {rights.acquiredPickNumber} | {rights.potentialRangeLabel} | {rights.signed ? "Signed" : "Unsigned"}
                   </span>
+                  <div className="button-row">
+                    <button type="button" disabled={rights.signed} onClick={() => signProspectTo(rights.prospectId, "affiliate")}>Sign Affiliate</button>
+                    <button type="button" disabled={rights.signed} onClick={() => signProspectTo(rights.prospectId, "active")}>Sign Active</button>
+                  </div>
                 </article>
               ))
             ) : (

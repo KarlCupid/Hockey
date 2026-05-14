@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { calculateCapSpace, formatMoney } from "../../game/systems/contracts";
 import { formatPickLabel } from "../../game/systems/draftPicks";
+import { defaultRosterStatusForIncomingPlayer } from "../../game/systems/rosterManagement";
+import { getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import { calculateTradePackageValue, evaluateTrade } from "../../game/systems/trades";
 import type { Team, TradeAsset } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
@@ -187,6 +189,8 @@ function AssetPicker({
               <th>Pos</th>
               <th>OVR</th>
               <th>Cap</th>
+              <th>Status</th>
+              <th>Dest.</th>
               <th>Asset</th>
             </tr>
           </thead>
@@ -197,6 +201,8 @@ function AssetPicker({
                 <td>{player.position}</td>
                 <td>{player.overall}</td>
                 <td>{formatMoney(player.contract.capHit)}</td>
+                <td>{getRosterStatusLabel(getPlayerRosterStatus(player))}</td>
+                <td>{getRosterStatusLabel(defaultRosterStatusForIncomingPlayer(team, player))}</td>
                 <td>
                   <button
                     type="button"

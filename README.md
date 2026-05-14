@@ -30,7 +30,8 @@ npm run build
 - Development Office with player development plans, progress ticks, workload risk, and small attribute growth
 - Phase 3 dynasty lifecycle with playoffs, champion history, draft execution, prospect pools, re-signing, free agency, staff hiring, owner goals, retirements, aging, and new-season generation
 - Phase 4 beta hardening with dynasty invariant checks, deterministic multi-season playtests, balance reporting, save integrity repair, settings/help, fictional branding, and panel-level code splitting
-- GM Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
+- Phase 5 roster ecosystem with active roster, scratches, affiliate roster, injured reserve, prospect pathways, AI roster repair, and training-camp setup
+- GM Office, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
 - Deterministic pure TypeScript game simulation
@@ -87,9 +88,22 @@ Phase 4 strengthens the existing V1.1 + Phase 2 + Phase 3 game instead of adding
 - Settings and help add reduced motion, reduced 3D detail, broadcast speed, autosave, confirmation, UI scale, table density, guide reset, and keyboard help.
 - Heavy room panels, the 3D facility, and developer tools are lazy-loaded behind loading fallbacks and an error boundary.
 
+## Phase 5 Roster Ecosystem, Affiliate System, and AI Roster Management
+
+Phase 5 fixes the biggest remaining multi-season roster weakness by giving every organization a clearer player pathway:
+
+- Active roster and scratches are distinct from affiliate depth, injured reserve, retired players, and unsigned prospect rights.
+- The new Roster Office shows roster health, depth charts, active players, scratches, affiliate players, injured reserve, cap impact, and recent roster moves.
+- User roster actions support call-ups, send-downs, scratches, activations, IR placement/removal, and prospect signing to either the active roster or affiliate.
+- Every fictional club has a simplified affiliate team. Affiliate players can generate development reports, benefit from development staff, and become promotion candidates without simulating a full minor-league schedule.
+- AI roster repair runs around franchise creation, save repair, trades, free agency, training camp, new seasons, and pre-game dry runs to prevent missing goalies or short depth charts.
+- Training camp trims surplus active players to the affiliate, repairs game rosters, and prepares teams for the next season.
+- Cap treatment is simplified: active, scratched, and IR players count against active cap; affiliate players are active-cap exempt; prospect rights and retired players do not count.
+- Re-signing and owner-goal balance were tuned so fair offers perform better than weak offers and owner goals better match rebuilding or contending contexts.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, and Phase 4 balance reporting are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, and cap treatment are simplified fictional prototype systems.
 
 ## Controls
 
@@ -102,4 +116,4 @@ This prototype intentionally avoids backend services, authentication, real hocke
 
 ## Save Data
 
-Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls.
+Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls. Older saves hydrate to schema version 4 with roster statuses, affiliates, roster logs, and player pathway defaults.

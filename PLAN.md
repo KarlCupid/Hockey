@@ -68,3 +68,12 @@
 - Add fictional team branding, generated crest/jersey/portrait/broadcast UI components, and integrate them into high-value surfaces without using real hockey marks.
 - Add settings/help/accessibility controls, reduced-motion/reduced-detail presentation hooks, panel-level lazy loading, loading fallbacks, and error boundaries.
 - Polish 3D room identity and the UI design system while keeping all systems client-only, serializable, and testable.
+
+## Milestone 11: Phase 5 Roster Ecosystem, Affiliate System, and AI Roster Management
+
+- Add typed roster statuses for active players, scratches, affiliate depth, injured reserve, prospect rights, and retired players.
+- Build pure roster rules, roster move logging, cap treatment by roster status, call-up/send-down/scratch/IR actions, and lineup eligibility checks.
+- Give every fictional club one simplified affiliate with development reports, promotion candidates, and staff-influenced growth.
+- Add AI roster repair and training-camp setup so multi-season saves can recover active depth, goalie shortages, surplus rosters, and invalid lineups without waivers or real-world CBA systems.
+- Add Phase 5 save migration to schema version 4 with safe roster-status, affiliate, roster-log, and player-pathway defaults.
+- Add Roster Office UI, operations-map/facility routing, room integrations, Dev Tools stress reports, five-season dry-run reporting, and focused Vitest coverage.

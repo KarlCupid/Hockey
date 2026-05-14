@@ -31,7 +31,7 @@ describe("Phase 3 season lifecycle and saves", () => {
 
     const restored = deserializeFranchise(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(3);
+    expect(restored.schemaVersion).toBe(4);
     expect(restored.seasonPhase).toBe("regularSeason");
     expect(restored.ownerState.seasonGoals).toHaveLength(3);
     expect(restored.staffState.teamStaff[restored.selectedTeamId].length).toBeGreaterThanOrEqual(7);
@@ -218,7 +218,7 @@ describe("Phase 3 draft and prospects", () => {
         ...picked.league,
         teams: picked.league.teams.map((team) => (team.id === selectedTeamId ? { ...team, capCeiling: 200_000_000 } : team))
       }
-    }, franchise.scouting.draftClass[0].id);
+    }, franchise.scouting.draftClass[0].id, "affiliate");
 
     expect(signed.league.teams.find((team) => team.id === selectedTeamId)?.roster.some((player) => player.id.includes(franchise.scouting.draftClass[0].id))).toBe(true);
     expect(signed.prospectPools[selectedTeamId][0].signed).toBe(true);
@@ -239,7 +239,7 @@ describe("Phase 3 draft and prospects", () => {
       }
     };
 
-    const blocked = signProspect(overloaded, franchise.scouting.draftClass[0].id);
+    const blocked = signProspect(overloaded, franchise.scouting.draftClass[0].id, "active");
 
     expect(blocked.prospectPools[selectedTeamId][0].signed).toBe(false);
   });
@@ -490,7 +490,7 @@ describe("Phase 3 staff, player lifecycle, owner, history, and serialization", (
     const franchise = createFranchise("harbor-city", "phase3-serialize");
     const restored = deserializeFranchise(serializeFranchise(franchise));
 
-    expect(restored.schemaVersion).toBe(3);
+    expect(restored.schemaVersion).toBe(4);
     expect(restored.seasonPhase).toBe("regularSeason");
     expect(restored.staffState.teamStaff[restored.selectedTeamId]).toHaveLength(7);
   });

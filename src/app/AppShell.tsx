@@ -20,6 +20,7 @@ const FreeAgencyOfficePanel = lazy(() => import("../components/rooms/FreeAgencyO
 const GMOfficePanel = lazy(() => import("../components/rooms/GMOfficePanel").then((module) => ({ default: module.GMOfficePanel })));
 const LockerRoomPanel = lazy(() => import("../components/rooms/LockerRoomPanel").then((module) => ({ default: module.LockerRoomPanel })));
 const MedicalRoomPanel = lazy(() => import("../components/rooms/MedicalRoomPanel").then((module) => ({ default: module.MedicalRoomPanel })));
+const RosterOfficePanel = lazy(() => import("../components/rooms/RosterOfficePanel").then((module) => ({ default: module.RosterOfficePanel })));
 const SaveLoadPanel = lazy(() => import("../components/rooms/SaveLoadPanel").then((module) => ({ default: module.SaveLoadPanel })));
 const ScoutingDepartmentPanel = lazy(() => import("../components/rooms/ScoutingDepartmentPanel").then((module) => ({ default: module.ScoutingDepartmentPanel })));
 const StaffOfficePanel = lazy(() => import("../components/rooms/StaffOfficePanel").then((module) => ({ default: module.StaffOfficePanel })));
@@ -79,6 +80,8 @@ function panelFor(room: RoomId) {
   switch (room) {
     case "gm":
       return <GMOfficePanel />;
+    case "roster":
+      return <RosterOfficePanel />;
     case "coach":
       return <CoachOfficePanel />;
     case "locker":
@@ -115,6 +118,7 @@ function panelFor(room: RoomId) {
 function subtitleFor(room: RoomId): string {
   const subtitles: Record<RoomId, string> = {
     gm: "Inbox, calendar, owner pressure, and save desk.",
+    roster: "Active roster, scratches, affiliate depth, injured reserve, and roster moves.",
     coach: "Line combinations, goalie decisions, and tactical identity.",
     locker: "Roster pulse, player cards, morale, form, fatigue, and stats.",
     medical: "Injuries, day-to-day notes, and workload warnings.",

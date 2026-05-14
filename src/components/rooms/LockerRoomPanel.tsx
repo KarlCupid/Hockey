@@ -2,15 +2,20 @@ import { useState } from "react";
 import { PlayerCard } from "../hud/PlayerCard";
 import { StatBadge } from "../hud/StatBadge";
 import { fatigueBand, formBand, moraleBand } from "../../game/systems/morale";
+import { getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 import type { Player } from "../../game/types";
 import { useUiStore } from "../../store/uiStore";
 
-type RosterFilter = "all" | "forwards" | "defense" | "goalies" | "injured" | "tired" | "unhappy" | "hot";
+type RosterFilter = "all" | "active" | "scratched" | "affiliate" | "injuredReserve" | "forwards" | "defense" | "goalies" | "injured" | "tired" | "unhappy" | "hot";
 type RosterSort = "overall" | "name" | "points" | "fatigue";
 
 const FILTERS: Array<{ id: RosterFilter; label: string }> = [
   { id: "all", label: "All" },
+  { id: "active", label: "Active" },
+  { id: "scratched", label: "Scratches" },
+  { id: "affiliate", label: "Affiliate" },
+  { id: "injuredReserve", label: "IR" },
   { id: "forwards", label: "Forwards" },
   { id: "defense", label: "Defense" },
   { id: "goalies", label: "Goalies" },
@@ -71,6 +76,7 @@ export function LockerRoomPanel() {
                 <th>Pos</th>
                 <th>OVR</th>
                 <th>Role</th>
+                <th>Status</th>
                 <th>Morale</th>
                 <th>Form</th>
                 <th>Fatigue</th>
@@ -85,6 +91,7 @@ export function LockerRoomPanel() {
                   <td>{player.position}</td>
                   <td>{player.overall}</td>
                   <td>{player.roleExpectation}</td>
+                  <td>{getRosterStatusLabel(getPlayerRosterStatus(player))}</td>
                   <td>{moraleBand(player.morale)}</td>
                   <td>{formBand(player.form)}</td>
                   <td>{fatigueBand(player.fatigue)}</td>
@@ -102,6 +109,13 @@ export function LockerRoomPanel() {
         {!filtered.length && <p className="empty-state">No players match that filter.</p>}
       </section>
       <PlayerCard player={selected} />
+      {selected.developmentPath && (
+        <section className="panel-section">
+          <h3>Pathway Read</h3>
+          <p><strong>{selected.developmentPath.track}</strong> | ETA {selected.developmentPath.eta} | Confidence {selected.developmentPath.confidence}/100</p>
+          <p className="muted">{selected.developmentPath.lastReport}</p>
+        </section>
+      )}
     </div>
   );
 }
@@ -110,6 +124,14 @@ function filterRoster(players: Player[], filter: RosterFilter): Player[] {
   switch (filter) {
     case "forwards":
       return players.filter((player) => ["LW", "C", "RW"].includes(player.position));
+    case "active":
+      return players.filter((player) => getPlayerRosterStatus(player) === "active");
+    case "scratched":
+      return players.filter((player) => getPlayerRosterStatus(player) === "scratched");
+    case "affiliate":
+      return players.filter((player) => getPlayerRosterStatus(player) === "affiliate");
+    case "injuredReserve":
+      return players.filter((player) => getPlayerRosterStatus(player) === "injuredReserve");
     case "defense":
       return players.filter((player) => player.position === "LD" || player.position === "RD");
     case "goalies":

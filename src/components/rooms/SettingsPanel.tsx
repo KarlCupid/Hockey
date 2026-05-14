@@ -24,6 +24,8 @@ export function SettingsPanel() {
           <Toggle label="Reduced 3D detail" checked={settings.reduced3DDetail} onChange={(value) => updateSettings({ reduced3DDetail: value })} />
           <Toggle label="Disable broadcast flashes" checked={settings.reduceMotion} onChange={(value) => updateSettings({ reduceMotion: value })} />
           <Toggle label="Auto-save after games" checked={settings.autoSave} onChange={(value) => updateSettings({ autoSave: value })} />
+          <Toggle label="Auto-repair AI rosters during sim" checked={settings.autoRepairAiRosters} onChange={(value) => updateSettings({ autoRepairAiRosters: value })} />
+          <Toggle label="Offer user roster auto-fix at season start" checked={settings.autoFixUserRosterOnSeasonStart} onChange={(value) => updateSettings({ autoFixUserRosterOnSeasonStart: value })} />
           <Toggle label="Confirm phase advances" checked={settings.confirmPhaseAdvances} onChange={(value) => updateSettings({ confirmPhaseAdvances: value })} />
           <Toggle label="Sound placeholder" checked={settings.soundPlaceholder} onChange={(value) => updateSettings({ soundPlaceholder: value })} />
           <label className="select-field">

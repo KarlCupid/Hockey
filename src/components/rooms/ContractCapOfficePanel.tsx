@@ -1,8 +1,19 @@
 import { useState } from "react";
 import { StatBadge } from "../hud/StatBadge";
-import { calculateCapSpace, calculateTeamCapHit, contractRiskNote, contractValueRisk, formatMoney, getCapWarnings, getExpiringContracts } from "../../game/systems/contracts";
+import {
+  calculateActiveRosterCapHit,
+  calculateAffiliateCommitments,
+  calculateCapSpace,
+  calculateOrganizationCapCommitments,
+  contractRiskNote,
+  contractValueRisk,
+  formatMoney,
+  getCapWarnings,
+  getExpiringContracts
+} from "../../game/systems/contracts";
 import { createContractDemand, getPendingExpiringPlayers } from "../../game/systems/contractNegotiation";
 import { formatPickLabel, getTeamPicks } from "../../game/systems/draftPicks";
+import { activeRosterCount, getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import type { RoleExpectation } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 
@@ -30,7 +41,7 @@ export function ContractCapOfficePanel() {
   const [role, setRole] = useState<RoleExpectation>("Depth");
   if (!franchise) return null;
   const team = selectedTeam(franchise);
-  const capHit = calculateTeamCapHit(team);
+  const capHit = calculateActiveRosterCapHit(team);
   const capSpace = calculateCapSpace(team);
   const warnings = getCapWarnings(team);
   const expiring = getExpiringContracts(team);
@@ -49,8 +60,10 @@ export function ContractCapOfficePanel() {
         <StatBadge label="Cap Ceiling" value={formatMoney(team.capCeiling)} />
         <StatBadge label="Current Hit" value={formatMoney(capHit)} tone={capSpace < 0 ? "bad" : capSpace < 3_000_000 ? "warn" : "default"} />
         <StatBadge label="Cap Space" value={formatMoney(capSpace)} tone={capSpace < 0 ? "bad" : capSpace < 3_000_000 ? "warn" : "good"} />
-        <StatBadge label="Roster Size" value={team.roster.length} />
-        <p className="muted">Cap space affects whether trades can be completed. Full negotiations arrive later.</p>
+        <StatBadge label="Active Roster" value={`${activeRosterCount(team)}/${team.activeRosterLimit}`} />
+        <StatBadge label="Org Commitments" value={formatMoney(calculateOrganizationCapCommitments(team))} />
+        <StatBadge label="Affiliate" value={formatMoney(calculateAffiliateCommitments(team))} />
+        <p className="muted">Affiliate players are cap-exempt in this simplified fictional ruleset. Waivers and retained salary are not implemented.</p>
       </section>
 
       {warnings.length > 0 && (
@@ -145,6 +158,7 @@ export function ContractCapOfficePanel() {
                   <th>OVR</th>
                   <th>POT</th>
                   <th>Role</th>
+                  <th>Status</th>
                   <th>Cap Hit</th>
                   <th>Salary</th>
                   <th>Years</th>
@@ -161,6 +175,7 @@ export function ContractCapOfficePanel() {
                     <td>{player.overall}</td>
                     <td>{player.potential}</td>
                     <td>{player.roleExpectation}</td>
+                    <td>{getRosterStatusLabel(getPlayerRosterStatus(player))}</td>
                     <td>{formatMoney(player.contract.capHit)}</td>
                     <td>{formatMoney(player.contract.salary)}</td>
                     <td>{player.contract.yearsRemaining}</td>

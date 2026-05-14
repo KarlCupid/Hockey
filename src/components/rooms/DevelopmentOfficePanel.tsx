@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { developmentCandidateScore } from "../../game/systems/development";
+import { getAffiliatePromotionCandidates } from "../../game/systems/affiliate";
 import { rankProspectPool } from "../../game/systems/prospects";
+import { getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import type { DevelopmentFocus, DevelopmentIntensity, Player } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 
@@ -20,7 +22,7 @@ export function DevelopmentOfficePanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const assignDevelopmentPlan = useFranchiseStore((state) => state.assignDevelopmentPlan);
   const removeDevelopmentPlan = useFranchiseStore((state) => state.removeDevelopmentPlan);
-  const signProspect = useFranchiseStore((state) => state.signProspect);
+  const signProspectTo = useFranchiseStore((state) => state.signProspectTo);
   const [playerId, setPlayerId] = useState<string>("");
   const [focus, setFocus] = useState<DevelopmentFocus>("Skating");
   const [intensity, setIntensity] = useState<DevelopmentIntensity>("Normal");
@@ -30,6 +32,7 @@ export function DevelopmentOfficePanel() {
   const candidates = [...team.roster].sort((a, b) => developmentCandidateScore(b) - developmentCandidateScore(a)).slice(0, 10);
   const selectedPlayer = team.roster.find((player) => player.id === playerId) ?? candidates[0];
   const pipeline = rankProspectPool(franchise, team.id);
+  const promotionCandidates = getAffiliatePromotionCandidates(team);
 
   const assign = () => {
     if (!selectedPlayer) return;
@@ -128,6 +131,7 @@ export function DevelopmentOfficePanel() {
                   <th>OVR</th>
                   <th>POT</th>
                   <th>Morale</th>
+                  <th>Status</th>
                   <th>Fatigue</th>
                   <th>Score</th>
                 </tr>
@@ -141,6 +145,7 @@ export function DevelopmentOfficePanel() {
                     <td>{player.overall}</td>
                     <td>{player.potential}</td>
                     <td>{player.morale}</td>
+                    <td>{getRosterStatusLabel(getPlayerRosterStatus(player))}</td>
                     <td>{player.fatigue}</td>
                     <td>{Math.round(developmentCandidateScore(player))}</td>
                   </tr>
@@ -188,7 +193,20 @@ export function DevelopmentOfficePanel() {
           )}
 
           <h3>Prospect Pipeline</h3>
-          <p className="muted">Unsigned prospects are draft rights, not active-roster players. Signing uses a low-cost entry deal and respects cap and the 30-player roster limit.</p>
+          <p className="muted">Unsigned prospects are draft rights, not active-roster players. Signing can send them to the affiliate path or, when valid, straight to the active roster.</p>
+          {promotionCandidates.length > 0 && (
+            <>
+              <h4>Affiliate Promotion Candidates</h4>
+              <div className="asset-list asset-list--compact">
+                {promotionCandidates.map((player) => (
+                  <article key={player.id}>
+                    <strong>{player.displayName}</strong>
+                    <span>{player.position} | {player.overall}/{player.potential} | {player.developmentPath?.lastReport}</span>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
           <div className="asset-list">
             {pipeline.length ? (
               pipeline.slice(0, 8).map((rights) => (
@@ -197,8 +215,11 @@ export function DevelopmentOfficePanel() {
                   <span>
                     {rights.position} | {rights.age} yrs | {rights.potentialRangeLabel} | rights through {rights.rightsExpireYear}
                   </span>
-                  <button type="button" disabled={rights.signed} onClick={() => signProspect(rights.prospectId)}>
-                    {rights.signed ? "Signed" : "Sign Prospect"}
+                  <button type="button" disabled={rights.signed} onClick={() => signProspectTo(rights.prospectId, "affiliate")}>
+                    {rights.signed ? "Signed" : "Sign to Affiliate"}
+                  </button>
+                  <button type="button" disabled={rights.signed} onClick={() => signProspectTo(rights.prospectId, "active")}>
+                    Sign Active
                   </button>
                 </article>
               ))

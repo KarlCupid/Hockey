@@ -13,11 +13,11 @@ export const TUNING = {
     depthOverallThreshold: 70,
     plausibleStarSalary: { min: 4_000_000, max: 14_000_000 },
     plausibleDepthSalary: { min: 775_000, max: 2_750_000 },
-    rosterLimit: 30
+    rosterLimit: 23
   },
   dynasty: {
     requiredTeams: 12,
-    playtestSeasons: 3,
+    playtestSeasons: 5,
     inboxLimit: 60,
     groupedLowPriorityLimit: 5
   },

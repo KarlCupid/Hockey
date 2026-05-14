@@ -1,5 +1,6 @@
 import { getCurrentPick } from "./draftExecution";
 import { getPendingExpiringPlayers } from "./contractNegotiation";
+import { validateRosterForGame } from "./rosterRules";
 import { nextGameForTeam } from "../simulation/simulateGame";
 import type { FranchiseState, SeasonPhase } from "../types";
 
@@ -52,6 +53,7 @@ export function getRecommendedNextAction(franchise: FranchiseState): string {
   const phase = franchise.seasonPhase;
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId);
   if (phase === "regularSeason") {
+    if (team && validateRosterForGame(team).errors.length) return "Open the Roster Office and repair active depth.";
     if (franchise.league.completed) return "Start the playoff bracket.";
     const game = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
     return game ? "Review lineup health, then simulate the next game." : "Complete the schedule and open playoffs.";
@@ -81,7 +83,7 @@ export function getPhaseChecklist(franchise: FranchiseState): PhaseChecklistItem
   if (phase === "regularSeason") {
     const nextGame = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
     return [
-      { id: "lineup", label: "Lineup has no blocking errors", complete: Boolean(selected) },
+      { id: "lineup", label: "Lineup has no blocking errors", complete: Boolean(selected && validateRosterForGame(selected).errors.length === 0) },
       { id: "next-game", label: "Next game reviewed", complete: Boolean(nextGame), optional: true },
       { id: "season-complete", label: "Regular season complete", complete: franchise.league.completed }
     ];
@@ -157,6 +159,10 @@ export function getDangerWarnings(franchise: FranchiseState, action = "advance")
   }
   if (franchise.seasonPhase === "trainingCamp" || franchise.seasonPhase === "preseason") {
     warnings.push("Starting next season resets season stats, schedule, fatigue, and owner goals.");
+  }
+  if (selected) {
+    const roster = validateRosterForGame(selected);
+    if (roster.errors.length) warnings.push(`Roster Office warning: ${roster.errors[0]}`);
   }
   return warnings;
 }

@@ -2,6 +2,7 @@ import { autoFillBestLineup } from "./lineupValidation";
 import { calculateCapSpace, contractSummary, estimateMarketSalary, formatMoney } from "./contracts";
 import { evaluateContractOffer } from "./contractNegotiation";
 import { calculateTeamStaffModifiers } from "./staff";
+import { defaultRosterStatusForIncomingPlayer } from "./rosterManagement";
 import { generateDisplayName, generateNationality } from "../generators/generateNames";
 import { SeededRng, clamp } from "../rng";
 import type {
@@ -20,8 +21,6 @@ import type {
 } from "../types";
 
 const MARKET_SIZE = 24;
-const ACTIVE_ROSTER_LIMIT = 30;
-
 export function createFreeAgentMarket(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-free-agency-${franchise.league.seasonYear}`)): FreeAgentState {
   const existing = franchise.freeAgencyState?.market ?? [];
   const generated = createGeneratedFreeAgents(franchise.league.seasonYear, rng, Math.max(0, MARKET_SIZE - existing.length));
@@ -93,7 +92,6 @@ export function evaluateFreeAgentOffer(
   const salaryFit = offer.capHit / Math.max(1, freeAgent.demandSalary);
   const adjustedInterest = Math.round(clamp(base.playerInterest * 0.72 + interest * 0.28 + assistantGm * 2 + (salaryFit >= 1.05 ? 8 : 0), 0, 100));
   const warnings = [...base.warnings];
-  if (team.roster.length >= ACTIVE_ROSTER_LIMIT) warnings.push("Active roster is already at the 30-player prototype limit.");
   const accepted = warnings.length === 0 && adjustedInterest >= 82 && offer.capHit >= freeAgent.demandSalary * 0.95;
   return {
     ...base,
@@ -105,7 +103,7 @@ export function evaluateFreeAgentOffer(
   };
 }
 
-export function applyFreeAgentSigning(franchise: FranchiseState, freeAgentId: string, offer: ContractOffer): FranchiseState {
+export function applyFreeAgentSigning(franchise: FranchiseState, freeAgentId: string, offer: ContractOffer, destination?: "active" | "scratched" | "affiliate"): FranchiseState {
   const state = franchise.freeAgencyState ?? createFreeAgentMarket(franchise);
   const freeAgent = state.market.find((candidate) => candidate.player.id === freeAgentId);
   const team = franchise.league.teams.find((candidate) => candidate.id === offer.teamId);
@@ -118,7 +116,7 @@ export function applyFreeAgentSigning(franchise: FranchiseState, freeAgentId: st
       freeAgencyState: state
     };
   }
-  const signedPlayer = {
+  const signedBase = {
     ...freeAgent.player,
     teamId: team.id,
     contract: {
@@ -131,6 +129,12 @@ export function applyFreeAgentSigning(franchise: FranchiseState, freeAgentId: st
       signedAtAge: freeAgent.player.age
     }
   };
+  const rosterStatus = destination ?? defaultRosterStatusForIncomingPlayer(team, signedBase);
+  const signedPlayer = {
+    ...signedBase,
+    rosterStatus,
+    acquiredVia: "freeAgency" as const
+  };
   signedPlayer.contractSummary = contractSummary(signedPlayer.contract);
   const nextTeam = { ...team, roster: [...team.roster, signedPlayer] };
   const normalizedTeam = { ...nextTeam, lines: autoFillBestLineup(nextTeam).lineup };
@@ -139,7 +143,7 @@ export function applyFreeAgentSigning(franchise: FranchiseState, freeAgentId: st
     date: franchise.league.currentDate,
     type: "freeAgency",
     headline: `${signedPlayer.displayName} signs`,
-    details: `${team.fullName} sign ${signedPlayer.displayName} for ${offer.years} years at ${formatMoney(offer.capHit)}.`,
+    details: `${team.fullName} sign ${signedPlayer.displayName} for ${offer.years} years at ${formatMoney(offer.capHit)}; destination: ${rosterStatus}.`,
     teamIds: [team.id],
     playerIds: [signedPlayer.id]
   };
@@ -169,7 +173,7 @@ export function runAiFreeAgencyDay(franchise: FranchiseState, rng = new SeededRn
     const freeAgent = market[i];
     if (!freeAgent || !next.freeAgencyState?.market.some((candidate) => candidate.player.id === freeAgent.player.id)) continue;
     const candidates = next.league.teams
-      .filter((team) => team.id !== next.selectedTeamId && team.roster.length < ACTIVE_ROSTER_LIMIT && calculateCapSpace(team) > freeAgent.demandSalary)
+      .filter((team) => team.id !== next.selectedTeamId && calculateCapSpace(team) > freeAgent.demandSalary)
       .sort((a, b) => rosterNeedScore(b, freeAgent.player.position) - rosterNeedScore(a, freeAgent.player.position));
     const team = candidates[0];
     if (!team || !rng.chance(0.72)) continue;

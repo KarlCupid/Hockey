@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import { getBroadcastLiveState } from "../../game/systems/broadcastPresentation";
 import type { GameEvent, GameResult, Team } from "../../game/types";
+import { useSettingsStore } from "../../store/settingsStore";
 import { GameResultCenter } from "../rooms/GameResultCenter";
 
 export function ArenaVisualization({
@@ -23,7 +24,9 @@ export function ArenaVisualization({
   onFinish: () => void;
 }) {
   const [index, setIndex] = useState(0);
-  const [speed, setSpeed] = useState(900);
+  const settings = useSettingsStore((state) => state.settings);
+  const defaultSpeed = settings.broadcastSpeedDefault === "fast" ? 260 : settings.broadcastSpeedDefault === "slow" ? 1300 : 900;
+  const [speed, setSpeed] = useState(defaultSpeed);
   const current = result.eventTimeline[Math.min(index, result.eventTimeline.length - 1)];
   const done = index >= result.eventTimeline.length;
   const live = getBroadcastLiveState(result, awayTeam, homeTeam, index);
@@ -41,7 +44,7 @@ export function ArenaVisualization({
           <color attach="background" args={["#06101d"]} />
           <ambientLight intensity={0.6} />
           <pointLight position={[0, 6, 4]} intensity={1.5} color="#bfefff" />
-          <BroadcastRink event={current} homeTeam={homeTeam} awayTeam={awayTeam} tick={index} />
+          <BroadcastRink event={current} homeTeam={homeTeam} awayTeam={awayTeam} tick={index} reducedMotion={settings.reduceMotion} />
         </Canvas>
       </div>
       <div className="broadcast-overlay">
@@ -51,7 +54,7 @@ export function ArenaVisualization({
           <strong>{homeTeam.abbreviation} {live.homeScore}</strong>
           <b>{live.chip}</b>
         </div>
-        <div className={`broadcast-banner broadcast-banner--${live.chip.toLowerCase()}`} style={{ "--event-accent": live.accentColor } as React.CSSProperties}>
+        <div className={`broadcast-banner broadcast-banner--${live.chip.toLowerCase()} ${settings.reduceMotion ? "broadcast-banner--reduced" : ""}`} style={{ "--event-accent": live.accentColor } as React.CSSProperties}>
           {live.banner}
         </div>
         <div className="button-row broadcast-controls">
@@ -80,15 +83,16 @@ export function ArenaVisualization({
   );
 }
 
-function BroadcastRink({ event, homeTeam, awayTeam, tick }: { event?: GameEvent; homeTeam: Team; awayTeam: Team; tick: number }) {
+function BroadcastRink({ event, homeTeam, awayTeam, tick, reducedMotion }: { event?: GameEvent; homeTeam: Team; awayTeam: Team; tick: number; reducedMotion: boolean }) {
   const puck = useMemo(() => new THREE.Vector3(0, 0.08, 0), []);
   const eventTeamId = event && "teamId" in event ? event.teamId : homeTeam.id;
   const teamColor = eventTeamId === homeTeam.id ? homeTeam.primaryColor : awayTeam.primaryColor;
   useFrame(({ clock }) => {
+    if (reducedMotion) return;
     puck.x = Math.sin(clock.elapsedTime * 2 + tick) * 2.2;
     puck.z = Math.cos(clock.elapsedTime * 1.3 + tick) * 0.95;
   });
-  const flashScale = event?.type === "goal" || event?.type === "powerPlayGoal" ? 1.7 : event?.type === "penalty" ? 1.25 : 1;
+  const flashScale = reducedMotion ? 1 : event?.type === "goal" || event?.type === "powerPlayGoal" ? 1.7 : event?.type === "penalty" ? 1.25 : 1;
 
   return (
     <group>

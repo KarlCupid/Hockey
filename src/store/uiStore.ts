@@ -29,6 +29,7 @@ interface UiStore {
   markChecklistItem: (id: FirstDayChecklistId) => void;
   setChecklistCollapsed: (collapsed: boolean) => void;
   dismissChecklist: () => void;
+  resetChecklist: () => void;
 }
 
 const initialChecklist: Record<FirstDayChecklistId, boolean> = {
@@ -74,5 +75,6 @@ export const useUiStore = create<UiStore>((set) => ({
   setOperationsMapOpen: (open) => set({ operationsMapOpen: open }),
   markChecklistItem: (id) => set((state) => ({ checklistCompleted: { ...state.checklistCompleted, [id]: true } })),
   setChecklistCollapsed: (collapsed) => set({ checklistCollapsed: collapsed }),
-  dismissChecklist: () => set({ checklistDismissed: true })
+  dismissChecklist: () => set({ checklistDismissed: true }),
+  resetChecklist: () => set({ checklistDismissed: false, checklistCollapsed: false, checklistCompleted: initialChecklist })
 }));

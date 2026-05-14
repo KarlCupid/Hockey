@@ -29,6 +29,7 @@ npm run build
 - Scouting Department with a 72-player fictional draft class, assignments, watchlist, fuzzy reports, and certainty growth
 - Development Office with player development plans, progress ticks, workload risk, and small attribute growth
 - Phase 3 dynasty lifecycle with playoffs, champion history, draft execution, prospect pools, re-signing, free agency, staff hiring, owner goals, retirements, aging, and new-season generation
+- Phase 4 beta hardening with dynasty invariant checks, deterministic multi-season playtests, balance reporting, save integrity repair, settings/help, fictional branding, and panel-level code splitting
 - GM Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -73,17 +74,32 @@ Phase 3 turns the one-season prototype into a client-only dynasty loop:
 
 Older V1.1/Phase 2 saves hydrate to schema version 3 with safe defaults for season phase, staff, owner goals, history, and prospect pools.
 
+## Phase 4 Beta Hardening, Presentation, Balance, and Identity
+
+Phase 4 strengthens the existing V1.1 + Phase 2 + Phase 3 game instead of adding another large rule layer:
+
+- Pure dynasty invariant checks validate teams, rosters, draft picks, prospects, contracts, phases, schedules, playoff data, ratings bounds, and JSON serializability.
+- A deterministic multi-season playtest harness can run three-season dry runs through regular season, playoffs, draft, re-signing, free agency, staff hiring, and training camp without mutating the active save.
+- Balance reporting summarizes scoring, shots, power play rate, overtime, cap pressure, free-agent movement, draft quality, development, owner security, and champion history.
+- Save integrity helpers validate, repair, export, and import JSON while keeping old schema-version 3 saves loadable.
+- Phase guidance in the GM Office shows the current phase, recommended next step, checklist, advance preview, and danger warnings.
+- Fictional team identity now uses generated crests, jersey swatches, portrait placeholders, and broadcast scorebug/lower-third components. No real hockey marks or external licensed art are used.
+- Settings and help add reduced motion, reduced 3D detail, broadcast speed, autosave, confirmation, UI scale, table density, guide reset, and keyboard help.
+- Heavy room panels, the 3D facility, and developer tools are lazy-loaded behind loading fallbacks and an error boundary.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, and playoffs are simplified fictional Phase 3 systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, and Phase 4 balance reporting are simplified fictional prototype systems.
 
 ## Controls
 
 - `WASD`: move the GM/coach avatar
 - Mouse drag/wheel: orbit and zoom the third-person camera
 - `E`: open the highlighted room
-- `Escape`: close the active panel
+- `H`: open help
+- `M`: open the Operations Map
+- `Escape`: close the active panel, help, or settings dialog
 
 ## Save Data
 
-Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games.
+Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls.

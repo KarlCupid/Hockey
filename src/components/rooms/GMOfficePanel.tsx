@@ -4,7 +4,21 @@ import { upcomingOpponent, recordLabel, selectedTeam } from "../../store/franchi
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { describePlayoffResult, getCurrentUserPlayoffGame } from "../../game/systems/playoffs";
 import { ownerMoodLabel } from "../../game/systems/owner";
+import {
+  getAdvancePreview,
+  getDangerWarnings,
+  getPhaseChecklist,
+  getPhaseDescription,
+  getPhaseLabel,
+  getRecommendedNextAction
+} from "../../game/systems/phaseGuidance";
 import type { FranchiseState } from "../../game/types";
+import { useSettingsStore } from "../../store/settingsStore";
+import { JerseySwatch } from "../branding/JerseySwatch";
+import { TeamCrest } from "../branding/TeamCrest";
+import { ProgressBar } from "../ui/ProgressBar";
+import { SectionHeader } from "../ui/SectionHeader";
+import { WarningCallout } from "../ui/WarningCallout";
 import { SaveLoadPanel } from "./SaveLoadPanel";
 
 export function GMOfficePanel() {
@@ -19,6 +33,7 @@ export function GMOfficePanel() {
   const autoCompleteDraft = useFranchiseStore((state) => state.autoCompleteDraft);
   const advanceFreeAgencyDay = useFranchiseStore((state) => state.advanceFreeAgencyDay);
   const completeFreeAgency = useFranchiseStore((state) => state.completeFreeAgency);
+  const confirmPhaseAdvances = useSettingsStore((state) => state.settings.confirmPhaseAdvances);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
   useEffect(() => {
@@ -33,11 +48,30 @@ export function GMOfficePanel() {
     .slice(Math.max(0, team.stats.gamesPlayed - 1), team.stats.gamesPlayed + 5);
   const mood = team.ownerPatience < 38 ? "Demanding" : team.ownerPatience < 62 ? "Concerned" : "Patient";
   const fan = team.fanConfidence < 42 ? "Falling" : team.fanConfidence < 66 ? "Stable" : "Rising";
-  const phaseLabel = phaseTitle(franchise.seasonPhase);
+  const phaseLabel = getPhaseLabel(franchise.seasonPhase);
+  const checklist = getPhaseChecklist(franchise);
+  const completedChecklist = checklist.filter((item) => item.complete).length;
+  const dangerWarnings = getDangerWarnings(franchise);
+  const confirmAndRun = (action: string, run: () => void) => {
+    if (!confirmPhaseAdvances) {
+      run();
+      return;
+    }
+    const warnings = getDangerWarnings(franchise, action);
+    const message = [getAdvancePreview(franchise, action), ...warnings].join("\n");
+    if (warnings.length || action !== "safe") {
+      if (!window.confirm(message)) return;
+    }
+    run();
+  };
 
   return (
     <div className="room-stack">
       <section className="command-strip">
+        <div className="brand-strip">
+          <TeamCrest teamId={team.id} size={46} title={`${team.fullName} crest`} />
+          <JerseySwatch teamId={team.id} kind="home" />
+        </div>
         <div>
           <small>Current Phase</small>
           <strong>{phaseLabel}</strong>
@@ -69,12 +103,35 @@ export function GMOfficePanel() {
         </button>
       </section>
       <section className="panel-section">
-        <h3>Calendar Command Center</h3>
+        <SectionHeader title="Calendar Command Center" eyebrow={phaseLabel} />
         <div className="season-pulse">
           <span>Season <strong>{franchise.league.seasonYear}</strong></span>
           <span>Date <strong>{franchise.league.currentDate}</strong></span>
-          <span>Next action <strong>{nextAction(franchise)}</strong></span>
+          <span>Next action <strong>{getRecommendedNextAction(franchise)}</strong></span>
           <span>Owner confidence <strong>{ownerMoodLabel(franchise.ownerState)} | {franchise.ownerState.jobSecurity}/100</strong></span>
+        </div>
+        <article className="phase-command-card">
+          <span className="phase-badge">{phaseLabel}</span>
+          <p>{getPhaseDescription(franchise)}</p>
+          <strong>Recommended: {getRecommendedNextAction(franchise)}</strong>
+          <small>Advance preview: {getAdvancePreview(franchise)}</small>
+          <ProgressBar value={completedChecklist} max={Math.max(1, checklist.length)} label={`${completedChecklist}/${checklist.length} phase checks`} />
+        </article>
+        {dangerWarnings.length > 0 && (
+          <WarningCallout title="Advance Warning">
+            {dangerWarnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </WarningCallout>
+        )}
+        <div className="dynasty-checklist dynasty-checklist--inline">
+          {checklist.map((item) => (
+            <span className={item.complete ? "is-complete" : ""} key={item.id}>
+              <b aria-hidden="true">{item.complete ? "OK" : ""}</b>
+              {item.label}
+              {item.optional ? " (optional)" : ""}
+            </span>
+          ))}
         </div>
         {franchise.seasonPhase === "regularSeason" && (
           <div className="button-row">
@@ -84,7 +141,7 @@ export function GMOfficePanel() {
             <button type="button" onClick={() => window.confirm("Sim the rest of the regular season?") && simToEndRegularSeason()}>
               Sim to end of regular season
             </button>
-            <button type="button" disabled={!franchise.league.completed} onClick={advanceSeasonPhase}>
+            <button type="button" disabled={!franchise.league.completed} onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>
               Start playoffs
             </button>
           </div>
@@ -99,7 +156,7 @@ export function GMOfficePanel() {
               <button type="button" onClick={simulateNextPlayoffDay}>Sim next playoff game/day</button>
               <button type="button" onClick={simulateCurrentPlayoffRound}>Sim current round</button>
               <button type="button" onClick={simulateToPlayoffChampion}>Sim to champion</button>
-              <button type="button" disabled={!franchise.playoffState?.completed} onClick={advanceSeasonPhase}>
+              <button type="button" disabled={!franchise.playoffState?.completed} onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>
                 Advance to season review
               </button>
             </div>
@@ -107,7 +164,7 @@ export function GMOfficePanel() {
         )}
         {["seasonReview", "retirements", "draftLottery", "staffHiring", "trainingCamp", "preseason"].includes(franchise.seasonPhase) && (
           <div className="button-row">
-            <button type="button" onClick={advanceSeasonPhase}>
+            <button type="button" onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>
               Advance to next major phase
             </button>
           </div>
@@ -119,7 +176,7 @@ export function GMOfficePanel() {
             <button type="button" onClick={() => window.confirm("Auto-complete the rest of the draft?") && autoCompleteDraft()}>
               Auto-complete draft
             </button>
-            <button type="button" disabled={!franchise.offseasonState?.draftState?.completed} onClick={advanceSeasonPhase}>
+            <button type="button" disabled={!franchise.offseasonState?.draftState?.completed} onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>
               Advance to re-signing
             </button>
           </div>
@@ -127,7 +184,7 @@ export function GMOfficePanel() {
         {franchise.seasonPhase === "reSigning" && (
           <div className="button-row">
             <button type="button" onClick={() => setActiveRoom("contracts")}>Open Re-Signing Board</button>
-            <button type="button" onClick={() => window.confirm("Unsigned UFAs will enter free agency. Continue?") && advanceSeasonPhase()}>
+            <button type="button" onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>
               Advance to free agency
             </button>
           </div>
@@ -135,9 +192,9 @@ export function GMOfficePanel() {
         {franchise.seasonPhase === "freeAgency" && (
           <div className="button-row">
             <button type="button" onClick={() => setActiveRoom("freeAgency")}>Open Free Agency Office</button>
-            <button type="button" onClick={advanceFreeAgencyDay}>Advance one free agency day</button>
+            <button type="button" onClick={() => confirmAndRun("day", advanceFreeAgencyDay)}>Advance one free agency day</button>
             <button type="button" onClick={() => window.confirm("Resolve the rest of free agency?") && completeFreeAgency()}>Auto-resolve free agency</button>
-            <button type="button" disabled={!franchise.freeAgencyState?.completed} onClick={advanceSeasonPhase}>Advance to staff hiring</button>
+            <button type="button" disabled={!franchise.freeAgencyState?.completed} onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>Advance to staff hiring</button>
           </div>
         )}
         <h4>Owner Goals</h4>
@@ -232,31 +289,4 @@ export function GMOfficePanel() {
       </div>
     </div>
   );
-}
-
-function phaseTitle(phase: string): string {
-  const labels: Record<string, string> = {
-    regularSeason: "Regular Season",
-    playoffs: "Playoffs",
-    seasonReview: "Season Review",
-    retirements: "Retirements",
-    draftLottery: "Draft Lottery",
-    draft: "Draft",
-    reSigning: "Re-Signing",
-    freeAgency: "Free Agency",
-    staffHiring: "Staff Hiring",
-    trainingCamp: "Training Camp",
-    preseason: "Preseason",
-    completed: "Completed"
-  };
-  return labels[phase] ?? phase;
-}
-
-function nextAction(franchise: FranchiseState): string {
-  if (franchise.seasonPhase === "regularSeason") return franchise.league.completed ? "Start playoffs" : "Play the schedule";
-  if (franchise.seasonPhase === "playoffs") return franchise.playoffState?.completed ? "Advance to review" : "Resolve bracket";
-  if (franchise.seasonPhase === "draft") return franchise.offseasonState?.draftState?.userPickPending ? "Make your pick" : "Auto-draft to your table";
-  if (franchise.seasonPhase === "freeAgency") return `Free agency day ${franchise.freeAgencyState?.currentDay ?? 1}`;
-  if (franchise.seasonPhase === "trainingCamp") return "Start next season";
-  return `Advance from ${phaseTitle(franchise.seasonPhase)}`;
 }

@@ -1,13 +1,14 @@
 import { createPlayerCoachRead, createPlayerManagementRisk, getFatigueBand, getFormBand, getMoraleBand } from "../../game/systems/playerNotes";
 import { contractSummary } from "../../game/systems/contracts";
 import type { Player } from "../../game/types";
+import { PlayerPortrait } from "../branding/PlayerPortrait";
 import { StatBadge } from "./StatBadge";
 
 export function PlayerCard({ player }: { player: Player }) {
   return (
     <article className="player-card">
       <header>
-        <span className="player-card__pos">{player.position}</span>
+        <PlayerPortrait player={player} compact />
         <div>
           <h3>{player.displayName}</h3>
           <p>

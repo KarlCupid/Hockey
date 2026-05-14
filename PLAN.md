@@ -59,3 +59,12 @@
 - Add schema version 3 hydration for older V1.1/Phase 2 saves and defaults for missing staff, owner, history, prospect pools, and phase state.
 - Add Phase 3 Vitest coverage for lifecycle, playoffs, draft, prospects, contracts, free agency, staff, owner goals, history, player lifecycle, and save migration.
 - Keep the milestone client-only and fictional; leave waivers, buyouts, retained salary, clauses, arbitration, offer sheets, online play, backend/cloud saves, and playable on-ice hockey out of scope.
+
+## Milestone 10: Phase 4 Beta Hardening, Presentation, Balance, and Identity
+
+- Add pure dynasty invariant checks and a deterministic multi-season playtest harness for repeated franchise stress tests.
+- Add balance-report and tuning helpers covering scoring, cap/economy, free agency, trades, scouting, development, playoffs, and owner-goal outputs.
+- Improve phase guidance, irreversible-action warnings, dynasty checklists, save validation/repair/import/export, and developer-only dry-run reporting.
+- Add fictional team branding, generated crest/jersey/portrait/broadcast UI components, and integrate them into high-value surfaces without using real hockey marks.
+- Add settings/help/accessibility controls, reduced-motion/reduced-detail presentation hooks, panel-level lazy loading, loading fallbacks, and error boundaries.
+- Polish 3D room identity and the UI design system while keeping all systems client-only, serializable, and testable.

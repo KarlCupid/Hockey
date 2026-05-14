@@ -164,7 +164,7 @@ export function applyFreeAgentSigning(franchise: FranchiseState, freeAgentId: st
 export function runAiFreeAgencyDay(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-ai-fa-${franchise.freeAgencyState?.currentDay ?? 1}`)): FranchiseState {
   let next = franchise.freeAgencyState ? franchise : { ...franchise, freeAgencyState: createFreeAgentMarket(franchise, rng) };
   const market = [...(next.freeAgencyState?.market ?? [])].sort((a, b) => b.player.overall - a.player.overall);
-  const attempts = Math.min(4, market.length);
+  const attempts = Math.min(8, market.length);
   for (let i = 0; i < attempts; i += 1) {
     const freeAgent = market[i];
     if (!freeAgent || !next.freeAgencyState?.market.some((candidate) => candidate.player.id === freeAgent.player.id)) continue;
@@ -172,7 +172,7 @@ export function runAiFreeAgencyDay(franchise: FranchiseState, rng = new SeededRn
       .filter((team) => team.id !== next.selectedTeamId && team.roster.length < ACTIVE_ROSTER_LIMIT && calculateCapSpace(team) > freeAgent.demandSalary)
       .sort((a, b) => rosterNeedScore(b, freeAgent.player.position) - rosterNeedScore(a, freeAgent.player.position));
     const team = candidates[0];
-    if (!team || !rng.chance(0.65)) continue;
+    if (!team || !rng.chance(0.72)) continue;
     const offer: ContractOffer = {
       id: `ai-fa-${team.id}-${freeAgent.player.id}`,
       playerId: freeAgent.player.id,

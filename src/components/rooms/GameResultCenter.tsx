@@ -5,6 +5,7 @@ import {
   type ResultEventFilter
 } from "../../game/systems/resultPresentation";
 import type { GameResult, Team } from "../../game/types";
+import { BroadcastScorebug } from "../branding/BroadcastPackage";
 
 const FILTERS: Array<{ id: ResultEventFilter; label: string }> = [
   { id: "all", label: "All" },
@@ -19,20 +20,32 @@ export function GameResultCenter({ result, teams }: { result: GameResult; teams:
   const [filter, setFilter] = useState<ResultEventFilter>("all");
   const presentation = useMemo(() => createGameResultPresentation(result, teams), [result, teams]);
   const events = filterPresentedEvents(presentation.eventFeed, filter);
+  const homeTeam = teams.find((team) => team.id === result.homeTeamId);
+  const awayTeam = teams.find((team) => team.id === result.awayTeamId);
 
   return (
     <div className="result-center">
-      <section className="result-scoreboard">
-        <div>
-          <small>{presentation.scoreboard.awayTeam}</small>
-          <strong>{presentation.scoreboard.awayAbbreviation} {presentation.scoreboard.awayScore}</strong>
-        </div>
-        <span>{presentation.scoreboard.finalLabel}</span>
-        <div>
-          <small>{presentation.scoreboard.homeTeam}</small>
-          <strong>{presentation.scoreboard.homeScore} {presentation.scoreboard.homeAbbreviation}</strong>
-        </div>
-      </section>
+      {homeTeam && awayTeam ? (
+        <BroadcastScorebug
+          awayTeam={awayTeam}
+          homeTeam={homeTeam}
+          awayScore={presentation.scoreboard.awayScore}
+          homeScore={presentation.scoreboard.homeScore}
+          label={presentation.scoreboard.finalLabel}
+        />
+      ) : (
+        <section className="result-scoreboard">
+          <div>
+            <small>{presentation.scoreboard.awayTeam}</small>
+            <strong>{presentation.scoreboard.awayAbbreviation} {presentation.scoreboard.awayScore}</strong>
+          </div>
+          <span>{presentation.scoreboard.finalLabel}</span>
+          <div>
+            <small>{presentation.scoreboard.homeTeam}</small>
+            <strong>{presentation.scoreboard.homeScore} {presentation.scoreboard.homeAbbreviation}</strong>
+          </div>
+        </section>
+      )}
 
       <section className="result-section">
         <h4>Period Scores</h4>

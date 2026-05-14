@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { TeamBrandCard } from "../components/branding/TeamBrandCard";
+import { LoadingPanel } from "../components/hud/LoadingPanel";
 import { FICTIONAL_TEAMS } from "../game/constants";
+import { getPhaseLabel } from "../game/systems/phaseGuidance";
 import { useFranchiseStore } from "../store/franchiseStore";
-import { AppShell } from "./AppShell";
+
+const AppShell = lazy(() => import("./AppShell").then((module) => ({ default: module.AppShell })));
 
 export function App() {
   const franchise = useFranchiseStore((state) => state.franchise);
@@ -17,7 +21,13 @@ export function App() {
     void refreshSaves();
   }, [refreshSaves]);
 
-  if (franchise) return <AppShell />;
+  if (franchise) {
+    return (
+      <Suspense fallback={<LoadingPanel label="Opening facility..." />}>
+        <AppShell />
+      </Suspense>
+    );
+  }
 
   if (selectingTeam) {
     return (
@@ -28,18 +38,14 @@ export function App() {
           <p>Every market is fictional, every dressing room has pressure, and every owner thinks the plan should already be working.</p>
         </div>
         <section className="team-select-grid">
-          {FICTIONAL_TEAMS.map(([id, city, nickname, abbreviation, primaryColor, secondaryColor, marketSize, personality]) => (
-            <button
-              className="team-select-card"
+          {FICTIONAL_TEAMS.map(([id, city, nickname, _abbreviation, _primaryColor, _secondaryColor, marketSize, personality]) => (
+            <TeamBrandCard
               key={id}
-              type="button"
-              onClick={() => startNewFranchise(id)}
-              style={{ "--team-primary": primaryColor, "--team-secondary": secondaryColor } as React.CSSProperties}
-            >
-              <span>{abbreviation}</span>
-              <strong>{city} {nickname}</strong>
-              <small>{marketSize} market | {personality}</small>
-            </button>
+              teamId={id}
+              name={`${city} ${nickname}`}
+              meta={`${marketSize} market | ${personality}`}
+              onSelect={() => startNewFranchise(id)}
+            />
           ))}
         </section>
       </main>
@@ -70,7 +76,7 @@ export function App() {
               <div>
                 <strong>{save.label}</strong>
                 <span>
-                  {save.teamName} | {save.record} | {save.currentDate} | {new Date(save.lastSaved).toLocaleString()}
+                  {save.teamName} | {save.record} | {getPhaseLabel(save.seasonPhase)} | {save.currentDate} | {new Date(save.lastSaved).toLocaleString()}
                 </span>
               </div>
               <div className="button-row">

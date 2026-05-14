@@ -90,8 +90,8 @@ export function assembleGameResult(
   const awayPpAttempts = periods.reduce((sum, period) => sum + period.awayPowerPlayAttempts, 0);
   const homePpGoals = periods.reduce((sum, period) => sum + period.homePowerPlayGoals, 0);
   const awayPpGoals = periods.reduce((sum, period) => sum + period.awayPowerPlayGoals, 0);
-  const homeGoalie = homeTeam.roster.find((player) => player.id === homeTeam.lines.goalies.starter) ?? homeTeam.roster.find((player) => player.position === "G")!;
-  const awayGoalie = awayTeam.roster.find((player) => player.id === awayTeam.lines.goalies.starter) ?? awayTeam.roster.find((player) => player.position === "G")!;
+  const homeGoalie = selectSimulationStarter(homeTeam);
+  const awayGoalie = selectSimulationStarter(awayTeam);
 
   incrementUpdate(playerUpdates, homeGoalie, {
     gamesPlayed: 1,
@@ -182,6 +182,14 @@ function teamRating(team: Team): number {
   const ids = getAssignedPlayerIds(team.lines).filter(Boolean) as string[];
   const players = ids.map((id) => team.roster.find((player) => player.id === id)).filter((player): player is Player => Boolean(player));
   return players.reduce((sum, player) => sum + player.overall, 0) / Math.max(1, players.length);
+}
+
+function selectSimulationStarter(team: Team): Player {
+  const lineupStarter = team.roster.find((player) => player.id === team.lines.goalies.starter);
+  const goalie = team.roster.filter((player) => player.position === "G").sort((a, b) => b.overall - a.overall)[0];
+  const emergency = [...team.roster].sort((a, b) => b.overall - a.overall)[0];
+  if (!lineupStarter && !goalie && !emergency) throw new Error(`${team.fullName} has no players available for simulation.`);
+  return lineupStarter ?? goalie ?? emergency;
 }
 
 function activeSkaters(team: Team): Player[] {

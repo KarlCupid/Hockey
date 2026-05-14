@@ -1,11 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SAVE_SLOT_COUNT } from "../../game/constants";
+import { getPhaseLabel } from "../../game/systems/phaseGuidance";
+import { validateSaveIntegrity } from "../../game/systems/saves";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
+import { Button } from "../ui/Button";
+import { WarningCallout } from "../ui/WarningCallout";
 
 export function SaveLoadPanel() {
-  const { saves, refreshSaves, saveToSlot, loadFromSlot, deleteSlot, loadError } = useFranchiseStore();
+  const { franchise, saves, refreshSaves, saveToSlot, loadFromSlot, deleteSlot, loadError, importFromJson, exportCurrentJson, repairCurrentSave } = useFranchiseStore();
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
+  const [importText, setImportText] = useState("");
+  const [exportText, setExportText] = useState("");
+  const integrity = useMemo(() => (franchise ? validateSaveIntegrity(franchise) : undefined), [franchise]);
 
   useEffect(() => {
     void refreshSaves();
@@ -28,6 +35,24 @@ export function SaveLoadPanel() {
       <section className="panel-section">
         <h3>Manual Saves</h3>
         <p className="muted">Three local slots are stored in IndexedDB. Autosave updates after completed games.</p>
+        {franchise && (
+          <div className="save-integrity-card">
+            <strong>Current save integrity</strong>
+            <span>Schema v{integrity?.schemaVersion} | {getPhaseLabel(franchise.seasonPhase)} | Season {franchise.league.seasonYear}</span>
+            <span>{integrity?.errors.length ?? 0} errors | {integrity?.warnings.length ?? 0} warnings</span>
+            {!!integrity?.warnings.length && (
+              <WarningCallout title="Save Warnings" tone="info">
+                {integrity.warnings.slice(0, 4).map((warning) => (
+                  <p key={warning}>{warning}</p>
+                ))}
+              </WarningCallout>
+            )}
+            <div className="button-row">
+              <Button onClick={repairCurrentSave} disabled={!integrity?.warnings.length && !integrity?.errors.length}>Repair current save</Button>
+              <Button onClick={() => setExportText(exportCurrentJson() ?? "")}>Export save JSON</Button>
+            </div>
+          </div>
+        )}
         {slots.map((slotId) => {
           const metadata = saves.find((save) => save.slotId === slotId);
           return (
@@ -36,7 +61,7 @@ export function SaveLoadPanel() {
                 <strong>{metadata?.label ?? `Slot ${slotId.replace("slot-", "")}`}</strong>
                 <span>
                   {metadata
-                    ? `${metadata.teamName} | ${metadata.record} | Game ${metadata.gameNumber} | ${metadata.currentDate} | Saved ${new Date(metadata.lastSaved).toLocaleString()}`
+                    ? `${metadata.teamName} | ${metadata.record} | ${getPhaseLabel(metadata.seasonPhase)} | Game ${metadata.gameNumber} | ${metadata.currentDate} | Saved ${new Date(metadata.lastSaved).toLocaleString()}`
                     : "Empty slot"}
                 </span>
                 {metadata && <small className="muted">Season {metadata.seasonYear} | schema v{metadata.schemaVersion}</small>}
@@ -65,7 +90,7 @@ export function SaveLoadPanel() {
               <div>
                 <strong>{save.teamName}</strong>
                 <span>
-                  {save.record} | Game {save.gameNumber} | {save.currentDate} | Saved {new Date(save.lastSaved).toLocaleString()}
+                  {save.record} | {getPhaseLabel(save.seasonPhase)} | Game {save.gameNumber} | {save.currentDate} | Saved {new Date(save.lastSaved).toLocaleString()}
                 </span>
               </div>
               <div className="button-row">
@@ -80,6 +105,27 @@ export function SaveLoadPanel() {
           ))}
         {!saves.some((save) => save.slotId === "autosave") && <p className="empty-state">No autosave yet. Complete a game to create one.</p>}
         {loadError && <p className="error-text">{loadError}</p>}
+        <h3>Import / Export JSON</h3>
+        <label className="select-field">
+          <span>Exported save JSON</span>
+          <textarea readOnly value={exportText} placeholder="Use Export save JSON to populate this field." />
+        </label>
+        <label className="select-field">
+          <span>Import save JSON</span>
+          <textarea value={importText} onChange={(event) => setImportText(event.target.value)} placeholder="Paste a Franchise Ice save JSON export here." />
+        </label>
+        <div className="button-row">
+          <Button
+            tone="primary"
+            disabled={!importText.trim()}
+            onClick={() => {
+              if (window.confirm("Importing will replace the currently loaded franchise. Continue?")) importFromJson(importText);
+            }}
+          >
+            Validate and Import
+          </Button>
+          <Button onClick={() => setImportText("")}>Clear Import</Button>
+        </div>
       </section>
     </div>
   );

@@ -5,8 +5,8 @@ export const SAVE_SLOT_COUNT = 3;
 export const AUTOSAVE_SLOT_ID = "autosave";
 export const REGULAR_SEASON_DAYS = 22;
 export const START_DATE = "2026-10-03";
-export const SALARY_CAP_CEILING = 88_000_000;
-export const SALARY_CAP_FLOOR = 55_000_000;
+export const SALARY_CAP_CEILING = 96_000_000;
+export const SALARY_CAP_FLOOR = 58_000_000;
 export const DRAFT_PICK_ROUNDS = 4;
 export const DRAFT_PICK_SEASONS = 2;
 
@@ -49,12 +49,16 @@ export const NATIONALITIES = [
 ];
 
 export const SIM_CONSTANTS = {
+  // Small arcade-management boost for home ice; enough to matter without making road wins rare.
   homeIceBoost: 2.4,
+  // Per-period shot baseline. Current balance target is roughly 22-38 shots per team.
   baseShotChance: 7.2,
-  baseGoalRate: 0.075,
+  // Per-shot scoring baseline tuned for total goals near the lower half of the fun plausibility band.
+  baseGoalRate: 0.092,
   fatiguePenaltyScale: 0.07,
   moraleScale: 0.045,
   formScale: 0.055,
+  // Injuries should create management pressure without wiping out rosters during dry-run seasons.
   injuryBaseChance: 0.012,
   overtimeGoalChance: 0.58
 };

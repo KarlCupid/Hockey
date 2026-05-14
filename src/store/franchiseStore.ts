@@ -5,7 +5,17 @@ import { clamp, SeededRng } from "../game/rng";
 import { createGameNews } from "../game/systems/news";
 import { autoFillBestLineup, validateLineup } from "../game/systems/lineupValidation";
 import { applyGameToStandings, recordString } from "../game/systems/standings";
-import { deleteSave, listSaveMetadata, readSave, writeSave } from "../game/systems/saves";
+import {
+  deleteSave,
+  exportSaveToJson,
+  importSaveFromJson,
+  listSaveMetadata,
+  readSave,
+  repairFranchiseState,
+  validateSaveIntegrity,
+  writeSave
+} from "../game/systems/saves";
+import { capNewsItems, createPhaseTransitionNews } from "../game/systems/storyEngine";
 import { getCapWarnings } from "../game/systems/contracts";
 import { assignDevelopmentPlan as assignDevelopmentPlanPure, removeDevelopmentPlan as removeDevelopmentPlanPure, tickDevelopment } from "../game/systems/development";
 import {
@@ -36,6 +46,7 @@ import { tickScouting, toggleWatchlist, moveProspectOnBoard, updateScoutingAssig
 import { fireStaff as fireStaffPure, hireStaff as hireStaffPure, replaceStaff as replaceStaffPure } from "../game/systems/staff";
 import { applyTrade, evaluateTrade, generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../game/systems/trades";
 import { assembleGameResult, nextGameForTeam, simulateGame } from "../game/simulation/simulateGame";
+import { useSettingsStore } from "./settingsStore";
 import type { TacticKey } from "../game/systems/tactics";
 import type {
   DevelopmentFocus,
@@ -71,6 +82,9 @@ interface FranchiseStore {
   saveToSlot: (slotId: string) => Promise<void>;
   loadFromSlot: (slotId: string) => Promise<void>;
   deleteSlot: (slotId: string) => Promise<void>;
+  importFromJson: (raw: string) => void;
+  exportCurrentJson: () => string | undefined;
+  repairCurrentSave: () => void;
   autoFillLineup: () => void;
   setLineupSlot: (path: string, playerId: string) => void;
   setTactic: (key: TacticKey, value: number) => void;
@@ -151,6 +165,32 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   deleteSlot: async (slotId) => {
     await deleteSave(slotId);
     await get().refreshSaves();
+  },
+  importFromJson: (raw) => {
+    try {
+      const franchise = importSaveFromJson(raw);
+      const integrity = validateSaveIntegrity(franchise);
+      set({
+        franchise,
+        loadError: integrity.errors.length ? integrity.errors[0] : integrity.warnings[0]
+      });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Save import failed." });
+    }
+  },
+  exportCurrentJson: () => {
+    const franchise = get().franchise;
+    return franchise ? exportSaveToJson(franchise) : undefined;
+  },
+  repairCurrentSave: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const repaired = repairFranchiseState(franchise);
+    const integrity = validateSaveIntegrity(repaired);
+    set({
+      franchise: repaired,
+      loadError: integrity.warnings[0] ?? undefined
+    });
   },
   autoFillLineup: () => {
     const franchise = get().franchise;
@@ -234,13 +274,16 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         seed: `${franchise.franchiseId}-${playoffGame.id}-${franchise.playoffState?.currentRound ?? 1}`
       });
       const next = applyPlayoffGameResult(franchise, playoffGame, result);
-      set({ franchise: { ...next, saveStatus: "saving" } });
-      const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
-        .then(() => true)
-        .catch(() => false);
-      await get().refreshSaves();
+      const autoSave = useSettingsStore.getState().settings.autoSave;
+      set({ franchise: { ...next, saveStatus: autoSave ? "saving" : next.saveStatus } });
+      const saved = autoSave
+        ? await writeSave(AUTOSAVE_SLOT_ID, next)
+            .then(() => true)
+            .catch(() => false)
+        : true;
+      if (autoSave) await get().refreshSaves();
       const latest = get().franchise;
-      if (latest?.lastResult?.id === result.id) set({ franchise: { ...latest, saveStatus: saved ? "saved" : "error" } });
+      if (autoSave && latest?.lastResult?.id === result.id) set({ franchise: { ...latest, saveStatus: saved ? "saved" : "error" } });
       return result;
     }
     const game = nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex);
@@ -288,8 +331,9 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       next = simulateRemainingDay(next, result.gameId);
       next = tickFrontOfficeSystems(next);
     }
-    set({ franchise: { ...next, saveStatus: autosave ? "saving" : next.saveStatus } });
-    if (autosave) {
+    const autoSaveEnabled = useSettingsStore.getState().settings.autoSave;
+    set({ franchise: { ...next, saveStatus: autosave && autoSaveEnabled ? "saving" : next.saveStatus } });
+    if (autosave && autoSaveEnabled) {
       const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
         .then(() => true)
         .catch(() => false);
@@ -306,7 +350,9 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   advanceSeasonPhase: () => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: advanceSeasonPhasePure(franchise, new SeededRng(`${franchise.franchiseId}-advance-${franchise.seasonPhase}`)) });
+    const next = advanceSeasonPhasePure(franchise, new SeededRng(`${franchise.franchiseId}-advance-${franchise.seasonPhase}`));
+    const news = next.seasonPhase !== franchise.seasonPhase ? createPhaseTransitionNews(next, franchise.seasonPhase, next.seasonPhase) : [];
+    set({ franchise: news.length ? { ...next, inbox: capNewsItems([...news, ...next.inbox]) } : next });
   },
   simulateNextPlayoffDay: () => {
     const franchise = get().franchise;
@@ -619,7 +665,7 @@ function applyDetailedResult(franchise: FranchiseState, result: GameResult): Fra
       schedule,
       recentResults: [recent, ...leagueWithRecords.recentResults].slice(0, 10)
     },
-    inbox: [...news, ...franchise.inbox].slice(0, 40),
+    inbox: capNewsItems([...news, ...franchise.inbox], 60),
     lastResult: { ...result, newsEvents: news },
     updatedAt: new Date().toISOString()
   };
@@ -719,7 +765,7 @@ function tickFrontOfficeSystems(franchise: FranchiseState): FranchiseState {
     },
     scouting: scoutingResult.state,
     development: developmentResult.development,
-    inbox: [...frontOfficeNews, ...franchise.inbox].slice(0, 40),
+    inbox: capNewsItems([...frontOfficeNews, ...franchise.inbox], 60),
     transactionLog: [...transactions, ...franchise.transactionLog].slice(0, 30),
     updatedAt: new Date().toISOString()
   };

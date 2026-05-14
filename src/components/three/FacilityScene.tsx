@@ -1,7 +1,10 @@
 import { Canvas } from "@react-three/fiber";
-import { Environment, Grid } from "@react-three/drei";
+import { Grid } from "@react-three/drei";
 import { useEffect } from "react";
+import { getTeamBranding } from "../../game/assets/teamBranding";
 import type { RoomId } from "../../game/types";
+import { useFranchiseStore } from "../../store/franchiseStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { useUiStore } from "../../store/uiStore";
 import { RoomZone, type RoomZoneConfig } from "./RoomZone";
 import { ThirdPersonController } from "./ThirdPersonController";
@@ -27,6 +30,9 @@ export function FacilityScene() {
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
   const setNearbyRoom = useUiStore((state) => state.setNearbyRoom);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
+  const franchise = useFranchiseStore((state) => state.franchise);
+  const reduced3DDetail = useSettingsStore((state) => state.settings.reduced3DDetail);
+  const selectedTeamId = franchise?.selectedTeamId ?? "harbor-city";
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -44,8 +50,7 @@ export function FacilityScene() {
         <ambientLight intensity={0.42} />
         <directionalLight position={[4, 10, 5]} intensity={1.4} castShadow />
         <pointLight position={[0, 3, 0]} intensity={1.2} color="#60c9ff" />
-        <Environment preset="city" />
-        <FacilityGeometry />
+        <FacilityGeometry selectedTeamId={selectedTeamId} reducedDetail={reduced3DDetail} />
         <Grid args={[24, 18]} cellSize={1} sectionSize={4} cellColor="#17304d" sectionColor="#6ecbff" fadeDistance={22} fadeStrength={1.2} />
         {ZONES.map((zone) => (
           <RoomZone key={zone.id} zone={zone} active={nearbyRoom === zone.id} onOpen={setActiveRoom} />
@@ -56,7 +61,7 @@ export function FacilityScene() {
   );
 }
 
-function FacilityGeometry() {
+function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: string; reducedDetail: boolean }) {
   return (
     <group>
       <mesh receiveShadow position={[0, -0.02, 0]}>
@@ -79,6 +84,7 @@ function FacilityGeometry() {
         <boxGeometry args={[0.25, 2.4, 20]} />
         <meshStandardMaterial color="#101d31" />
       </mesh>
+      <TeamBrandingWall teamId={selectedTeamId} />
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
       <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
       <ContractOfficeProps />
@@ -94,8 +100,30 @@ function FacilityGeometry() {
       <DraftStageProps />
       <ArenaTunnel />
       <ScoutingProps />
-      <TrophyCases />
+      <TrophyCases reducedDetail={reducedDetail} />
       <SaveDesk />
+    </group>
+  );
+}
+
+function TeamBrandingWall({ teamId }: { teamId: string }) {
+  const brand = getTeamBranding(teamId);
+  return (
+    <group position={[0, 0, -9.62]}>
+      <mesh position={[0, 1.25, 0]}>
+        <boxGeometry args={[3.4, 1.4, 0.08]} />
+        <meshStandardMaterial color={brand.secondaryColor} emissive={brand.primaryColor} emissiveIntensity={0.12} />
+      </mesh>
+      <mesh position={[0, 1.26, 0.08]}>
+        <circleGeometry args={[0.48, 32]} />
+        <meshStandardMaterial color={brand.primaryColor} emissive={brand.primaryColor} emissiveIntensity={0.35} />
+      </mesh>
+      {[-0.7, 0.7].map((x) => (
+        <mesh key={x} position={[x, 1.26, 0.1]}>
+          <boxGeometry args={[0.38, 0.9, 0.04]} />
+          <meshStandardMaterial color={brand.accentColor} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -380,10 +408,10 @@ function ScoutingProps() {
   );
 }
 
-function TrophyCases() {
+function TrophyCases({ reducedDetail }: { reducedDetail: boolean }) {
   return (
     <group position={[7.3, 0, 5.8]}>
-      {[-0.7, 0, 0.7].map((x) => (
+      {(reducedDetail ? [0] : [-0.7, 0, 0.7]).map((x) => (
         <mesh key={x} position={[x, 0.72, 0]}>
           <cylinderGeometry args={[0.16, 0.22, 0.7, 18]} />
           <meshStandardMaterial color="#f5c65b" metalness={0.65} roughness={0.25} emissive="#8a5d1f" emissiveIntensity={0.15} />

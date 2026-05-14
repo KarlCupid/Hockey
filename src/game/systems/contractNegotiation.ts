@@ -1,4 +1,5 @@
 import { calculateCapSpace, contractSummary, estimateMarketSalary, formatMoney } from "./contracts";
+import { autoFillBestLineup } from "./lineupValidation";
 import { calculateTeamStaffModifiers } from "./staff";
 import type { ContractDemand, ContractOffer, ContractOfferEvaluation, FranchiseState, NewsItem, Player, Team } from "../types";
 
@@ -122,7 +123,8 @@ export function releaseUnsignedUFAsToMarket(franchise: FranchiseState): Franchis
       if (player.contract.yearsRemaining <= 0 && player.contract.expiryStatus === "UFA") released.push({ ...player, teamId: "free-agent" });
       else keep.push(player);
     });
-    return { ...team, roster: keep };
+    const nextTeam = { ...team, roster: keep };
+    return { ...nextTeam, lines: autoFillBestLineup(nextTeam).lineup };
   });
   if (!released.length) return franchise;
   const market = released.map((player) => ({

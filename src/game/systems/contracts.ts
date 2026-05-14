@@ -1,5 +1,6 @@
 import type { Contract, Player, Team } from "../types";
 import { clamp, type SeededRng } from "../rng";
+import { TUNING } from "./tuning";
 
 type ContractPlayerInput = Pick<Player, "age" | "overall" | "potential" | "position" | "roleExpectation">;
 
@@ -8,8 +9,8 @@ export function createContractForPlayer(player: ContractPlayerInput, rng: Seeded
   const prospectDiscount = player.age <= 22 ? 0.64 : player.age <= 24 ? 0.78 : 1;
   const veteranDiscount = player.age >= 34 ? 0.82 : player.age >= 31 ? 0.92 : 1;
   const roleBoost = player.roleExpectation === "Franchise Driver" || player.roleExpectation === "Starter" ? 1.1 : 1;
-  const salary = roundMoney(Math.max(775_000, market * prospectDiscount * veteranDiscount * roleBoost + rng.float(-350_000, 450_000)));
-  const capHit = roundMoney(Math.max(775_000, salary * rng.float(0.96, 1.04)));
+  const salary = roundMoney(Math.max(TUNING.economy.minSalary, market * prospectDiscount * veteranDiscount * roleBoost + rng.float(-300_000, 350_000)));
+  const capHit = roundMoney(Math.max(TUNING.economy.minSalary, salary * rng.float(0.96, 1.04)));
   const yearsRemaining = inferTerm(player, rng);
   const expiryStatus = player.age <= 21 && player.overall < 74 ? "Prospect" : player.age <= 25 ? "RFA" : "UFA";
 
@@ -65,14 +66,14 @@ export function getCapWarnings(team: Team): string[] {
 export function estimateMarketSalary(player: ContractPlayerInput): number {
   const ovr = player.overall;
   const upside = Math.max(0, player.potential - player.overall);
-  let value = 775_000 + Math.max(0, ovr - 58) ** 2 * 18_000 + upside * 95_000;
-  if (ovr >= 88) value += 3_750_000;
-  else if (ovr >= 84) value += 1_900_000;
-  else if (ovr >= 78) value += 700_000;
-  if (player.position === "G" && ovr >= 80) value += 900_000;
-  if (player.roleExpectation === "Franchise Driver") value += 1_500_000;
-  if (player.roleExpectation === "Depth" || player.roleExpectation === "Backup") value *= 0.82;
-  return Math.round(clamp(value, 775_000, 14_000_000));
+  let value = TUNING.economy.minSalary + Math.max(0, ovr - 58) ** 2 * 14_500 + upside * 72_000;
+  if (ovr >= 88) value += 2_850_000;
+  else if (ovr >= 84) value += 1_450_000;
+  else if (ovr >= 78) value += 525_000;
+  if (player.position === "G" && ovr >= 80) value += 675_000;
+  if (player.roleExpectation === "Franchise Driver") value += 1_150_000;
+  if (player.roleExpectation === "Depth" || player.roleExpectation === "Backup") value *= 0.8;
+  return Math.round(clamp(value, TUNING.economy.minSalary, TUNING.economy.plausibleStarSalary.max));
 }
 
 export function contractValueRisk(player: Player): "Low" | "Medium" | "High" {

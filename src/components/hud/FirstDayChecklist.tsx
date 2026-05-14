@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { getPhaseChecklist, getPhaseLabel } from "../../game/systems/phaseGuidance";
+import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore, type FirstDayChecklistId } from "../../store/uiStore";
 
 const ITEMS: Array<{ id: FirstDayChecklistId; label: string }> = [
@@ -22,30 +24,49 @@ export function FirstDayChecklist() {
   const dismissed = useUiStore((state) => state.checklistDismissed);
   const setCollapsed = useUiStore((state) => state.setChecklistCollapsed);
   const dismiss = useUiStore((state) => state.dismissChecklist);
+  const franchise = useFranchiseStore((state) => state.franchise);
   const count = useMemo(() => ITEMS.filter((item) => completed[item.id]).length, [completed]);
+  const showDynastyGuide = Boolean(franchise && (franchise.league.seasonYear > 2026 || count === ITEMS.length || franchise.seasonPhase !== "regularSeason"));
+  const phaseChecklist = franchise ? getPhaseChecklist(franchise) : [];
 
-  if (dismissed || count === ITEMS.length) return null;
+  if (dismissed) return null;
 
   return (
     <aside className={collapsed ? "first-day first-day--collapsed" : "first-day"}>
       <header>
         <div>
-          <small>First Day</small>
-          <strong>GM / Head Coach</strong>
+          <small>{showDynastyGuide ? "Dynasty Guide" : "First Day"}</small>
+          <strong>{showDynastyGuide && franchise ? getPhaseLabel(franchise.seasonPhase) : "GM / Head Coach"}</strong>
         </div>
-        <span>{count}/{ITEMS.length}</span>
+        <span>{showDynastyGuide ? `${phaseChecklist.filter((item) => item.complete).length}/${phaseChecklist.length}` : `${count}/${ITEMS.length}`}</span>
       </header>
       {!collapsed && (
         <>
-          <ol>
-            {ITEMS.map((item) => (
-              <li className={completed[item.id] ? "is-complete" : ""} key={item.id}>
-                <span aria-hidden="true">{completed[item.id] ? "✓" : ""}</span>
-                {item.label}
-              </li>
-            ))}
-          </ol>
-          <p>Walk the facility, make the first decisions, then see what the room gives back.</p>
+          {showDynastyGuide ? (
+            <>
+              <ol>
+                {phaseChecklist.map((item) => (
+                  <li className={item.complete ? "is-complete" : ""} key={item.id}>
+                    <span aria-hidden="true">{item.complete ? "OK" : ""}</span>
+                    {item.label}
+                  </li>
+                ))}
+              </ol>
+              <p>Use the GM Office phase card when an action would permanently advance the dynasty calendar.</p>
+            </>
+          ) : (
+            <>
+              <ol>
+                {ITEMS.map((item) => (
+                  <li className={completed[item.id] ? "is-complete" : ""} key={item.id}>
+                    <span aria-hidden="true">{completed[item.id] ? "OK" : ""}</span>
+                    {item.label}
+                  </li>
+                ))}
+              </ol>
+              <p>Walk the facility, make the first decisions, then see what the room gives back.</p>
+            </>
+          )}
         </>
       )}
       <div className="first-day__actions">

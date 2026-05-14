@@ -10,6 +10,7 @@
 - V1.1 kept the existing architecture and added polish through small pure helper systems plus targeted room/HUD components.
 - Phase 2 keeps the app client-only and adds front-office depth through serializable state plus pure systems under `src/game/systems`.
 - Phase 3 keeps the V1.1/Phase 2 architecture intact and adds the year-to-year dynasty lifecycle as typed client-only state.
+- Phase 4 hardens the existing client-only dynasty loop through invariants, dry-run playtests, balance reporting, save repair, fictional identity, settings/help, lazy loading, and targeted visual polish instead of adding another large rule-system layer.
 
 ## Files Added
 
@@ -62,6 +63,21 @@
 - Added Phase 3 save hydration so V1.1/Phase 2 saves get safe dynasty defaults.
 - Added `src/tests/phase3Dynasty.test.ts` with lifecycle, playoff, draft, prospect, contract, free agency, staff, player lifecycle, owner/history, and save coverage.
 
+## Phase 4 Beta Hardening, Presentation, Balance, and Identity Changes
+
+- Added `dynastyInvariants`, `dynastyPlaytest`, `balanceReport`, `tuning`, `phaseGuidance`, and `storyEngine` pure systems for multi-season validation, dry-run reporting, balance summaries, phase guidance, and inbox dedupe.
+- Hardened regular-season completion and simulation goalie selection so dry-run seasons do not crash when offseason churn leaves a lineup with missing or invalid goalie references.
+- Tuned scoring, salary generation, cap ceiling/floor, and AI free-agency signing pace toward a more playable multi-season balance profile.
+- Expanded save helpers with integrity validation, repair, safe JSON deserialize, export, and import. Save metadata now includes schema version, phase, season, selected-team record, and warnings.
+- Added fictional team branding registries plus generated crest, jersey swatch, portrait, and broadcast package components. No real hockey marks or external assets were added.
+- Added settings/help surfaces for reduced motion, reduced 3D detail, broadcast speed, autosave, phase confirmations, UI scale, table density, sound placeholder, and guide reset.
+- Added reusable UI primitives for buttons, cards, headers, data tables, confirmation dialogs, empty states, warnings, progress bars, tabs, and filters, then applied them to the GM Office phase command center and save integrity surfaces.
+- Improved GM Office phase flow with labels, descriptions, checklists, recommended next actions, danger warnings, and advance previews.
+- Added developer-only tools for invariant reports, one-seed playtests, balance summaries, and one/three-season dry runs that do not write into the active save.
+- Lazy-loaded room panels, the 3D facility, and Dev Tools through `React.lazy`/`Suspense`, with loading fallbacks and an error boundary.
+- Improved 3D facility identity with selected-team branding, trophy display scaling, reduced-detail behavior, and reduced-motion-aware broadcast presentation.
+- Removed Drei `Environment` and Troika `Text` dependencies from the facility render path after browser smoke exposed blocked external HDR/font fetches. Facility lighting and room labels now use local lights and DOM labels only.
+
 ## Verification
 
 - Passed: `npm install`
@@ -84,6 +100,10 @@
 - Passed: `npm run build` after Phase 2 changes. Vite still reports the known large Three/R3F bundle warning.
 - Passed: `npm test` with 6 test files and 70 tests after Phase 3 systems.
 - Passed: `npm run build` after Phase 3 changes. Vite still reports the known large Three/R3F bundle warning.
+- Passed: `npm test` with 7 test files and 96 tests after Phase 4 systems.
+- Passed: `npm run build` after Phase 4 changes. Panel-level code splitting produced separate chunks for GM Office, Arena, Save Desk, Dev Tools, Settings, Staff, Free Agency, Scouting, Development, Contract/Cap, Trade, Coach, Standings, Locker, Medical, FacilityScene, and shared UI pieces. Removing external Drei environment/text helpers reduced the FacilityScene chunk to about 42.7 kB minified. Vite still reports a large `react-three-fiber` chunk, which remains the main known bundle warning.
+- Ran deterministic Phase 4 dry-run reporting with seeds `40401`, `40402`, `40403`, `40404`, and `40405`. Each seed completed three seasons with zero fatal invariant errors. See `PLAYTEST_REPORT.md`.
+- Passed browser runtime smoke at `http://127.0.0.1:5173/` with a new franchise, visible 1440x950 canvas, high screenshot color variance, and no page/console errors after removing external facility fetches. Headless WebGL still emits expected GPU stall performance warnings during screenshots.
 - Passed browser smoke at `http://127.0.0.1:5173/` with the Codex in-app Browser using DOM/interaction/console checks:
   - New Franchise, team selection, First Day checklist, and Operations Map rendered.
   - GM Office inbox, Locker Room roster/player card, Coach Office tactic preset and auto-fill, Arena instant sim, period sim with Bench Report and explicit apply, broadcast sim with skip/apply, Standings Hall, and manual save were exercised.
@@ -102,4 +122,7 @@
 - Job security can collapse, but the prototype does not fire the user or end the save.
 - Arena/broadcast mode visualizes events with stylized markers rather than playable hockey physics.
 - The production bundle is large because Three.js, React Three Fiber, and Drei ship in the first vertical-slice chunk; code splitting is a Phase 2 optimization.
+- Phase 4 lazy-loads room panels and the facility, but Vite still reports a large React Three Fiber chunk.
+- Phase 4 roster balance is improved but not final: some multi-season dry runs still generate roster-short warnings by year three because free agency and prospect promotion are simplified.
+- Re-signing and owner goal completion rates in the balance report are still conservative and need future tuning.
 - Browser screenshot capture can time out on the current WebGL scene in the Codex in-app Browser; DOM and console smoke checks still passed.

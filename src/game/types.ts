@@ -33,7 +33,9 @@ export type RoomId =
   | "development"
   | "freeAgency"
   | "staff"
-  | "draft";
+  | "draft"
+  | "settings"
+  | "devTools";
 
 export type PlayerArchetype =
   | "Sniper"
@@ -909,4 +911,5 @@ export interface SaveSlotMetadata {
   lastSaved: string;
   seasonYear: number;
   schemaVersion: number;
+  seasonPhase: SeasonPhase;
 }

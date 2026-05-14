@@ -28,6 +28,7 @@ npm run build
 - `src/app/AppShell.tsx`: main facility shell, room modal routing, global controls
 - `src/store/franchiseStore.ts`: franchise state, save/load, lineup/tactics mutations, simulation application
 - `src/store/uiStore.ts`: active room and nearby room UI state
+- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, and guide reset token
 
 ## Core Game Systems
 
@@ -50,6 +51,12 @@ npm run build
 - `src/game/systems/injuries.ts`: injury and fatigue risk selectors
 - `src/game/systems/news.ts`: inbox/news generation from game state
 - `src/game/systems/saves.ts`: localForage save serialization, metadata, load/delete helpers
+- `src/game/systems/dynastyInvariants.ts`: full-franchise invariant checks for rosters, picks, prospects, phases, schedules, contracts, ratings, and JSON serializability
+- `src/game/systems/dynastyPlaytest.ts`: deterministic multi-season dry-run harness with phase reports, champion history, cap health, roster health, and owner-security trend
+- `src/game/systems/balanceReport.ts`: seeded balance report for scoring, economy, free agency, trades, draft/scouting, development, and owner gameplay
+- `src/game/systems/tuning.ts`: Phase 4 target ranges and helper checks for simulation, economy, dynasty, draft, and development tuning
+- `src/game/systems/phaseGuidance.ts`: labels, descriptions, checklists, recommendations, advance previews, and danger warnings for every season phase
+- `src/game/systems/storyEngine.ts`: story event creation, inbox dedupe, low-priority grouping, phase stories, and milestone stories
 - `src/game/systems/contracts.ts`: structured contracts, cap calculations, expiry/risk helpers
 - `src/game/systems/draftPicks.ts`: initial pick generation, labels, values, and transfer helpers
 - `src/game/systems/trades.ts`: team needs, trade block logic, package valuation, cap validation, AI evaluation, and trade application
@@ -66,6 +73,10 @@ npm run build
 - `src/game/systems/playerLifecycle.ts`: aging, contract decrement, retirements, recovery, season-stat archive/reset, and offseason progression/regression
 - `src/game/systems/history.ts`: season history, champions, awards, and franchise timeline helpers
 - `src/game/generators/generateDraftClass.ts`: fictional 72-player draft-class generation
+- `src/game/assets/teamBranding.ts`: fictional team color, crest, jersey, arena mood, lower-third, and personality registry
+- `src/game/assets/jerseyTemplates.ts`: generated home/away/alternate jersey swatch data
+- `src/game/assets/portraitRegistry.ts`: deterministic fictional player portrait keys and visual variants
+- `src/game/assets/broadcastTheme.ts`: reusable fictional broadcast styling metadata
 - `src/game/simulation/simulatePeriod.ts`: deterministic period simulation
 - `src/game/simulation/simulateGame.ts`: full-game assembly, overtime, stars, coach notes, result shape
 - `src/game/simulation/eventTimeline.ts`: timeline ordering and clock helpers
@@ -78,6 +89,9 @@ npm run build
 - `src/components/hud/FirstDayChecklist.tsx`: first-session GM/head coach guidance checklist
 - `src/components/hud/OperationsMap.tsx`: facility map and room-directory fallback navigation
 - `src/components/hud/ModalShell.tsx`: modal shell for facility room panels
+- `src/components/hud/HelpOverlay.tsx`: keyboard controls, room guide, phase guide, sim modes, front-office basics, and save/load help
+- `src/components/hud/ErrorBoundary.tsx`: runtime fallback around lazy room and 3D surfaces
+- `src/components/hud/LoadingPanel.tsx`: Suspense fallback for lazy-loaded panels and facility
 - `src/components/hud/PlayerCard.tsx`: detailed player card
 - `src/components/hud/StatBadge.tsx`: compact stat display
 - `src/components/hud/TeamBadge.tsx`: team identity mark
@@ -91,10 +105,18 @@ npm run build
 - `src/components/rooms/DevelopmentOfficePanel.tsx`: development plans, candidate ranking, selected-player notes, and recent updates
 - `src/components/rooms/FreeAgencyOfficePanel.tsx`: Phase 3 free-agent market, filters, offer builder, AI signings, and advance controls
 - `src/components/rooms/StaffOfficePanel.tsx`: current staff, staff market, role filters, staff modifiers, and staff moves
+- `src/components/rooms/SettingsPanel.tsx`: reduced motion/detail, broadcast speed, autosave, confirmation, density, scale, sound placeholder, and guide reset settings
+- `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, and dry-run reporting tools
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
 - `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, consequences, and filtered event feed
 - `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary
 - `src/components/rooms/SaveLoadPanel.tsx`: autosave/manual slot UI
+- `src/components/branding/TeamCrest.tsx`: fictional generated SVG crests
+- `src/components/branding/JerseySwatch.tsx`: generated jersey concept cards
+- `src/components/branding/TeamBrandCard.tsx`: team-selection and brand display card
+- `src/components/branding/PlayerPortrait.tsx`: deterministic fictional player portrait placeholders
+- `src/components/branding/BroadcastPackage.tsx`: branded scorebug and lower-third components
+- `src/components/ui`: Phase 4 reusable button, card, section header, table, dialog, empty state, warning callout, progress bar, tabs, and filter bar primitives
 
 ## 3D And Visualization
 
@@ -113,6 +135,7 @@ npm run build
 - `src/tests/v11Systems.test.ts`: V1.1 pure helper coverage for player notes, line identity, tactics, result presentation, bench reports, broadcast score, news, and season pulse
 - `src/tests/phase2Systems.test.ts`: Phase 2 coverage for contracts, picks, trades, scouting, development, migration, and serialization
 - `src/tests/phase3Dynasty.test.ts`: Phase 3 coverage for lifecycle, playoffs, draft, prospects, contracts, free agency, staff, owner goals, history, player lifecycle, and save migration
+- `src/tests/phase4Playtest.test.ts`: Phase 4 coverage for invariants, three-season playtests, save integrity, phase guidance, balance reports, branding registries, settings, and story dedupe
 
 ## Styles
 
@@ -126,6 +149,7 @@ npm run build
 - `PLAN.md`: implementation milestones
 - `IMPLEMENTATION_LOG.md`: decisions, verification, and known limitations
 - `PROJECT_INDEX.md`: this navigation index
+- `PLAYTEST_REPORT.md`: deterministic Phase 4 playtest and balance report summary
 
 ## Current Playable Flow
 
@@ -134,16 +158,17 @@ npm run build
 3. Enter the 3D hockey operations facility.
 4. Walk with `WASD`, approach room markers, and press `E`.
 5. Read GM Office inbox/schedule.
-6. Review cap/contracts, draft picks, trade options, scouting assignments, development plans, staff, and free agency in the front-office rooms.
-7. Review Locker Room roster and player cards.
-8. Auto-fill or edit lines in Coach's Office.
-9. Adjust tactics.
-10. Enter Arena Bowl.
-11. Simulate the next game instantly, period-by-period, or through broadcast mode.
-12. Review score, events, box score, three stars, injuries, and coach notes.
-13. Check standings/news/player status/front-office changes.
-14. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp, and start the next season.
-15. Save locally and load later.
+6. Use GM Office phase guidance and the Dynasty Guide to understand the current phase, recommended next step, checklist, and advance warnings.
+7. Review cap/contracts, draft picks, trade options, scouting assignments, development plans, staff, and free agency in the front-office rooms.
+8. Review Locker Room roster and player cards.
+9. Auto-fill or edit lines in Coach's Office.
+10. Adjust tactics.
+11. Enter Arena Bowl.
+12. Simulate the next game instantly, period-by-period, or through broadcast mode.
+13. Review score, events, box score, three stars, injuries, and coach notes.
+14. Check standings/news/player status/front-office changes.
+15. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp, and start the next season.
+16. Validate, repair, export, import, save locally, and load later from the Save Desk.
 
 ## Useful Change Targets
 

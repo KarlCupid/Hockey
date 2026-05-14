@@ -1,4 +1,4 @@
-import { Text } from "@react-three/drei";
+import { Html } from "@react-three/drei";
 import type { Vector3Tuple } from "three";
 import type { RoomId } from "../../game/types";
 
@@ -26,13 +26,13 @@ export function RoomZone({ zone, active, onOpen }: { zone: RoomZoneConfig; activ
         <boxGeometry args={[2.35, 0.42, 0.08]} />
         <meshStandardMaterial color="#f5fbff" emissive={active ? zone.color : "#0d2035"} emissiveIntensity={active ? 0.45 : 0.12} />
       </mesh>
-      <Text position={[0, 1.22, 0.06]} fontSize={0.18} color="#07111f" anchorX="center" anchorY="middle" maxWidth={2.1}>
-        {zone.label}
-      </Text>
+      <Html position={[0, 1.22, 0.12]} center distanceFactor={9}>
+        <span className={`room-zone-label${active ? " room-zone-label--active" : ""}`}>{zone.label}</span>
+      </Html>
       {active && (
-        <Text position={[0, 1.62, 0.04]} fontSize={0.16} color={zone.color} anchorX="center" anchorY="middle" maxWidth={2.2}>
-          PRESS E
-        </Text>
+        <Html position={[0, 1.62, 0.12]} center distanceFactor={9}>
+          <span className="room-zone-label room-zone-label--prompt">PRESS E</span>
+        </Html>
       )}
     </group>
   );

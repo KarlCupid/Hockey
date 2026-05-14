@@ -5,6 +5,7 @@ import { generateDraftClass } from "../generators/generateDraftClass";
 import { SeededRng } from "../rng";
 import type { FranchiseState, LeagueHistory, OwnerState, Player, ProspectRights, SaveSlotMetadata, ScoutingState, StaffState, Team } from "../types";
 import { contractSummary, createContractForPlayer } from "./contracts";
+import { validateDynastyInvariants } from "./dynastyInvariants";
 import { generateInitialDraftPicks } from "./draftPicks";
 import { createDefaultOwnerState } from "./owner";
 import { createPlayoffState } from "./playoffs";
@@ -34,6 +35,14 @@ localforage.config({
   storeName: "saves"
 });
 
+export interface SaveIntegrityReport {
+  schemaVersion: number;
+  warnings: string[];
+  errors: string[];
+  repairedFields: string[];
+  lastValidatedAt: string;
+}
+
 export function saveKey(slotId: string): string {
   return `franchise-ice:${slotId}`;
 }
@@ -46,15 +55,11 @@ export function serializeFranchise(franchise: FranchiseState): string {
 }
 
 export function deserializeFranchise(payload: string): FranchiseState {
-  const parsed = JSON.parse(payload) as FranchiseState;
-  const result = saveSchema.safeParse(parsed);
-  if (!result.success) {
-    throw new Error("Save data is missing required franchise fields.");
+  const result = safeDeserializeFranchise(payload);
+  if (result.error || !result.franchise) {
+    throw new Error(result.error ?? "Save data could not be loaded.");
   }
-  if (parsed.schemaVersion > SCHEMA_VERSION) {
-    throw new Error(`Unsupported save schema version ${parsed.schemaVersion}.`);
-  }
-  return hydrateFranchiseState(parsed);
+  return result.franchise;
 }
 
 export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
@@ -120,6 +125,81 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
   };
 }
 
+export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityReport {
+  const report = validateDynastyInvariants(franchise);
+  const duplicateWarnings = report.errors
+    .filter((item) => item.code.includes("duplicate"))
+    .map((item) => item.message);
+  return {
+    schemaVersion: franchise.schemaVersion,
+    warnings: [...report.warnings.map((item) => item.message), ...duplicateWarnings],
+    errors: report.errors.map((item) => item.message),
+    repairedFields: collectMissingFieldRepairs(franchise),
+    lastValidatedAt: new Date().toISOString()
+  };
+}
+
+export function repairFranchiseState(franchise: FranchiseState): FranchiseState {
+  const hydrated = hydrateFranchiseState(franchise);
+  return {
+    ...hydrated,
+    league: {
+      ...hydrated.league,
+      teams: hydrated.league.teams.map((team) => ({
+        ...team,
+        roster: team.roster.map((player) => ({
+          ...player,
+          teamId: team.id,
+          contractSummary: contractSummary(player.contract)
+        })),
+        draftPicks: team.draftPicks.map((pick) => ({ ...pick, ownerTeamId: team.id }))
+      }))
+    },
+    prospectPools: Object.fromEntries(hydrated.league.teams.map((team) => [team.id, hydrated.prospectPools[team.id] ?? []])),
+    saveStatus: "idle"
+  };
+}
+
+export function safeDeserializeFranchise(raw: string): { franchise?: FranchiseState; error?: string; warnings: string[] } {
+  let parsed: FranchiseState;
+  try {
+    parsed = JSON.parse(raw) as FranchiseState;
+  } catch {
+    return { error: "Save JSON is corrupt or incomplete.", warnings: [] };
+  }
+  const result = saveSchema.safeParse(parsed);
+  if (!result.success) {
+    return { error: "Save data is missing required franchise fields.", warnings: result.error.issues.map((item) => item.message) };
+  }
+  if (parsed.schemaVersion > SCHEMA_VERSION) {
+    return { error: `Unsupported save schema version ${parsed.schemaVersion}.`, warnings: [] };
+  }
+  const repairedFields = collectMissingFieldRepairs(parsed);
+  const repaired = repairFranchiseState(parsed);
+  const integrity = validateSaveIntegrity(repaired);
+  return {
+    franchise: repaired,
+    warnings: [
+      ...integrity.warnings,
+      ...repairedFields.map((field) => `Repaired missing field: ${field}`),
+      ...integrity.errors.map((error) => `Invariant issue: ${error}`)
+    ]
+  };
+}
+
+export function exportSaveToJson(franchise: FranchiseState): string {
+  return JSON.stringify({ ...franchise, saveStatus: "idle" }, null, 2);
+}
+
+export function importSaveFromJson(raw: string): FranchiseState {
+  const result = safeDeserializeFranchise(raw);
+  if (result.error || !result.franchise) {
+    throw new Error(result.error ?? "Save import failed.");
+  }
+  validateSaveIntegrity(result.franchise);
+  return result.franchise;
+}
+
 export async function writeSave(slotId: string, franchise: FranchiseState): Promise<SaveSlotMetadata> {
   const updated: FranchiseState = { ...franchise, updatedAt: new Date().toISOString(), saveStatus: "idle" };
   const payload = serializeFranchise(updated);
@@ -162,7 +242,8 @@ export function metadataFor(slotId: string, franchise: FranchiseState): SaveSlot
     record: recordString(team),
     lastSaved: franchise.updatedAt,
     seasonYear: franchise.league.seasonYear,
-    schemaVersion: franchise.schemaVersion
+    schemaVersion: franchise.schemaVersion,
+    seasonPhase: franchise.seasonPhase
   };
 }
 
@@ -254,4 +335,27 @@ function emptyOwnerState(input: FranchiseState): OwnerState {
     seasonGoals: [],
     messages: []
   };
+}
+
+function collectMissingFieldRepairs(input: FranchiseState): string[] {
+  const repaired: string[] = [];
+  if (input.schemaVersion !== SCHEMA_VERSION) repaired.push("schemaVersion");
+  if (!input.seasonPhase) repaired.push("seasonPhase");
+  if (!input.currentSeasonId) repaired.push("currentSeasonId");
+  if (!input.staffState) repaired.push("staffState");
+  if (!input.ownerState) repaired.push("ownerState");
+  if (!input.history) repaired.push("history");
+  if (!input.prospectPools) repaired.push("prospectPools");
+  if (!input.scouting) repaired.push("scouting");
+  if (!input.development) repaired.push("development");
+  input.league.teams.forEach((team) => {
+    if (!team.draftPicks) repaired.push(`${team.id}.draftPicks`);
+    if (!team.teamNeeds) repaired.push(`${team.id}.teamNeeds`);
+    if (!team.tradeBlock) repaired.push(`${team.id}.tradeBlock`);
+    if (!team.untouchables) repaired.push(`${team.id}.untouchables`);
+    team.roster.forEach((player) => {
+      if (!player.contract) repaired.push(`${team.id}.${player.id}.contract`);
+    });
+  });
+  return repaired;
 }

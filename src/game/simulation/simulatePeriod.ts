@@ -250,7 +250,7 @@ function profileTeam(team: Team, tactics: Tactics, home: boolean): StrengthProfi
   const activeIds = getAssignedPlayerIds(team.lines).filter(Boolean) as string[];
   const activePlayers = activeIds.map((id) => team.roster.find((player) => player.id === id)).filter((player): player is Player => Boolean(player));
   const skaters = activePlayers.filter((player) => player.position !== "G");
-  const starter = team.roster.find((player) => player.id === team.lines.goalies.starter) ?? team.roster.find((player) => player.position === "G")!;
+  const starter = selectSimulationStarter(team);
   const avg = (selector: (player: Player) => number, players = skaters) =>
     players.length ? players.reduce((sum, player) => sum + selector(player), 0) / players.length : 60;
   const chemistry =
@@ -284,6 +284,14 @@ function profileTeam(team: Team, tactics: Tactics, home: boolean): StrengthProfi
     starter,
     activePlayersAverageFatigue: fatigue
   };
+}
+
+function selectSimulationStarter(team: Team): Player {
+  const lineupStarter = team.roster.find((player) => player.id === team.lines.goalies.starter);
+  const goalie = team.roster.filter((player) => player.position === "G").sort((a, b) => b.overall - a.overall)[0];
+  const emergency = [...team.roster].sort((a, b) => b.overall - a.overall)[0];
+  if (!lineupStarter && !goalie && !emergency) throw new Error(`${team.fullName} has no players available for simulation.`);
+  return lineupStarter ?? goalie ?? emergency;
 }
 
 function shotTotal(attack: StrengthProfile, defense: StrengthProfile, tactics: Tactics, rng: SeededRng, home: boolean): number {

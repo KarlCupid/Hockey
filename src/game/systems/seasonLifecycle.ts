@@ -9,6 +9,7 @@ import { generateInitialDraftPicks } from "./draftPicks";
 import { createDraftOrder, resolveDraftLottery } from "./draftExecution";
 import { createFreeAgentMarket } from "./freeAgency";
 import { createAwards, createSeasonHistory as createHistorySeason } from "./history";
+import { autoFillBestLineup } from "./lineupValidation";
 import { createDefaultOwnerState, createOwnerEvaluationNews, evaluateJobSecurity, generateOwnerGoals, updateOwnerGoalProgress } from "./owner";
 import {
   agePlayers as agePlayersPure,
@@ -39,6 +40,7 @@ export function canAdvanceSeasonPhase(franchise: FranchiseState): boolean {
 export function advanceSeasonPhase(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-phase-${franchise.seasonPhase}`)): FranchiseState {
   const phase = getSeasonPhase(franchise);
   if (phase === "regularSeason") {
+    if (!franchise.league.completed && !franchise.league.schedule.every((game) => game.played)) return franchise;
     const completed = franchise.league.completed ? franchise : completeRegularSeason(franchise, rng);
     return {
       ...completed,
@@ -132,7 +134,10 @@ export function advanceSeasonPhase(franchise: FranchiseState, rng = new SeededRn
 }
 
 export function completeRegularSeason(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-complete-regular`)): FranchiseState {
-  let league = franchise.league;
+  let league = {
+    ...franchise.league,
+    teams: franchise.league.teams.map((team) => ({ ...team, lines: autoFillBestLineup(team).lineup }))
+  };
   league.schedule
     .filter((game) => !game.played)
     .sort((a, b) => a.dayIndex - b.dayIndex)

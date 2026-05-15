@@ -90,7 +90,17 @@ export function evaluateFreeAgentOffer(
   const interest = freeAgent.interestByTeam[team.id] ?? 50;
   const assistantGm = calculateTeamStaffModifiers(franchise.staffState, team.id).negotiation;
   const salaryFit = offer.capHit / Math.max(1, freeAgent.demandSalary);
-  const adjustedInterest = Math.round(clamp(base.playerInterest * 0.72 + interest * 0.28 + assistantGm * 2 + (salaryFit >= 1.05 ? 8 : 0), 0, 100));
+  const adjustedInterest = Math.round(
+    clamp(
+      base.playerInterest * 0.72 +
+        interest * 0.28 +
+        assistantGm * 2 +
+        (salaryFit >= 1.05 ? 8 : 0) -
+        (team.id === franchise.selectedTeamId ? franchise.difficultyTuning.freeAgentInterestPenalty : 0),
+      0,
+      100
+    )
+  );
   const warnings = [...base.warnings];
   const accepted = warnings.length === 0 && adjustedInterest >= 82 && offer.capHit >= freeAgent.demandSalary * 0.95;
   return {

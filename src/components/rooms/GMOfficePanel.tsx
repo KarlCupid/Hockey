@@ -17,6 +17,9 @@ import { getActiveDecisionEvents } from "../../game/systems/decisionEvents";
 import { createFanPulse, createMediaNarrative } from "../../game/systems/fanMedia";
 import { getAgentPressureLevel } from "../../game/systems/agentInteractions";
 import { getTeamMeetingNeed } from "../../game/systems/playerMeetings";
+import { getMasterActionQueue, getUrgentActionCount } from "../../game/systems/actionQueue";
+import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
+import { getGmProfileSummary } from "../../game/systems/gmProfile";
 import type { FranchiseState } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
@@ -27,6 +30,7 @@ import { WarningCallout } from "../ui/WarningCallout";
 import { DecisionEventCard } from "../hud/DecisionEventCard";
 import { StoryArcCard } from "../hud/StoryArcCard";
 import { TeamDynamicsPanel } from "../hud/TeamDynamicsPanel";
+import { AssistantGmReportCard } from "../hud/AssistantGmReportCard";
 import { SaveLoadPanel } from "./SaveLoadPanel";
 
 export function GMOfficePanel() {
@@ -42,6 +46,7 @@ export function GMOfficePanel() {
   const advanceFreeAgencyDay = useFranchiseStore((state) => state.advanceFreeAgencyDay);
   const completeFreeAgency = useFranchiseStore((state) => state.completeFreeAgency);
   const resolveDecisionEvent = useFranchiseStore((state) => state.resolveDecisionEvent);
+  const dismissAssistantGmReport = useFranchiseStore((state) => state.dismissAssistantGmReport);
   const confirmPhaseAdvances = useSettingsStore((state) => state.settings.confirmPhaseAdvances);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
@@ -67,6 +72,9 @@ export function GMOfficePanel() {
   const currentStorylines = franchise.storyArcs.filter((arc) => arc.status === "active").slice(0, 4);
   const topAgentPressure = [...franchise.agents].sort((a, b) => b.publicPressure - a.publicPressure)[0];
   const recommendedMeeting = getTeamMeetingNeed(franchise) ?? activeDecisions.find((event) => event.locationRoom === "playerMeetings")?.headline ?? "No urgent meeting recommended.";
+  const actionQueue = getMasterActionQueue(franchise);
+  const urgentActionCount = getUrgentActionCount(franchise);
+  const assistantReports = franchise.assistantGmReports.filter((report) => !report.dismissed).slice(0, 3);
   const confirmAndRun = (action: string, run: () => void) => {
     if (!confirmPhaseAdvances) {
       run();
@@ -100,6 +108,10 @@ export function GMOfficePanel() {
           <strong>{activeDecisions.length}</strong>
         </div>
         <div>
+          <small>Urgent Actions</small>
+          <strong>{urgentActionCount}</strong>
+        </div>
+        <div>
           <small>Owner Mood</small>
           <strong>{mood}</strong>
         </div>
@@ -121,6 +133,57 @@ export function GMOfficePanel() {
           {playoffGame ? "Instant Sim Playoff Game" : "Instant Sim Next Game"}
         </button>
       </section>
+      <div className="room-grid room-grid--two">
+        <section className="panel-section">
+          <SectionHeader title="Master Action Queue" eyebrow="Assistant GM" />
+          <div className="asset-list asset-list--compact">
+            {actionQueue.slice(0, 7).map((item) => (
+              <article key={item.id} className={`queue-item queue-item--${item.priority}`}>
+                <small>{item.priority}{item.blocking ? " | blocking" : ""} | {item.category}</small>
+                <strong>{item.label}</strong>
+                <span>{item.description}</span>
+                <button type="button" onClick={() => setActiveRoom(item.roomId)}>
+                  Open room
+                </button>
+              </article>
+            ))}
+          </div>
+          <div className="button-row">
+            <button type="button" onClick={() => setActiveRoom("arena")} disabled={!opponent && !playoffGame}>Go to next game</button>
+            <button type="button" onClick={() => activeDecisions[0] && setActiveRoom(activeDecisions[0].locationRoom ?? "gm")} disabled={!activeDecisions.length}>Resolve urgent decision</button>
+            <button type="button" onClick={() => setActiveRoom("roster")} disabled={!rosterReport.errors.length}>Fix roster</button>
+            <button type="button" onClick={() => setActiveRoom("coach")}>Review lines</button>
+            <button type="button" onClick={() => confirmAndRun("advance", advanceSeasonPhase)}>Advance phase</button>
+          </div>
+        </section>
+        <section className="panel-section">
+          <SectionHeader title="GM Profile & Pressure" eyebrow="Phase 7" />
+          <div className="profile-card">
+            <strong>{franchise.gmProfile.displayName}</strong>
+            <span>{getGmProfileSummary(franchise.gmProfile)}</span>
+            <small>
+              {getGameModeLabel(franchise.gmProfile.gameMode)} | {getDifficultyLabel(franchise.gmProfile.difficulty)} | {franchise.gmProfile.storyFrequency} stories
+            </small>
+          </div>
+          <div className="season-pulse">
+            <span>Owner trust <strong>{franchise.teamDynamics[team.id]?.ownerTrust ?? 0}/100</strong></span>
+            <span>Chemistry <strong>{franchise.teamDynamics[team.id]?.chemistry ?? 0}/100</strong></span>
+            <span>Media pressure <strong>{franchise.mediaState.pressure}/100</strong></span>
+            <span>Assistant help <strong>{franchise.difficultyTuning.assistantGmHelpLevel}</strong></span>
+          </div>
+          <p className="muted">{createMediaNarrative(franchise)}</p>
+        </section>
+      </div>
+      {assistantReports.length > 0 && (
+        <section className="panel-section">
+          <SectionHeader title="Assistant GM Reports" eyebrow="Guidance" />
+          <div className="assistant-report-grid">
+            {assistantReports.map((report) => (
+              <AssistantGmReportCard key={report.id} report={report} onGoTo={setActiveRoom} onDismiss={dismissAssistantGmReport} />
+            ))}
+          </div>
+        </section>
+      )}
       {(activeDecisions.length > 0 || currentStorylines.length > 0) && (
         <div className="room-grid room-grid--two">
           <section className="panel-section">

@@ -4,6 +4,8 @@ import { useUiStore } from "../../store/uiStore";
 import { getCurrentUserPlayoffGame } from "../../game/systems/playoffs";
 import { getPhaseLabel, getRecommendedNextAction } from "../../game/systems/phaseGuidance";
 import { validateRosterForGame } from "../../game/systems/rosterRules";
+import { getUrgentActionCount } from "../../game/systems/actionQueue";
+import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
 import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -25,6 +27,10 @@ export function TopBar() {
   const lastSaved = [...saves].sort((a, b) => Date.parse(b.lastSaved) - Date.parse(a.lastSaved))[0];
   const roster = validateRosterForGame(team);
   const rosterHealth = roster.healthyGoalieCount < 2 ? "Needs goalie" : roster.activeCount > team.activeRosterLimit ? "Too many active" : roster.errors.length ? "Invalid lineup" : "Ready";
+  const urgentActions = getUrgentActionCount(franchise);
+  const assistantAlerts = franchise.assistantGmReports
+    .filter((report) => !report.dismissed)
+    .reduce((sum, report) => sum + report.recommendations.filter((recommendation) => recommendation.priority === "urgent" || recommendation.priority === "high").length, 0);
 
   return (
     <header className="top-bar">
@@ -33,6 +39,7 @@ export function TopBar() {
         <strong>{recordLabel(team)}</strong>
         <span>{franchise.league.currentDate}</span>
         <span>{getPhaseLabel(franchise.seasonPhase)} | Game {Math.min(22, team.stats.gamesPlayed + 1)}/22</span>
+        <span>{getGameModeLabel(franchise.gmProfile.gameMode)} | {getDifficultyLabel(franchise.gmProfile.difficulty)} | {franchise.gmProfile.storyFrequency}</span>
       </div>
       <div className="top-bar__next">
         <strong>{nextGame}</strong>
@@ -51,6 +58,8 @@ export function TopBar() {
                   : "Local"}
         </span>
         <span>Roster: {rosterHealth}</span>
+        <span>Urgent: {urgentActions}</span>
+        <span>AGM: {assistantAlerts}</span>
         <strong>{activeRoom ? roomLabel(activeRoom) : nearbyRoom ? roomLabel(nearbyRoom) : "Facility Hub"}</strong>
         <div className="top-bar__actions">
           <button type="button" onClick={() => setHelpOpen(true)} aria-label="Open help">?</button>

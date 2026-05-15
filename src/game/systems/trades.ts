@@ -84,7 +84,7 @@ export function generateUntouchables(team: Team): string[] {
     .map((player) => player.id);
 }
 
-export function evaluateTrade(proposal: TradeProposal, league: LeagueState): TradeEvaluation {
+export function evaluateTrade(proposal: TradeProposal, league: LeagueState, tradeAiStrictness = 1): TradeEvaluation {
   const fromTeam = findTeam(league, proposal.fromTeamId);
   const toTeam = findTeam(league, proposal.toTeamId);
   const warnings: string[] = [];
@@ -116,12 +116,12 @@ export function evaluateTrade(proposal: TradeProposal, league: LeagueState): Tra
     !duplicateWarning &&
     proposal.assetsFrom.length > 0 &&
     proposal.assetsTo.length > 0 &&
-    scoreForOtherTeam >= scoreForUserTeam * 0.9 + 18 &&
+    scoreForOtherTeam >= scoreForUserTeam * 0.9 * tradeAiStrictness + 18 * tradeAiStrictness &&
     otherUntouchablePenalty === 0;
 
   if (accepted) {
     reasons.push("The package gives the other front office enough value and roster logic to say yes.");
-  } else if (scoreForOtherTeam < scoreForUserTeam * 0.9 + 18) {
+  } else if (scoreForOtherTeam < scoreForUserTeam * 0.9 * tradeAiStrictness + 18 * tradeAiStrictness) {
     reasons.push("They see the value gap as too wide from their side of the table.");
   }
 
@@ -152,7 +152,7 @@ export function validateTradeCap(proposal: TradeProposal, league: LeagueState): 
 }
 
 export function applyTrade(proposal: TradeProposal, franchise: FranchiseState): FranchiseState {
-  const evaluation = evaluateTrade(proposal, franchise.league);
+  const evaluation = evaluateTrade(proposal, franchise.league, franchise.difficultyTuning?.tradeAiStrictness ?? 1);
   const acceptedProposal: TradeProposal = { ...proposal, status: evaluation.accepted ? "accepted" : "rejected" };
   if (!evaluation.accepted) {
     return {

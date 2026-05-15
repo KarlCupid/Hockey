@@ -8,6 +8,7 @@ import type {
   DecisionOptionTone,
   FranchiseState,
   GameResult,
+  NarrativeTemplate,
   NewsItem,
   Player,
   RosterMove,
@@ -17,6 +18,10 @@ import type {
 } from "../types";
 import { getPlayerRelationship, getTeamDynamics, normalizeRelationship, normalizeTeamDynamics } from "./relationships";
 import { getPlayerRosterStatus } from "./rosterRules";
+import { applyGmTraitModifiers } from "./gmProfile";
+import { NARRATIVE_TEMPLATES } from "../content/narrativeTemplates";
+import { createDecisionEventFromTemplate, getTemplateContextFromFranchise, selectNarrativeTemplate } from "./narrativeTemplateEngine";
+import { calculateEventSeverity, shouldGenerateDecisionEvent } from "./livingOpsTuning";
 
 export interface DecisionGenerationContext {
   kind?: "postGame" | "phase" | "roster" | "contract" | "playoff" | "draftReaction" | "freeAgencyMiss" | "tradeRumor" | "manual";
@@ -50,6 +55,10 @@ export function generateDecisionEvents(franchise: FranchiseState, context: Decis
   }
   if (context.kind === "tradeRumor" && context.playerId) {
     const event = createTradeRumorEvent(franchise, context.playerId, rng);
+    if (event) events.push(event);
+  }
+  if (context.kind !== "manual") {
+    const event = createCadenceTemplateEvent(franchise, context, rng);
     if (event) events.push(event);
   }
   return dedupeDecisionEvents(events);
@@ -407,12 +416,76 @@ function createTradeRumorEvent(franchise: FranchiseState, playerId: string, rng:
   });
 }
 
+function createCadenceTemplateEvent(franchise: FranchiseState, context: DecisionGenerationContext, rng: SeededRng): DecisionEvent | undefined {
+  const trigger = context.kind ?? "ambient";
+  if (!shouldGenerateDecisionEvent(franchise, trigger, rng)) return undefined;
+  const category = categoryForContext(context, franchise);
+  const template = selectNarrativeTemplate(
+    NARRATIVE_TEMPLATES,
+    getTemplateContextFromFranchise(franchise, { category, tags: tagsForContext(context), playerId: context.playerId ?? context.player?.id }),
+    rng
+  );
+  const severity = calculateEventSeverity(franchise, trigger);
+  const event = createDecisionEventFromTemplate(template, getTemplateContextFromFranchise(franchise, { category, tags: tagsForContext(context), playerId: context.playerId ?? context.player?.id }), rng);
+  return {
+    ...event,
+    severity,
+    createdDate: franchise.league.currentDate,
+    expiresDate: addDays(franchise.league.currentDate, severity === "low" ? 5 : severity === "medium" ? 7 : 10),
+    phase: franchise.seasonPhase,
+    repeatKey: `${template.id}-${franchise.league.seasonYear}-${franchise.league.currentDayIndex}-${trigger}`
+  };
+}
+
+function categoryForContext(context: DecisionGenerationContext, franchise: FranchiseState): NarrativeTemplate["category"] {
+  if (context.kind === "postGame") return franchise.mediaState.pressure >= 55 ? "press" : "team";
+  if (context.kind === "phase" && context.nextPhase === "draft") return "draft";
+  if (context.kind === "phase" && context.nextPhase === "freeAgency") return "freeAgency";
+  if (context.kind === "phase" && context.nextPhase === "playoffs") return "playoff";
+  if (context.kind === "roster") return "player";
+  if (context.kind === "contract") return "agent";
+  if (context.kind === "playoff") return "playoff";
+  if (context.kind === "draftReaction") return "draft";
+  if (context.kind === "freeAgencyMiss") return "freeAgency";
+  if (context.kind === "tradeRumor") return "trade";
+  return franchise.mediaState.pressure >= 62 ? "media" : "team";
+}
+
+function tagsForContext(context: DecisionGenerationContext): string[] {
+  if (context.kind === "postGame") return ["postgame", context.result ? "game" : "team"];
+  if (context.kind === "phase") return ["phase", context.nextPhase ?? "season"];
+  if (context.kind === "roster") return ["roster"];
+  if (context.kind === "contract") return ["contract", "agent"];
+  if (context.kind === "playoff") return ["playoff"];
+  if (context.kind === "draftReaction") return ["draft"];
+  if (context.kind === "freeAgencyMiss") return ["freeAgency"];
+  if (context.kind === "tradeRumor") return ["trade"];
+  return ["team"];
+}
+
 function buildOutcome(franchise: FranchiseState, event: DecisionEvent, option: DecisionOption, rng: SeededRng) {
   const severityWeight = event.severity === "critical" ? 2 : event.severity === "high" ? 1.45 : event.severity === "medium" ? 1 : 0.62;
   const tone = toneImpact(option.tone);
+  const gmModifiers = applyGmTraitModifiers(franchise, {
+    type:
+      event.type === "pressConference" || event.type === "mediaQuestion"
+        ? "press"
+        : event.type === "ownerMeeting"
+          ? "owner"
+          : event.type === "playerMeeting" || event.type === "teamMeeting"
+            ? "player"
+            : event.type === "agentCall" || event.type === "contractStandoff"
+              ? "contract"
+              : "story"
+  });
   const playerIds = event.playerIds ?? [];
-  const moraleDelta = playerIds.length ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round(tone.playerMorale * severityWeight)])) : undefined;
-  const roleDelta = playerIds.length ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round(tone.role * severityWeight)])) : undefined;
+  const playerTrustBonus = event.type === "playerMeeting" || event.type === "teamMeeting" ? (gmModifiers.playerTrustModifier ?? 0) : 0;
+  const moraleDelta = playerIds.length
+    ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round(tone.playerMorale * severityWeight + playerTrustBonus * 0.35)]))
+    : undefined;
+  const roleDelta = playerIds.length
+    ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round(tone.role * severityWeight + playerTrustBonus * 0.4)]))
+    : undefined;
   const agent = event.type === "agentCall" && playerIds[0] ? franchise.agents.find((candidate) => candidate.clientPlayerIds.includes(playerIds[0])) : undefined;
   const summary = summaryFor(event, option);
   return {
@@ -423,10 +496,13 @@ function buildOutcome(franchise: FranchiseState, event: DecisionEvent, option: D
     roleSatisfactionDeltaByPlayerId: roleDelta,
     chemistryDelta: Math.round(tone.chemistry * severityWeight + (event.type === "teamMeeting" ? 4 : 0)),
     fanSentimentDelta: Math.round(tone.fan * severityWeight),
-    ownerTrustDelta: Math.round((tone.owner + (event.type === "ownerMeeting" ? 3 : 0)) * severityWeight),
-    mediaPressureDelta: Math.round(tone.media * severityWeight),
-    agentRelationshipDeltaByAgentId: agent ? { [agent.id]: Math.round(tone.agent * severityWeight) } : undefined,
-    contractInterestDeltaByPlayerId: event.type === "agentCall" || event.type === "contractStandoff" ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round(tone.agent * severityWeight)])) : undefined,
+    ownerTrustDelta: Math.round((tone.owner + (event.type === "ownerMeeting" ? 3 : 0)) * severityWeight + (gmModifiers.ownerTrustModifier ?? 0) * 0.45),
+    mediaPressureDelta: Math.round(tone.media * severityWeight + (gmModifiers.mediaPressureModifier ?? 0) * (event.type === "pressConference" || event.type === "mediaQuestion" ? 0.65 : 0.2)),
+    agentRelationshipDeltaByAgentId: agent ? { [agent.id]: Math.round(tone.agent * severityWeight + (gmModifiers.negotiationModifier ?? 0) * 0.35) } : undefined,
+    contractInterestDeltaByPlayerId:
+      event.type === "agentCall" || event.type === "contractStandoff"
+        ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round(tone.agent * severityWeight + (gmModifiers.negotiationModifier ?? 0) * 0.35)]))
+        : undefined,
     tradeNoiseDeltaByPlayerId: event.type === "tradeRumor" ? Object.fromEntries(playerIds.map((playerId) => [playerId, Math.round((option.tone === "transparent" ? -5 : 5) * severityWeight)])) : undefined,
     newsItems: createDecisionNews(event, option, { summary })
   };

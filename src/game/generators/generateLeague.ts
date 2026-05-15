@@ -1,6 +1,6 @@
 import { ACTIVE_ROSTER_LIMIT, ACTIVE_ROSTER_MINIMUM, DEFAULT_TACTICS, FICTIONAL_TEAMS, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SCHEMA_VERSION, START_DATE } from "../constants";
 import { SeededRng } from "../rng";
-import type { FranchiseState, LeagueState, Team, TeamRecord, TeamStats } from "../types";
+import type { FranchiseSetupOptions, FranchiseStartPreset, FranchiseState, GMProfile, LeagueState, OwnerState, Team, TeamDynamics, TeamRecord, TeamStats } from "../types";
 import { generateAffiliateForTeam } from "../systems/affiliate";
 import { repairAllTeamRosters } from "../systems/aiRosterManagement";
 import { autoFillBestLineup } from "../systems/lineupValidation";
@@ -12,6 +12,10 @@ import { createDefaultOwnerState } from "../systems/owner";
 import { defaultMediaState } from "../systems/fanMedia";
 import { generateAgentsForPlayers, generateInitialPlayerRelationships, generateInitialTeamDynamics } from "../systems/relationships";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../systems/trades";
+import { generateAssistantGmReport } from "../systems/assistantGm";
+import { createDifficultyTuning } from "../systems/difficulty";
+import { createGmProfile } from "../systems/gmProfile";
+import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
 import { generateDraftClass } from "./generateDraftClass";
 import { generateRoster } from "./generatePlayers";
 import { generateSchedule } from "./generateSchedule";
@@ -84,11 +88,27 @@ export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueSta
   };
 }
 
-export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId}-${Date.now()}`): FranchiseState {
-  const league = generateLeague(seed);
+export function createFranchise(
+  selectedTeamId: string,
+  seedOrOptions: string | FranchiseSetupOptions = `${selectedTeamId}-${Date.now()}`
+): FranchiseState {
+  const options: FranchiseSetupOptions = typeof seedOrOptions === "string" ? { seed: seedOrOptions } : seedOrOptions;
+  const seed = options.seed ?? `${selectedTeamId}-${Date.now()}`;
+  let league = generateLeague(seed);
+  league = applyStartPresetToLeague(league, selectedTeamId, options.startPreset ?? "balanced");
   const selectedTeam = league.teams.find((team) => team.id === selectedTeamId) ?? league.teams[0];
   const now = new Date().toISOString();
-  const draftClass = generateDraftClass(`${seed}-draft`);
+  const gmProfile = createGmProfile({
+    displayName: options.gmName,
+    background: options.gmBackground,
+    avatarStyle: options.avatarStyle,
+    difficulty: options.difficulty,
+    gameMode: options.gameMode,
+    storyFrequency: options.storyFrequency,
+    createdAt: now
+  });
+  const difficultyTuning = createDifficultyTuning(gmProfile.difficulty, gmProfile.gameMode, gmProfile.storyFrequency);
+  const draftClass = applyStartPresetToDraftClass(generateDraftClass(`${seed}-draft`), options.startPreset ?? "balanced");
   const staffState = generateStaffForLeague(league.teams, new SeededRng(`${seed}-staff`));
   const prospectPools = Object.fromEntries(league.teams.map((team) => [team.id, []]));
   const base: FranchiseState = {
@@ -98,6 +118,10 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     league,
     seasonPhase: "regularSeason",
     currentSeasonId: `${league.seasonYear}-${selectedTeam.id}`,
+    gmProfile,
+    difficultyTuning,
+    assistantGmReports: [],
+    narrativeTemplateVersion: NARRATIVE_TEMPLATE_VERSION,
     staffState,
     history: {
       seasons: [],
@@ -171,13 +195,22 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     createdAt: now,
     updatedAt: now
   };
-  const ownerState = createDefaultOwnerState(base, new SeededRng(`${seed}-owner`));
+  const ownerState = applyOpeningOwnerTuning(
+    createDefaultOwnerState(base, new SeededRng(`${seed}-owner`)),
+    gmProfile,
+    options.startPreset ?? "balanced"
+  );
   const withOwner = { ...base, ownerState };
   const agents = generateAgentsForPlayers(withOwner, new SeededRng(`${seed}-agents`));
   const withAgents = { ...withOwner, agents };
   const playerRelationships = generateInitialPlayerRelationships(withAgents);
   const withRelationships = { ...withAgents, playerRelationships };
-  const teamDynamics = generateInitialTeamDynamics(withRelationships);
+  const teamDynamics = applyOpeningDynamics(
+    generateInitialTeamDynamics(withRelationships),
+    selectedTeam.id,
+    gmProfile,
+    options.startPreset ?? "balanced"
+  );
   const mediaState = defaultMediaState(withRelationships);
   const initial = {
     ...withRelationships,
@@ -189,7 +222,7 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     ...initial,
     inbox: initial.inbox
   }, "newFranchise");
-  return {
+  const finalState: FranchiseState = {
     ...base,
     ownerState,
     league: repaired.league,
@@ -203,6 +236,10 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     rosterMoveHistory: repaired.rosterMoveHistory,
     transactionLog: repaired.transactionLog,
     inbox: [...ownerState.messages, ...repaired.inbox.filter((item) => !ownerState.messages.some((message) => message.id === item.id))].slice(0, 60)
+  };
+  return {
+    ...finalState,
+    assistantGmReports: [generateAssistantGmReport(finalState, { type: "daily", date: finalState.league.currentDate })]
   };
 }
 
@@ -227,5 +264,152 @@ export function emptyTeamStats(): TeamStats {
     powerPlayAttempts: 0,
     penaltyKillGoalsAgainst: 0,
     penaltyKillAttempts: 0
+  };
+}
+
+function applyStartPresetToLeague(league: LeagueState, selectedTeamId: string, preset: FranchiseStartPreset): LeagueState {
+  if (preset === "balanced") return league;
+  return {
+    ...league,
+    teams: league.teams.map((team) => {
+      if (team.id !== selectedTeamId) return team;
+      if (preset === "capCrunched") {
+        return {
+          ...team,
+          capCeiling: Math.max(team.capFloor + 9_000_000, team.capCeiling - 4_500_000),
+          ownerPatience: Math.max(28, team.ownerPatience - 8),
+          fanConfidence: Math.max(35, team.fanConfidence - 4)
+        };
+      }
+      if (preset === "rebuild") {
+        return {
+          ...team,
+          ownerPatience: Math.min(92, team.ownerPatience + 10),
+          fanConfidence: Math.max(38, team.fanConfidence - 6),
+          roster: team.roster.map((player) =>
+            player.age <= 23 ? { ...player, potential: Math.min(95, player.potential + 1), morale: Math.min(100, player.morale + 2) } : player
+          )
+        };
+      }
+      if (preset === "contender") {
+        return {
+          ...team,
+          ownerPatience: Math.max(30, team.ownerPatience - 9),
+          fanConfidence: Math.min(88, team.fanConfidence + 6),
+          roster: team.roster.map((player, index) =>
+            index < 6 ? { ...player, form: Math.min(100, player.form + 3), morale: Math.min(100, player.morale + 2) } : player
+          )
+        };
+      }
+      if (preset === "injuryLight") {
+        return {
+          ...team,
+          roster: team.roster.map((player) => ({
+            ...player,
+            fatigue: Math.min(player.fatigue, 38),
+            injuryStatus: "healthy" as const,
+            injuryGamesRemaining: 0
+          }))
+        };
+      }
+      if (preset === "prospectHeavy") {
+        return {
+          ...team,
+          roster: team.roster.map((player) =>
+            player.age <= 24 ? { ...player, potential: Math.min(95, player.potential + 2) } : player
+          )
+        };
+      }
+      return team;
+    })
+  };
+}
+
+function applyStartPresetToDraftClass<T extends { scouting: { certainty: number }; actualPotential: number }>(
+  draftClass: T[],
+  preset: FranchiseStartPreset
+): T[] {
+  if (preset !== "prospectHeavy") return draftClass;
+  return draftClass.map((prospect, index) => ({
+    ...prospect,
+    actualPotential: index < 18 ? Math.min(96, prospect.actualPotential + 1) : prospect.actualPotential,
+    scouting: {
+      ...prospect.scouting,
+      certainty: Math.min(100, prospect.scouting.certainty + 8)
+    }
+  }));
+}
+
+function applyOpeningOwnerTuning(ownerState: OwnerState, gmProfile: GMProfile, preset: FranchiseStartPreset): OwnerState {
+  let jobSecurity = ownerState.jobSecurity;
+  let patience = ownerState.patience;
+  if (gmProfile.background === "Owner Favorite") {
+    jobSecurity += 8;
+    patience += 5;
+  }
+  if (gmProfile.gameMode === "sandbox") {
+    jobSecurity += 15;
+    patience += 12;
+  }
+  if (gmProfile.gameMode === "pressureCooker") {
+    jobSecurity -= 8;
+    patience -= 8;
+  }
+  if (gmProfile.gameMode === "contenderChallenge" || preset === "contender") {
+    jobSecurity -= 6;
+    patience -= 6;
+  }
+  if (gmProfile.gameMode === "rebuildChallenge" || preset === "rebuild") {
+    patience += 8;
+  }
+  if (preset === "capCrunched") {
+    jobSecurity -= 6;
+    patience -= 4;
+  }
+  return {
+    ...ownerState,
+    jobSecurity: Math.max(25, Math.min(100, Math.round(jobSecurity))),
+    patience: Math.max(25, Math.min(100, Math.round(patience)))
+  };
+}
+
+function applyOpeningDynamics(
+  teamDynamics: Record<string, TeamDynamics>,
+  selectedTeamId: string,
+  gmProfile: GMProfile,
+  preset: FranchiseStartPreset
+): Record<string, TeamDynamics> {
+  const dynamics = teamDynamics[selectedTeamId];
+  if (!dynamics) return teamDynamics;
+  let ownerTrust = dynamics.ownerTrust;
+  let chemistry = dynamics.chemistry;
+  let mediaPressure = dynamics.mediaPressure;
+  let fanSentiment = dynamics.fanSentiment;
+  if (gmProfile.background === "Owner Favorite") ownerTrust += 7;
+  if (gmProfile.background === "Player Relationship Builder" || gmProfile.background === "Former Coach") chemistry += 4;
+  if (gmProfile.background === "Media Savvy") mediaPressure -= 6;
+  if (gmProfile.gameMode === "pressureCooker") mediaPressure += 12;
+  if (gmProfile.gameMode === "sandbox") mediaPressure -= 8;
+  if (preset === "capCrunched") {
+    ownerTrust -= 8;
+    mediaPressure += 8;
+  }
+  if (preset === "rebuild") {
+    fanSentiment -= 4;
+    ownerTrust += 4;
+  }
+  if (preset === "contender") {
+    fanSentiment += 5;
+    mediaPressure += 5;
+  }
+  return {
+    ...teamDynamics,
+    [selectedTeamId]: {
+      ...dynamics,
+      ownerTrust: Math.max(0, Math.min(100, Math.round(ownerTrust))),
+      chemistry: Math.max(0, Math.min(100, Math.round(chemistry))),
+      mediaPressure: Math.max(0, Math.min(100, Math.round(mediaPressure))),
+      fanSentiment: Math.max(0, Math.min(100, Math.round(fanSentiment)))
+    }
   };
 }

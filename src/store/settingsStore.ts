@@ -5,6 +5,7 @@ export type TableDensity = "compact" | "normal";
 export type BroadcastSpeedDefault = "slow" | "normal" | "fast";
 export type DecisionEventFrequency = "Low" | "Normal" | "High";
 export type PressConferenceFrequency = "Key games only" | "Normal" | "Frequent";
+export type AssistantGmHelpSetting = "Minimal" | "Normal" | "Detailed";
 
 export interface AppSettings {
   reduceMotion: boolean;
@@ -22,6 +23,11 @@ export interface AppSettings {
   autoResolveLowSeverityEvents: boolean;
   pressConferenceFrequency: PressConferenceFrequency;
   hideConsequencePreviews: boolean;
+  assistantGmReportsEnabled: boolean;
+  assistantGmHelpLevel: AssistantGmHelpSetting;
+  roomBadgesEnabled: boolean;
+  consequencePreviewsEnabled: boolean;
+  eventCadenceDebugDisplay: boolean;
   dynastyGuideResetToken: number;
 }
 
@@ -52,6 +58,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoResolveLowSeverityEvents: false,
   pressConferenceFrequency: "Normal",
   hideConsequencePreviews: false,
+  assistantGmReportsEnabled: true,
+  assistantGmHelpLevel: "Normal",
+  roomBadgesEnabled: true,
+  consequencePreviewsEnabled: true,
+  eventCadenceDebugDisplay: false,
   dynastyGuideResetToken: 0
 };
 
@@ -84,6 +95,17 @@ export function normalizeSettings(input: Partial<AppSettings>): AppSettings {
     pressConferenceFrequency: ["Key games only", "Normal", "Frequent"].includes(input.pressConferenceFrequency ?? "")
       ? (input.pressConferenceFrequency as PressConferenceFrequency)
       : DEFAULT_SETTINGS.pressConferenceFrequency,
+    assistantGmHelpLevel: ["Minimal", "Normal", "Detailed"].includes(input.assistantGmHelpLevel ?? "")
+      ? (input.assistantGmHelpLevel as AssistantGmHelpSetting)
+      : DEFAULT_SETTINGS.assistantGmHelpLevel,
+    consequencePreviewsEnabled:
+      typeof input.consequencePreviewsEnabled === "boolean" ? input.consequencePreviewsEnabled : !Boolean(input.hideConsequencePreviews),
+    hideConsequencePreviews:
+      typeof input.hideConsequencePreviews === "boolean"
+        ? input.hideConsequencePreviews
+        : typeof input.consequencePreviewsEnabled === "boolean"
+          ? !input.consequencePreviewsEnabled
+          : DEFAULT_SETTINGS.hideConsequencePreviews,
     dynastyGuideResetToken: Number.isFinite(input.dynastyGuideResetToken) ? Number(input.dynastyGuideResetToken) : 0
   };
 }

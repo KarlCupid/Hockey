@@ -1,6 +1,8 @@
 import { useSettingsStore } from "../../store/settingsStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
+import { getDifficultyDescription, getDifficultyLabel, getGameModeLabel, getStoryFrequencyDescription } from "../../game/systems/difficulty";
+import type { GameDifficulty, StoryFrequency } from "../../game/types";
 import { Button } from "../ui/Button";
 import { SectionHeader } from "../ui/SectionHeader";
 
@@ -10,7 +12,9 @@ export function SettingsPanel() {
   const resetGuides = useSettingsStore((state) => state.resetGuides);
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
   const resetChecklist = useUiStore((state) => state.resetChecklist);
+  const franchise = useFranchiseStore((state) => state.franchise);
   const resetLivingOpsState = useFranchiseStore((state) => state.resetLivingOpsState);
+  const updateDifficultySettings = useFranchiseStore((state) => state.updateDifficultySettings);
 
   const resetAllGuides = () => {
     resetGuides();
@@ -29,6 +33,10 @@ export function SettingsPanel() {
           <Toggle label="Auto-repair AI rosters during sim" checked={settings.autoRepairAiRosters} onChange={(value) => updateSettings({ autoRepairAiRosters: value })} />
           <Toggle label="Offer user roster auto-fix at season start" checked={settings.autoFixUserRosterOnSeasonStart} onChange={(value) => updateSettings({ autoFixUserRosterOnSeasonStart: value })} />
           <Toggle label="Enable story events" checked={settings.storyEventsEnabled} onChange={(value) => updateSettings({ storyEventsEnabled: value })} />
+          <Toggle label="Enable Assistant GM reports" checked={settings.assistantGmReportsEnabled} onChange={(value) => updateSettings({ assistantGmReportsEnabled: value })} />
+          <Toggle label="Enable room badges" checked={settings.roomBadgesEnabled} onChange={(value) => updateSettings({ roomBadgesEnabled: value })} />
+          <Toggle label="Enable consequence previews" checked={settings.consequencePreviewsEnabled} onChange={(value) => updateSettings({ consequencePreviewsEnabled: value, hideConsequencePreviews: !value })} />
+          <Toggle label="Event cadence debug display" checked={settings.eventCadenceDebugDisplay} onChange={(value) => updateSettings({ eventCadenceDebugDisplay: value })} />
           <Toggle label="Auto-resolve low severity events" checked={settings.autoResolveLowSeverityEvents} onChange={(value) => updateSettings({ autoResolveLowSeverityEvents: value })} />
           <Toggle label="Hide consequence previews" checked={settings.hideConsequencePreviews} onChange={(value) => updateSettings({ hideConsequencePreviews: value })} />
           <Toggle label="Confirm phase advances" checked={settings.confirmPhaseAdvances} onChange={(value) => updateSettings({ confirmPhaseAdvances: value })} />
@@ -39,6 +47,14 @@ export function SettingsPanel() {
               <option value="slow">Slow</option>
               <option value="normal">Normal</option>
               <option value="fast">Fast</option>
+            </select>
+          </label>
+          <label className="select-field">
+            <span>Assistant GM help level</span>
+            <select value={settings.assistantGmHelpLevel} onChange={(event) => updateSettings({ assistantGmHelpLevel: event.target.value as typeof settings.assistantGmHelpLevel })}>
+              <option value="Minimal">Minimal</option>
+              <option value="Normal">Normal</option>
+              <option value="Detailed">Detailed</option>
             </select>
           </label>
           <label className="select-field">
@@ -73,6 +89,46 @@ export function SettingsPanel() {
             </select>
           </label>
         </div>
+        {franchise && (
+          <section className="settings-subpanel">
+            <h3>Franchise Difficulty</h3>
+            <p className="muted">
+              {getGameModeLabel(franchise.gmProfile.gameMode)} | {getDifficultyLabel(franchise.gmProfile.difficulty)} | {franchise.gmProfile.storyFrequency} stories
+            </p>
+            <div className="settings-grid">
+              <label className="select-field">
+                <span>Difficulty</span>
+                <select
+                  value={franchise.gmProfile.difficulty}
+                  onChange={(event) => {
+                    const next = event.target.value as GameDifficulty;
+                    if (window.confirm(`Change franchise difficulty to ${getDifficultyLabel(next)}? ${getDifficultyDescription(next)}`)) {
+                      updateDifficultySettings({ difficulty: next });
+                    }
+                  }}
+                >
+                  <option value="relaxed">Relaxed</option>
+                  <option value="standard">Standard</option>
+                  <option value="demanding">Demanding</option>
+                  <option value="hardcore">Hardcore</option>
+                </select>
+              </label>
+              <label className="select-field">
+                <span>Story frequency</span>
+                <select
+                  value={franchise.gmProfile.storyFrequency}
+                  onChange={(event) => updateDifficultySettings({ storyFrequency: event.target.value as StoryFrequency })}
+                >
+                  <option value="quiet">Quiet</option>
+                  <option value="normal">Normal</option>
+                  <option value="dramatic">Dramatic</option>
+                </select>
+              </label>
+            </div>
+            <p className="muted">{getDifficultyDescription(franchise.gmProfile.difficulty)}</p>
+            <p className="muted">{getStoryFrequencyDescription(franchise.gmProfile.storyFrequency)}</p>
+          </section>
+        )}
         <div className="button-row">
           <Button tone="primary" onClick={resetAllGuides}>Reset guides</Button>
           <Button onClick={() => setHelpOpen(true)}>Controls and systems help</Button>

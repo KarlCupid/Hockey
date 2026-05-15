@@ -18,7 +18,15 @@ import {
 import { capNewsItems, createPhaseTransitionNews } from "../game/systems/storyEngine";
 import { repairAllTeamRosters } from "../game/systems/aiRosterManagement";
 import { tickAffiliateDevelopment } from "../game/systems/affiliate";
+import { dismissAssistantGmReport as dismissAssistantGmReportPure, generateAssistantGmReport } from "../game/systems/assistantGm";
 import { getCapWarnings } from "../game/systems/contracts";
+import { createDifficultyTuning } from "../game/systems/difficulty";
+import {
+  applyMediaPressureDrift,
+  applyNaturalSentimentDecay,
+  applyRelationshipDrift,
+  applyTeamChemistryDrift
+} from "../game/systems/livingOpsTuning";
 import { assignDevelopmentPlan as assignDevelopmentPlanPure, removeDevelopmentPlan as removeDevelopmentPlanPure, tickDevelopment } from "../game/systems/development";
 import {
   applyAcceptedContractOffer,
@@ -78,7 +86,9 @@ import type { TacticKey } from "../game/systems/tactics";
 import type {
   DevelopmentFocus,
   DevelopmentIntensity,
+  FranchiseSetupOptions,
   FranchiseState,
+  GameDifficulty,
   GameResult,
   LeagueState,
   Lineup,
@@ -91,6 +101,7 @@ import type {
   ScoutingAssignment,
   SeasonPhase,
   StaffRole,
+  StoryFrequency,
   Tactics,
   Team,
   ContractOffer,
@@ -105,7 +116,9 @@ interface FranchiseStore {
   loadError?: string;
   activeTradeProposal?: TradeProposal;
   lastTradeEvaluation?: TradeEvaluation;
-  startNewFranchise: (teamId: string) => void;
+  startNewFranchise: (teamId: string, setupOptions?: FranchiseSetupOptions) => void;
+  updateDifficultySettings: (patch: Partial<{ difficulty: GameDifficulty; storyFrequency: StoryFrequency }>) => void;
+  dismissAssistantGmReport: (reportId: string) => void;
   refreshSaves: () => Promise<void>;
   saveToSlot: (slotId: string) => Promise<void>;
   loadFromSlot: (slotId: string) => Promise<void>;
@@ -172,8 +185,30 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   loadError: undefined,
   activeTradeProposal: undefined,
   lastTradeEvaluation: undefined,
-  startNewFranchise: (teamId) => {
-    set({ franchise: createFranchise(teamId), loadError: undefined });
+  startNewFranchise: (teamId, setupOptions) => {
+    set({ franchise: createFranchise(teamId, setupOptions ?? undefined), loadError: undefined });
+  },
+  updateDifficultySettings: (patch) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const gmProfile = {
+      ...franchise.gmProfile,
+      difficulty: patch.difficulty ?? franchise.gmProfile.difficulty,
+      storyFrequency: patch.storyFrequency ?? franchise.gmProfile.storyFrequency
+    };
+    set({
+      franchise: {
+        ...franchise,
+        gmProfile,
+        difficultyTuning: createDifficultyTuning(gmProfile.difficulty, gmProfile.gameMode, gmProfile.storyFrequency),
+        updatedAt: new Date().toISOString()
+      }
+    });
+  },
+  dismissAssistantGmReport: (reportId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: dismissAssistantGmReportPure(franchise, reportId) });
   },
   refreshSaves: async () => {
     const saves = await listSaveMetadata().catch(() => []);
@@ -456,14 +491,14 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     };
     set({
       activeTradeProposal: nextProposal,
-      lastTradeEvaluation: evaluateTrade(nextProposal, franchise.league)
+      lastTradeEvaluation: evaluateTrade(nextProposal, franchise.league, franchise.difficultyTuning.tradeAiStrictness)
     });
   },
   submitTradeProposal: async () => {
     const franchise = get().franchise;
     const proposal = get().activeTradeProposal;
     if (!franchise || !proposal) return undefined;
-    const evaluation = evaluateTrade(proposal, franchise.league);
+    const evaluation = evaluateTrade(proposal, franchise.league, franchise.difficultyTuning.tradeAiStrictness);
     let next = applyTrade({ ...proposal, status: evaluation.accepted ? "accepted" : "rejected" }, franchise);
     if (!evaluation.accepted && shouldGenerateLivingOps()) {
       const playerRumors = proposal.assetsFrom
@@ -944,32 +979,52 @@ function tickLivingOpsAfterGame(franchise: FranchiseState, result: GameResult, p
   const uglyLoss = !won && Math.abs(result.finalScore.home - result.finalScore.away) >= 3;
   let next = updateFanSentiment(franchise, { win: won });
   next = updateMediaState(next, { win: won, uglyLoss });
+  next = applyNaturalSentimentDecay(next);
+  next = applyMediaPressureDrift(next);
+  next = applyTeamChemistryDrift(next);
+  next = applyRelationshipDrift(next);
   const events = [
-    ...generatePostGameDecisionEvents(next, result, new SeededRng(`${next.franchiseId}-${result.id}-living`)),
+    ...generateDecisionEvents(next, { kind: "postGame", result }, new SeededRng(`${next.franchiseId}-${result.id}-living`)),
     ...(playoffGame ? generateDecisionEvents(next, { kind: "playoff" }, new SeededRng(`${next.franchiseId}-${result.id}-playoff-living`)) : [])
   ];
   next = mergeDecisionEvents(next, filterEventsBySettings(events));
   next = updateStoryArcs(next, new SeededRng(`${next.franchiseId}-${result.id}-story`));
   next = mergeDecisionEvents(next, filterEventsBySettings(next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc) ?? [])));
-  return autoResolveLowSeverityIfNeeded(next);
+  return appendAssistantGmReport(autoResolveLowSeverityIfNeeded(next), "postGame");
 }
 
 function tickLivingOpsForPhase(franchise: FranchiseState, previousPhase: SeasonPhase, nextPhase: SeasonPhase): FranchiseState {
   if (!shouldGenerateLivingOps()) return franchise;
-  let next = mergeDecisionEvents(
-    franchise,
-    filterEventsBySettings(generatePhaseDecisionEvents(franchise, previousPhase, nextPhase, new SeededRng(`${franchise.franchiseId}-${previousPhase}-${nextPhase}-living`)))
+  let next = applyNaturalSentimentDecay(franchise);
+  next = mergeDecisionEvents(
+    next,
+    filterEventsBySettings(generateDecisionEvents(next, { kind: "phase", previousPhase, nextPhase }, new SeededRng(`${franchise.franchiseId}-${previousPhase}-${nextPhase}-living`)))
   );
   next = updateStoryArcs(next, new SeededRng(`${next.franchiseId}-${nextPhase}-story`));
-  return autoResolveLowSeverityIfNeeded(mergeDecisionEvents(next, filterEventsBySettings(next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc) ?? []))));
+  return appendAssistantGmReport(
+    autoResolveLowSeverityIfNeeded(mergeDecisionEvents(next, filterEventsBySettings(next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc) ?? [])))),
+    "phase"
+  );
 }
 
 function tickLivingOpsForRosterMove(franchise: FranchiseState): FranchiseState {
   if (!shouldGenerateLivingOps()) return franchise;
   const move = franchise.rosterMoveHistory[0];
   if (!move) return franchise;
-  const events = generateRosterDecisionEvents(franchise, move, new SeededRng(`${franchise.franchiseId}-${move.id}-living`));
-  return autoResolveLowSeverityIfNeeded(mergeDecisionEvents(franchise, filterEventsBySettings(events)));
+  const events = generateDecisionEvents(franchise, { kind: "roster", move }, new SeededRng(`${franchise.franchiseId}-${move.id}-living`));
+  return appendAssistantGmReport(autoResolveLowSeverityIfNeeded(mergeDecisionEvents(franchise, filterEventsBySettings(events))), "daily");
+}
+
+function appendAssistantGmReport(franchise: FranchiseState, type: "daily" | "weekly" | "phase" | "preGame" | "postGame" | "offseason"): FranchiseState {
+  const settings = useSettingsStore.getState().settings as ReturnType<typeof useSettingsStore.getState>["settings"] & {
+    assistantGmReportsEnabled?: boolean;
+  };
+  if (settings.assistantGmReportsEnabled === false) return franchise;
+  const report = generateAssistantGmReport(franchise, { type, date: franchise.league.currentDate });
+  return {
+    ...franchise,
+    assistantGmReports: [report, ...franchise.assistantGmReports.filter((candidate) => candidate.id !== report.id)].slice(0, 20)
+  };
 }
 
 function shouldGenerateLivingOps(): boolean {

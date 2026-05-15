@@ -5,6 +5,7 @@ import type { FranchiseState, NewsItem, OwnerGoal, OwnerState } from "../types";
 
 export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-owner-${franchise.league.seasonYear}`)): OwnerGoal[] {
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
+  const gameMode = franchise.gmProfile?.gameMode ?? "standardDynasty";
   const previous = franchise.history?.seasons?.[0];
   const standings = sortStandings(franchise.league.teams);
   const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
@@ -80,6 +81,34 @@ export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRn
       importance: "low"
     }
   ];
+  if (gameMode === "sandbox") {
+    return [
+      { ...rng.pick(frontOffice), importance: "low" },
+      { ...rng.pick(development.filter((goal) => goal.type !== "sellVeteran")), importance: "low" },
+      { ...rng.pick(performance.filter((goal) => goal.type !== "winRound")), importance: "low" }
+    ];
+  }
+  if (gameMode === "rebuildChallenge") {
+    return [
+      { ...frontOffice.find((goal) => goal.type === "buildThroughDraft")!, importance: "high" },
+      { ...development.find((goal) => goal.type === "developProspect")!, importance: "high" },
+      { ...frontOffice.find((goal) => goal.type === "stayUnderCap")!, importance: "medium" }
+    ];
+  }
+  if (gameMode === "contenderChallenge") {
+    return [
+      { ...performance.find((goal) => goal.type === "makePlayoffs")!, importance: "high" },
+      { ...performance.find((goal) => goal.type === "winRound")!, importance: "high" },
+      { ...frontOffice.find((goal) => goal.type === "stayUnderCap")!, importance: "medium" }
+    ];
+  }
+  if (gameMode === "pressureCooker") {
+    return [
+      { ...rng.pick(performance), importance: "high" },
+      { ...rng.pick(performance.filter((goal) => goal.type !== "improveRecord")), importance: "high" },
+      { ...rng.pick(frontOffice), importance: "medium" }
+    ];
+  }
   if (rebuilding) return [rng.pick(frontOffice), rng.pick(development), rng.pick(development.filter((goal) => goal.type !== "sellVeteran"))];
   if (contender) return [rng.pick(performance.filter((goal) => goal.type !== "improveRecord")), rng.pick(performance), rng.pick(frontOffice)];
   return [rng.pick(performance), rng.pick(frontOffice), rng.pick(development)];
@@ -136,15 +165,19 @@ export function evaluateJobSecurity(franchise: FranchiseState): OwnerState {
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
   const pointsPace = team.stats.gamesPlayed ? team.record.points / team.stats.gamesPlayed : 1;
-  const delta = owner.seasonGoals.reduce((sum, goal) => {
+  const rawDelta = owner.seasonGoals.reduce((sum, goal) => {
     const weight = goal.importance === "high" ? 9 : goal.importance === "medium" ? 6 : 3;
     if (goal.status === "met") return sum + weight;
     if (goal.status === "failed") return sum - weight;
     return sum - Math.round(weight * 0.35);
   }, rank > 0 && rank <= 4 ? 8 : rank > 0 && rank <= 8 ? 5 : pointsPace >= 1 ? 2 : -3);
+  const volatility = franchise.difficultyTuning?.jobSecurityVolatility ?? 1;
+  const patienceMultiplier = franchise.difficultyTuning?.ownerPatienceMultiplier ?? 1;
+  const modeFloor = franchise.gmProfile?.gameMode === "sandbox" ? 35 : 0;
+  const delta = Math.round(rawDelta * volatility * patienceMultiplier);
   return {
     ...owner,
-    jobSecurity: clamp(owner.jobSecurity + delta, 0, 100),
+    jobSecurity: clamp(owner.jobSecurity + delta, modeFloor, 100),
     lastEvaluationDate: franchise.league.currentDate
   };
 }

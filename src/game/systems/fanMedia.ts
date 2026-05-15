@@ -1,5 +1,6 @@
 import { SeededRng, clamp } from "../rng";
 import type { FranchiseState, MediaState, NewsItem } from "../types";
+import { applyGmTraitModifiers } from "./gmProfile";
 import { getTeamDynamics, normalizeTeamDynamics } from "./relationships";
 import { recordString } from "./standings";
 
@@ -7,7 +8,14 @@ export function updateFanSentiment(franchise: FranchiseState, context: { win?: b
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const dynamics = getTeamDynamics(franchise, team.id);
   const streak = team.record.streak.startsWith("W") ? Number(team.record.streak.slice(1) || 1) : team.record.streak.startsWith("L") ? -Number(team.record.streak.slice(1) || 1) : 0;
-  const delta = (context.win === true ? 3 : context.win === false ? -3 : 0) + streak * 0.8 + (context.majorSigning ? 5 : 0) - (context.missedTarget ? 4 : 0) - (context.tradeStar ? 7 : 0);
+  const pressureMultiplier = franchise.difficultyTuning?.fanPatienceMultiplier ?? 1;
+  const delta =
+    ((context.win === true ? 3 : context.win === false ? -3 : 0) +
+      streak * 0.8 +
+      (context.majorSigning ? 5 : 0) -
+      (context.missedTarget ? 4 : 0) -
+      (context.tradeStar ? 7 : 0)) *
+    pressureMultiplier;
   const fanSentiment = clamp(dynamics.fanSentiment + delta);
   return {
     ...franchise,
@@ -27,7 +35,13 @@ export function updateMediaState(franchise: FranchiseState, context: { win?: boo
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const dynamics = getTeamDynamics(franchise, team.id);
   const streakPressure = team.record.streak.startsWith("L") ? Number(team.record.streak.slice(1) || 1) * 2 : team.record.streak.startsWith("W") ? -Number(team.record.streak.slice(1) || 1) : 0;
-  const pressure = clamp(franchise.mediaState.pressure + streakPressure + (context.uglyLoss ? 8 : 0) + (context.rumor ? 5 : 0) - (context.transparentAnswer ? 4 : 0));
+  const gmModifiers = applyGmTraitModifiers(franchise, { type: "press" });
+  const pressureMultiplier = franchise.difficultyTuning?.mediaPressureMultiplier ?? 1;
+  const pressure = clamp(
+    franchise.mediaState.pressure +
+      Math.round((streakPressure + (context.uglyLoss ? 8 : 0) + (context.rumor ? 5 : 0)) * pressureMultiplier) -
+      (context.transparentAnswer ? 4 + Math.max(0, -(gmModifiers.mediaPressureModifier ?? 0)) : 0)
+  );
   return {
     ...franchise,
     mediaState: {

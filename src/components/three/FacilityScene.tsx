@@ -91,6 +91,8 @@ function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: s
       </mesh>
       <TeamBrandingWall teamId={selectedTeamId} />
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
+      <AssistantGmTerminal />
+      <SetupPlaque />
       <OwnerSuiteProps />
       <PressRoomProps />
       <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
@@ -239,6 +241,45 @@ function Desk({ position, color }: { position: [number, number, number]; color: 
         <boxGeometry args={[0.9, 0.45, 0.08]} />
         <meshStandardMaterial color="#bfefff" emissive="#3bb4ff" emissiveIntensity={0.18} />
       </mesh>
+    </group>
+  );
+}
+
+function AssistantGmTerminal() {
+  return (
+    <group position={[-5.2, 0, -6.15]}>
+      <mesh position={[0, 0.34, 0]}>
+        <boxGeometry args={[1.25, 0.58, 0.76]} />
+        <meshStandardMaterial color="#14243a" />
+      </mesh>
+      <mesh position={[0, 0.9, -0.18]} rotation={[-0.12, 0, 0]}>
+        <boxGeometry args={[0.9, 0.62, 0.07]} />
+        <meshStandardMaterial color="#dff8ff" emissive="#6ecbff" emissiveIntensity={0.28} />
+      </mesh>
+      {[0, 1, 2].map((index) => (
+        <mesh key={index} position={[-0.28 + index * 0.28, 0.92, -0.12]}>
+          <boxGeometry args={[0.12, 0.4 - index * 0.06, 0.035]} />
+          <meshStandardMaterial color={index === 1 ? "#f5c65b" : "#76e3a5"} emissive={index === 1 ? "#f5c65b" : "#76e3a5"} emissiveIntensity={0.12} />
+        </mesh>
+      ))}
+      <pointLight position={[0, 1.25, -0.25]} intensity={0.28} color="#6ecbff" />
+    </group>
+  );
+}
+
+function SetupPlaque() {
+  return (
+    <group position={[-6.6, 0, -8.88]}>
+      <mesh position={[0, 1.12, 0]}>
+        <boxGeometry args={[1.7, 0.85, 0.08]} />
+        <meshStandardMaterial color="#233244" emissive="#f5c65b" emissiveIntensity={0.09} />
+      </mesh>
+      {[0, 1, 2].map((index) => (
+        <mesh key={index} position={[-0.45 + index * 0.45, 1.14, 0.06]}>
+          <boxGeometry args={[0.28, 0.5, 0.035]} />
+          <meshStandardMaterial color={index === 0 ? "#6ecbff" : index === 1 ? "#f5c65b" : "#76e3a5"} />
+        </mesh>
+      ))}
     </group>
   );
 }

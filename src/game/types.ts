@@ -19,6 +19,21 @@ export type SeasonPhase =
   | "trainingCamp"
   | "preseason"
   | "completed";
+export type GameDifficulty = "relaxed" | "standard" | "demanding" | "hardcore";
+export type StoryFrequency = "quiet" | "normal" | "dramatic";
+export type GameMode = "sandbox" | "standardDynasty" | "pressureCooker" | "rebuildChallenge" | "contenderChallenge";
+export type GMBackground =
+  | "Former Coach"
+  | "Cap Strategist"
+  | "Scout at Heart"
+  | "Player Relationship Builder"
+  | "Analytics Executive"
+  | "Old-School Hockey Ops"
+  | "Owner Favorite"
+  | "Media Savvy";
+export type GMAvatarStyle = "classicSuit" | "teamPolo" | "rinkJacket" | "analyticsDesk";
+export type AssistantGmHelpLevel = "minimal" | "normal" | "detailed";
+export type FranchiseStartPreset = "balanced" | "injuryLight" | "prospectHeavy" | "capCrunched" | "rebuild" | "contender";
 export type RosterStatus = "active" | "scratched" | "affiliate" | "injuredReserve" | "prospectRights" | "retired";
 export type AcquiredVia = "generated" | "draft" | "trade" | "freeAgency" | "prospectSigning" | "replacement";
 export type CareerStage = "prospect" | "rookie" | "prime" | "veteran" | "decline";
@@ -201,6 +216,123 @@ export interface MediaState {
   narrative: "quiet" | "optimistic" | "skeptical" | "hotSeat" | "playoffBuzz" | "rebuildDebate";
   recentQuestions: string[];
   columnistTone: "friendly" | "neutral" | "critical" | "provocative";
+}
+
+export interface GMTrait {
+  id: string;
+  label: string;
+  description: string;
+  effects: {
+    negotiationModifier?: number;
+    scoutingModifier?: number;
+    developmentModifier?: number;
+    playerTrustModifier?: number;
+    mediaPressureModifier?: number;
+    ownerTrustModifier?: number;
+    tradeEvaluationModifier?: number;
+    storyFrequencyModifier?: number;
+  };
+}
+
+export interface GMProfile {
+  id: string;
+  displayName: string;
+  background: GMBackground;
+  difficulty: GameDifficulty;
+  gameMode: GameMode;
+  storyFrequency: StoryFrequency;
+  avatarStyle: GMAvatarStyle;
+  traits: GMTrait[];
+  createdAt: string;
+}
+
+export interface DifficultyTuning {
+  difficulty: GameDifficulty;
+  ownerPatienceMultiplier: number;
+  mediaPressureMultiplier: number;
+  fanPatienceMultiplier: number;
+  tradeAiStrictness: number;
+  contractDemandMultiplier: number;
+  freeAgentInterestPenalty: number;
+  injuryFrequencyMultiplier: number;
+  developmentVarianceMultiplier: number;
+  storyEventMultiplier: number;
+  capPressureMultiplier: number;
+  jobSecurityVolatility: number;
+  assistantGmHelpLevel: AssistantGmHelpLevel;
+}
+
+export interface AssistantGmRecommendation {
+  id: string;
+  category:
+    | "lineup"
+    | "roster"
+    | "trade"
+    | "contract"
+    | "scouting"
+    | "development"
+    | "freeAgency"
+    | "staff"
+    | "story"
+    | "phase"
+    | "cap";
+  priority: "low" | "medium" | "high" | "urgent";
+  title: string;
+  body: string;
+  actionLabel: string;
+  targetRoomId?: RoomId;
+  targetPlayerId?: string;
+  targetTeamId?: string;
+  estimatedImpact: "small" | "medium" | "large";
+}
+
+export interface AssistantGmReport {
+  id: string;
+  date: string;
+  type: "daily" | "weekly" | "phase" | "preGame" | "postGame" | "offseason";
+  headline: string;
+  summary: string;
+  recommendations: AssistantGmRecommendation[];
+  riskFlags: string[];
+  opportunityFlags: string[];
+  linkedRoomIds: RoomId[];
+  dismissed?: boolean;
+}
+
+export interface DecisionOptionTemplate {
+  tone: DecisionOptionTone;
+  labelTemplate: string;
+  descriptionTemplate: string;
+  previewTemplate: string;
+  outcomeProfile: "calm" | "honest" | "protective" | "aggressive" | "risky" | "deflecting" | "accountable";
+}
+
+export interface NarrativeTemplate {
+  id: string;
+  category:
+    | "press"
+    | "owner"
+    | "agent"
+    | "player"
+    | "team"
+    | "media"
+    | "fan"
+    | "rivalry"
+    | "playoff"
+    | "draft"
+    | "freeAgency"
+    | "trade"
+    | "development"
+    | "affiliate";
+  triggerTags: string[];
+  severity: DecisionEventSeverity;
+  headlineTemplate: string;
+  bodyTemplate: string;
+  optionTemplates?: DecisionOptionTemplate[];
+  cooldownDays: number;
+  weight: number;
+  difficultyRange?: GameDifficulty[];
+  storyFrequencyRange?: StoryFrequency[];
 }
 
 export type PlayerArchetype =
@@ -1176,6 +1308,52 @@ export interface TimelineItem {
   type: "season" | "playoffs" | "draft" | "contract" | "freeAgency" | "staff" | "retirement" | "owner";
 }
 
+export type ActionQueuePriority = "low" | "medium" | "high" | "urgent";
+
+export interface ActionQueueItem {
+  id: string;
+  priority: ActionQueuePriority;
+  label: string;
+  description: string;
+  roomId: RoomId;
+  category:
+    | "lineup"
+    | "roster"
+    | "trade"
+    | "contract"
+    | "scouting"
+    | "development"
+    | "freeAgency"
+    | "staff"
+    | "story"
+    | "phase"
+    | "cap"
+    | "owner"
+    | "news";
+  blocking: boolean;
+  relatedPlayerId?: string;
+  relatedTeamId?: string;
+  relatedEventId?: string;
+}
+
+export interface RoomBadge {
+  id: string;
+  label: string;
+  tone: "neutral" | "info" | "warning" | "danger" | "success";
+  count?: number;
+}
+
+export interface FranchiseSetupOptions {
+  seed?: string;
+  gmName?: string;
+  gmBackground?: GMBackground;
+  avatarStyle?: GMAvatarStyle;
+  difficulty?: GameDifficulty;
+  gameMode?: GameMode;
+  storyFrequency?: StoryFrequency;
+  startPreset?: FranchiseStartPreset;
+}
+
 export interface FranchiseState {
   schemaVersion: number;
   franchiseId: string;
@@ -1183,6 +1361,10 @@ export interface FranchiseState {
   league: LeagueState;
   seasonPhase: SeasonPhase;
   currentSeasonId: string;
+  gmProfile: GMProfile;
+  difficultyTuning: DifficultyTuning;
+  assistantGmReports: AssistantGmReport[];
+  narrativeTemplateVersion: number;
   playoffState?: PlayoffState;
   offseasonState?: OffseasonState;
   freeAgencyState?: FreeAgentState;

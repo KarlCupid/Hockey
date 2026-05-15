@@ -1,4 +1,7 @@
 import type { RoomId } from "../../game/types";
+import { getRoomBadges } from "../../game/systems/actionQueue";
+import { useFranchiseStore } from "../../store/franchiseStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { useUiStore } from "../../store/uiStore";
 import { roomLabel } from "./RoomPrompt";
 
@@ -30,6 +33,9 @@ export function OperationsMap() {
   const activeRoom = useUiStore((state) => state.activeRoom);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const setOpen = useUiStore((state) => state.setOperationsMapOpen);
+  const franchise = useFranchiseStore((state) => state.franchise);
+  const roomBadgesEnabled = useSettingsStore((state) => state.settings.roomBadgesEnabled);
+  const badges = franchise && roomBadgesEnabled ? getRoomBadges(franchise) : undefined;
 
   if (!open) {
     return (
@@ -54,7 +60,9 @@ export function OperationsMap() {
         <span className="ops-map__you" style={{ left: `${nearbyRoom ? ROOMS.find((room) => room.id === nearbyRoom)?.x ?? 50 : 50}%`, top: `${nearbyRoom ? ROOMS.find((room) => room.id === nearbyRoom)?.y ?? 50 : 50}%` }}>
           You
         </span>
-        {ROOMS.map((room) => (
+        {ROOMS.map((room) => {
+          const roomBadges = badges?.[room.id] ?? [];
+          return (
           <button
             className={room.id === nearbyRoom ? "ops-map__pin is-nearby" : "ops-map__pin"}
             key={room.id}
@@ -66,16 +74,28 @@ export function OperationsMap() {
             }}
           >
             {roomLabel(room.id)}
+            {roomBadges.length > 0 && <span className={`ops-map__badge ops-map__badge--${roomBadges[0].tone}`}>{roomBadges[0].count ?? roomBadges.length}</span>}
           </button>
-        ))}
+          );
+        })}
       </div>
       <div className="ops-map__directory">
-        {ROOMS.map((room) => (
+        {ROOMS.map((room) => {
+          const roomBadges = badges?.[room.id] ?? [];
+          return (
           <button key={room.id} type="button" onClick={() => setActiveRoom(room.id)}>
             <strong>{roomLabel(room.id)}</strong>
             <span>{room.note}</span>
+            {roomBadges.length > 0 && (
+              <small className="ops-map__directory-badges">
+                {roomBadges.slice(0, 2).map((badge) => (
+                  <b key={badge.id}>{badge.label}{badge.count ? ` ${badge.count}` : ""}</b>
+                ))}
+              </small>
+            )}
           </button>
-        ))}
+          );
+        })}
       </div>
     </aside>
   );

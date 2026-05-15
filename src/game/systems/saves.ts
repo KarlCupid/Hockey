@@ -5,8 +5,15 @@ import { generateDraftClass } from "../generators/generateDraftClass";
 import { SeededRng } from "../rng";
 import type {
   AgentProfile,
+  AssistantGmReport,
+  DifficultyTuning,
   DecisionEvent,
   FranchiseState,
+  GMAvatarStyle,
+  GMBackground,
+  GMProfile,
+  GameDifficulty,
+  GameMode,
   LeagueHistory,
   MediaState,
   OwnerState,
@@ -19,6 +26,7 @@ import type {
   ScoutingState,
   StaffState,
   StoryArc,
+  StoryFrequency,
   Team,
   TeamDynamics
 } from "../types";
@@ -35,6 +43,10 @@ import { recordString } from "./standings";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "./trades";
 import { autoSetInitialRosterStatuses } from "./rosterManagement";
 import { defaultMediaState } from "./fanMedia";
+import { generateAssistantGmReport } from "./assistantGm";
+import { createDifficultyTuning } from "./difficulty";
+import { createGmProfile } from "./gmProfile";
+import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
 import {
   generateAgentsForPlayers,
   generateInitialPlayerRelationships,
@@ -128,6 +140,8 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
   const staffState = hydrateStaffState(input, teamsWithAssets);
   const prospectPools = hydrateProspectPools(input, teamsWithAssets);
   const history = hydrateHistory(input);
+  const gmProfile = hydrateGmProfile(input);
+  const difficultyTuning = hydrateDifficultyTuning(input, gmProfile);
   const ownerBase: FranchiseState = {
     ...input,
     schemaVersion: SCHEMA_VERSION,
@@ -139,6 +153,10 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     },
     seasonPhase: phase,
     currentSeasonId: input.currentSeasonId ?? `${input.league.seasonYear}-${input.selectedTeamId}`,
+    gmProfile,
+    difficultyTuning,
+    assistantGmReports: hydrateAssistantGmReports(input),
+    narrativeTemplateVersion: input.narrativeTemplateVersion ?? NARRATIVE_TEMPLATE_VERSION,
     staffState,
     history,
     ownerState: input.ownerState ?? emptyOwnerState(input),
@@ -173,7 +191,13 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     saveStatus: "idle"
   });
   const repaired = repairAllTeamRosters(livingBase, "playtestRepair");
-  return hydrateLivingOpsState(repaired);
+  const living = hydrateLivingOpsState(repaired);
+  return {
+    ...living,
+    assistantGmReports: living.assistantGmReports.length
+      ? living.assistantGmReports
+      : [generateAssistantGmReport(living, { type: "daily", date: living.league.currentDate })]
+  };
 }
 
 export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityReport {
@@ -183,7 +207,7 @@ export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityR
     .map((item) => item.message);
   return {
     schemaVersion: franchise.schemaVersion,
-    warnings: [...report.warnings.map((item) => item.message), ...duplicateWarnings],
+    warnings: [...report.warnings.map((item) => item.message), ...duplicateWarnings, ...getPhase7IntegrityWarnings(franchise)],
     errors: report.errors.map((item) => item.message),
     repairedFields: collectMissingFieldRepairs(franchise),
     lastValidatedAt: new Date().toISOString()
@@ -214,6 +238,10 @@ export function repairFranchiseState(franchise: FranchiseState): FranchiseState 
     agents: repairedLiving.agents,
     teamDynamics: repairedLiving.teamDynamics,
     mediaState: repairedLiving.mediaState,
+    gmProfile: repairedLiving.gmProfile,
+    difficultyTuning: repairedLiving.difficultyTuning,
+    assistantGmReports: repairedLiving.assistantGmReports,
+    narrativeTemplateVersion: repairedLiving.narrativeTemplateVersion,
     saveStatus: "idle"
   };
 }
@@ -509,6 +537,42 @@ function hydrateHistory(input: FranchiseState): LeagueHistory {
   };
 }
 
+function hydrateGmProfile(input: FranchiseState): GMProfile {
+  const raw = (input as Partial<FranchiseState>).gmProfile as Partial<GMProfile> | undefined;
+  const background = validGmBackground(raw?.background) ? raw.background : "Former Coach";
+  return createGmProfile({
+    displayName: raw?.displayName,
+    background,
+    avatarStyle: validGmAvatarStyle(raw?.avatarStyle) ? raw.avatarStyle : "classicSuit",
+    difficulty: validGameDifficulty(raw?.difficulty) ? raw.difficulty : "standard",
+    gameMode: validGameMode(raw?.gameMode) ? raw.gameMode : "standardDynasty",
+    storyFrequency: validStoryFrequency(raw?.storyFrequency) ? raw.storyFrequency : "normal",
+    createdAt: raw?.createdAt ?? input.createdAt
+  });
+}
+
+function hydrateDifficultyTuning(input: FranchiseState, gmProfile: GMProfile): DifficultyTuning {
+  const raw = (input as Partial<FranchiseState>).difficultyTuning as Partial<DifficultyTuning> | undefined;
+  if (!raw || !validGameDifficulty(raw.difficulty)) {
+    return createDifficultyTuning(gmProfile.difficulty, gmProfile.gameMode, gmProfile.storyFrequency);
+  }
+  return createDifficultyTuning(raw.difficulty, gmProfile.gameMode, gmProfile.storyFrequency);
+}
+
+function hydrateAssistantGmReports(input: FranchiseState): AssistantGmReport[] {
+  const raw = (input as Partial<FranchiseState>).assistantGmReports;
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((report): report is AssistantGmReport => Boolean(report && typeof report.id === "string" && Array.isArray(report.recommendations)))
+    .map((report) => ({
+      ...report,
+      riskFlags: report.riskFlags ?? [],
+      opportunityFlags: report.opportunityFlags ?? [],
+      linkedRoomIds: report.linkedRoomIds ?? []
+    }))
+    .slice(0, 20);
+}
+
 function hydrateOwnerState(input: FranchiseState): OwnerState {
   if (input.ownerState?.seasonGoals?.length) {
     return {
@@ -533,6 +597,16 @@ function emptyOwnerState(input: FranchiseState): OwnerState {
 function collectMissingFieldRepairs(input: FranchiseState): string[] {
   const repaired: string[] = [];
   if (input.schemaVersion !== SCHEMA_VERSION) repaired.push("schemaVersion");
+  if (!(input as Partial<FranchiseState>).gmProfile) repaired.push("gmProfile");
+  if ((input as Partial<FranchiseState>).gmProfile && !validGameDifficulty((input as Partial<FranchiseState>).gmProfile?.difficulty)) {
+    repaired.push("gmProfile.difficulty");
+  }
+  if ((input as Partial<FranchiseState>).gmProfile && !validStoryFrequency((input as Partial<FranchiseState>).gmProfile?.storyFrequency)) {
+    repaired.push("gmProfile.storyFrequency");
+  }
+  if (!(input as Partial<FranchiseState>).difficultyTuning) repaired.push("difficultyTuning");
+  if (!(input as Partial<FranchiseState>).assistantGmReports) repaired.push("assistantGmReports");
+  if (!(input as Partial<FranchiseState>).narrativeTemplateVersion) repaired.push("narrativeTemplateVersion");
   if (!input.seasonPhase) repaired.push("seasonPhase");
   if (!input.currentSeasonId) repaired.push("currentSeasonId");
   if (!input.staffState) repaired.push("staffState");
@@ -566,8 +640,48 @@ function collectMissingFieldRepairs(input: FranchiseState): string[] {
   return repaired;
 }
 
+function getPhase7IntegrityWarnings(franchise: FranchiseState): string[] {
+  const warnings: string[] = [];
+  if (!franchise.gmProfile?.displayName) warnings.push("GM profile is missing a display name.");
+  if (!validGameDifficulty(franchise.gmProfile?.difficulty)) warnings.push("GM difficulty is invalid and will repair to standard.");
+  if (!validGameMode(franchise.gmProfile?.gameMode)) warnings.push("Game mode is invalid and will repair to Standard Dynasty.");
+  if (!validStoryFrequency(franchise.gmProfile?.storyFrequency)) warnings.push("Story frequency is invalid and will repair to normal.");
+  if (!franchise.difficultyTuning) warnings.push("Difficulty tuning is missing.");
+  if (!Number.isFinite(franchise.narrativeTemplateVersion)) warnings.push("Narrative template version is missing.");
+  return warnings;
+}
+
 function validRosterStatus(status: Player["rosterStatus"]): status is RosterStatus {
   return Boolean(status && ["active", "scratched", "affiliate", "injuredReserve", "prospectRights", "retired"].includes(status));
+}
+
+function validGameDifficulty(value: unknown): value is GameDifficulty {
+  return value === "relaxed" || value === "standard" || value === "demanding" || value === "hardcore";
+}
+
+function validStoryFrequency(value: unknown): value is StoryFrequency {
+  return value === "quiet" || value === "normal" || value === "dramatic";
+}
+
+function validGameMode(value: unknown): value is GameMode {
+  return value === "sandbox" || value === "standardDynasty" || value === "pressureCooker" || value === "rebuildChallenge" || value === "contenderChallenge";
+}
+
+function validGmBackground(value: unknown): value is GMBackground {
+  return (
+    value === "Former Coach" ||
+    value === "Cap Strategist" ||
+    value === "Scout at Heart" ||
+    value === "Player Relationship Builder" ||
+    value === "Analytics Executive" ||
+    value === "Old-School Hockey Ops" ||
+    value === "Owner Favorite" ||
+    value === "Media Savvy"
+  );
+}
+
+function validGmAvatarStyle(value: unknown): value is GMAvatarStyle {
+  return value === "classicSuit" || value === "teamPolo" || value === "rinkJacket" || value === "analyticsDesk";
 }
 
 function defaultDevelopmentPath(player: Player): PlayerDevelopmentPath {

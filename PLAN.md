@@ -86,3 +86,12 @@
 - Add Press Room, Owner Suite, Agent Desk, and Player Meeting Room panels plus GM Office, Locker Room, Contract, Trade, Roster, Settings, Help, and Dev Tools living-ops surfaces.
 - Add schema version 5 save hydration/repair for older saves, decision/story invariant checks, and a five-season story stress harness.
 - Keep all interactions fictional, client-only, deterministic where tested, and grounded in a serious hockey-operations tone.
+
+## Milestone 13: Phase 7 Game Feel, Difficulty, Narrative Content, Assistant GM, and Playtest Tuning
+
+- Add new-franchise setup options for GM profile/background traits, avatar style, game mode, difficulty, story frequency, and modest starting presets.
+- Build pure tuning systems for difficulty, game modes, GM traits, narrative template selection, living-ops cadence, Assistant GM reports, action queues, and room badges.
+- Broaden fictional narrative templates and tune owner/media/fan/team dynamics so multi-season playtests stay stable without feeling flat.
+- Improve GM Office, TopBar, Operations Map, Settings, Help, Dev Tools, and the facility with guidance, pressure readouts, reports, and quick navigation.
+- Add schema version 6 save hydration/repair and playtest/balance reporting for difficulty/story-frequency comparisons.
+- Keep Phase 7 client-only, fictional, advisory rather than autopilot-driven, and out of real-world CBA/rules complexity.

@@ -10,7 +10,29 @@ import { createPlayoffState, simulatePlayoffsUntil } from "./playoffs";
 import { applyOffseasonDevelopment } from "./playerLifecycle";
 import { evaluateTrade } from "./trades";
 import { TUNING } from "./tuning";
-import type { ContractOffer, FranchiseState, LeagueState, Player, Team, TradeProposal } from "../types";
+import { runDynastyPlaytest } from "./dynastyPlaytest";
+import type { ContractOffer, FranchiseSetupOptions, FranchiseState, LeagueState, Player, Team, TradeProposal } from "../types";
+
+export interface Phase7BalanceScenarioReport {
+  label: string;
+  setup: FranchiseSetupOptions;
+  decisionEventsGenerated: number;
+  highSeverityEvents: number;
+  storyArcsStarted: number;
+  storyArcsResolved: number;
+  ownerTrustTrend: number[];
+  chemistryTrend: number[];
+  mediaPressureTrend: number[];
+  fanSentimentTrend: number[];
+  assistantGmRecommendationsGenerated: number;
+  urgentActionsGenerated: number;
+  capPressureTrend: number[];
+  contractAcceptanceRate: number;
+  ownerGoalCompletionRate: number;
+  fatalInvariantErrors: number;
+  nonfatalWarnings: number;
+  champions: string[];
+}
 
 export interface BalanceReport {
   seeds: string[];
@@ -227,6 +249,40 @@ export function assertReportFinite(report: BalanceReport): boolean {
     report.ownerGameplay.playoffQualificationVolatility
   ];
   return values.every((value) => Number.isFinite(value) && !Number.isNaN(value));
+}
+
+export function generatePhase7BalanceReport(selectedTeamId = "harbor-city"): Phase7BalanceScenarioReport[] {
+  const scenarios: Array<{ label: string; setup: FranchiseSetupOptions }> = [
+    { label: "relaxed / quiet", setup: { difficulty: "relaxed", storyFrequency: "quiet", gameMode: "standardDynasty" } },
+    { label: "standard / normal", setup: { difficulty: "standard", storyFrequency: "normal", gameMode: "standardDynasty" } },
+    { label: "demanding / normal", setup: { difficulty: "demanding", storyFrequency: "normal", gameMode: "standardDynasty" } },
+    { label: "hardcore / dramatic", setup: { difficulty: "hardcore", storyFrequency: "dramatic", gameMode: "standardDynasty" } },
+    { label: "rebuildChallenge / normal", setup: { difficulty: "standard", storyFrequency: "normal", gameMode: "rebuildChallenge" } },
+    { label: "pressureCooker / dramatic", setup: { difficulty: "demanding", storyFrequency: "dramatic", gameMode: "pressureCooker" } }
+  ];
+  return scenarios.map(({ label, setup }) => {
+    const report = runDynastyPlaytest(`phase7-${label.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`, 5, selectedTeamId, setup);
+    return {
+      label,
+      setup,
+      decisionEventsGenerated: report.livingOps.eventsGenerated,
+      highSeverityEvents: report.livingOps.highSeverityEvents,
+      storyArcsStarted: report.livingOps.storyArcsStarted,
+      storyArcsResolved: report.livingOps.storyArcsResolved,
+      ownerTrustTrend: report.livingOps.ownerTrustTrend.map((item) => item.value),
+      chemistryTrend: report.livingOps.teamChemistryTrend.map((item) => item.value),
+      mediaPressureTrend: report.livingOps.mediaPressureTrend.map((item) => item.value),
+      fanSentimentTrend: report.livingOps.fanSentimentTrend.map((item) => item.value),
+      assistantGmRecommendationsGenerated: report.livingOps.assistantGmRecommendationsGenerated,
+      urgentActionsGenerated: report.livingOps.urgentActionsGenerated,
+      capPressureTrend: report.livingOps.capPressureTrend.map((item) => item.value),
+      contractAcceptanceRate: report.livingOps.contractAcceptanceRate,
+      ownerGoalCompletionRate: report.livingOps.ownerGoalCompletionRate,
+      fatalInvariantErrors: report.errors.length,
+      nonfatalWarnings: report.warnings.length,
+      champions: report.championHistory
+    };
+  });
 }
 
 function simulateRegularSeasonForReport(league: LeagueState, seed: string) {

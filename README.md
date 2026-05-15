@@ -32,6 +32,7 @@ npm run build
 - Phase 4 beta hardening with dynasty invariant checks, deterministic multi-season playtests, balance reporting, save integrity repair, settings/help, fictional branding, and panel-level code splitting
 - Phase 5 roster ecosystem with active roster, scratches, affiliate roster, injured reserve, prospect pathways, AI roster repair, and training-camp setup
 - Phase 6 living hockey operations with press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, story arcs, media pressure, fan sentiment, and owner trust
+- Phase 7 game-feel layer with setup wizard, GM profile/background traits, difficulty, game modes, story frequency, narrative templates, Assistant GM reports, action queue, room badges, and broader playtest tuning
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -117,9 +118,24 @@ Phase 6 makes the client-only dynasty feel more like a living hockey organizatio
 - Decision options show tone and consequence previews, then apply bounded effects to morale, form, fatigue, trust, role satisfaction, chemistry, fan sentiment, owner trust, media pressure, agent relationship, contract/free-agent interest, trade noise, staff trust, and news follow-ups.
 - Save migration now hydrates older saves to schema version 5 with generated relationships, agents, team dynamics, media state, decision-event state, and story-arc state.
 
+## Phase 7 Game Feel, Difficulty, Narrative Content, Assistant GM, and Playtest Tuning
+
+Phase 7 tunes the existing deep dynasty game rather than adding another real-world rules layer:
+
+- New Franchise setup is now a five-step wizard: choose team, name/build the GM profile, choose game mode, choose difficulty/story frequency, and apply a modest opening preset.
+- GM profiles include fictional background traits such as Former Coach, Cap Strategist, Scout at Heart, Player Relationship Builder, Analytics Executive, Owner Favorite, and Media Savvy.
+- Difficulty and game modes apply modest tuning to owner/media pressure, trade strictness, contract demands, free-agent interest, story cadence, cap pressure, and Assistant GM help level.
+- Story frequency controls living-ops cadence: Quiet stays lower-noise, Normal is the default, and Dramatic creates more story pressure while keeping active event caps.
+- A 140+ template fictional narrative library feeds press, owner, agent, player, team, media/fan, rivalry, playoff, draft, free agency, trade, development, and affiliate beats.
+- The Assistant GM generates advisory reports and recommendations from actual franchise state, including invalid roster, cap pressure, expiring stars, pending decisions, prospects ready for a look, idle scouting, staff vacancies, and phase risks.
+- The GM Office now includes a Master Action Queue, Assistant GM reports, GM profile/difficulty card, pressure readout, and quick room navigation.
+- TopBar and Operations Map show urgent action counts, Assistant GM alerts, and room badges for decisions, roster issues, draft picks, expiring contracts, market days, staff vacancies, and owner risk.
+- Dev Tools now expose template validation, cadence/tuning inspection, Assistant GM previews, action queue inspection, sample narrative events, and difficulty playtest entry points.
+- Save migration now hydrates older saves to schema version 6 with GM profile, difficulty tuning, Assistant GM reports, and narrative template version.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, and story events are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, and narrative templates are simplified fictional prototype systems.
 
 ## Controls
 
@@ -132,4 +148,4 @@ This prototype intentionally avoids backend services, authentication, real hocke
 
 ## Save Data
 
-Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls. Older saves hydrate to schema version 5 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, and story arcs.
+Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls. Older saves hydrate to schema version 6 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, and narrative template version.

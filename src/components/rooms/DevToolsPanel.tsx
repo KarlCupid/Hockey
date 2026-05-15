@@ -6,6 +6,18 @@ import { runDynastyPlaytest, type PlaytestReport } from "../../game/systems/dyna
 import { validateDynastyInvariants } from "../../game/systems/dynastyInvariants";
 import { getActiveDecisionEvents } from "../../game/systems/decisionEvents";
 import { getTeamDynamics } from "../../game/systems/relationships";
+import { NARRATIVE_TEMPLATES } from "../../game/content/narrativeTemplates";
+import { getMasterActionQueue, getRoomBadges } from "../../game/systems/actionQueue";
+import { generateAssistantGmReport } from "../../game/systems/assistantGm";
+import { createDifficultyTuning } from "../../game/systems/difficulty";
+import { getEventCadenceTuning } from "../../game/systems/livingOpsTuning";
+import {
+  createDecisionEventFromTemplate,
+  getTemplateContextFromFranchise,
+  selectNarrativeTemplate,
+  validateNarrativeTemplates
+} from "../../game/systems/narrativeTemplateEngine";
+import { SeededRng } from "../../game/rng";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
@@ -20,6 +32,17 @@ export function DevToolsPanel() {
   const [ownerBalance, setOwnerBalance] = useState<OwnerGoalBalanceSample | undefined>();
   const invariant = useMemo(() => (franchise ? validateDynastyInvariants(franchise) : undefined), [franchise]);
   const dynamics = franchise ? getTeamDynamics(franchise, franchise.selectedTeamId) : undefined;
+  const templateIssues = useMemo(() => validateNarrativeTemplates(NARRATIVE_TEMPLATES), []);
+  const assistantPreview = useMemo(() => (franchise ? generateAssistantGmReport(franchise, { type: "weekly" }) : undefined), [franchise]);
+  const actionQueue = useMemo(() => (franchise ? getMasterActionQueue(franchise) : []), [franchise]);
+  const roomBadgeCount = useMemo(() => (franchise ? Object.values(getRoomBadges(franchise)).reduce((sum, badges) => sum + badges.length, 0) : 0), [franchise]);
+  const cadence = useMemo(() => (franchise ? getEventCadenceTuning(franchise) : undefined), [franchise]);
+  const samplePressEvent = useMemo(() => {
+    if (!franchise) return undefined;
+    const rng = new SeededRng("dev-sample-press");
+    const context = getTemplateContextFromFranchise(franchise, { category: "press", tags: ["press"] });
+    return createDecisionEventFromTemplate(selectNarrativeTemplate(NARRATIVE_TEMPLATES, context, rng), context, rng);
+  }, [franchise]);
 
   if (!franchise) return null;
 
@@ -42,6 +65,7 @@ export function DevToolsPanel() {
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-three-season", 3, franchise.selectedTeamId))}>Run 3-season dry run</Button>
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-five-season-roster", 5, franchise.selectedTeamId))}>Run 5-season roster stress</Button>
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-five-season-story", 5, franchise.selectedTeamId))}>Run 5-season story stress</Button>
+        <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-hardcore-dramatic", 5, franchise.selectedTeamId, { difficulty: "hardcore", storyFrequency: "dramatic", gameMode: "pressureCooker" }))}>Hardcore dramatic sample</Button>
         <Button onClick={() => setBalance(generateBalanceReport(["dev-a", "dev-b"], 1))}>Run balance report</Button>
         <Button onClick={() => setReSigning(runReSigningBalanceSample(["dev-rs-a", "dev-rs-b"]))}>Re-signing sample</Button>
         <Button onClick={() => setOwnerBalance(runOwnerGoalBalanceSample(["dev-o-a", "dev-o-b", "dev-o-c"]))}>Owner sample</Button>
@@ -95,6 +119,53 @@ export function DevToolsPanel() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="panel-section">
+        <h3>Phase 7 Content & Guidance Tools</h3>
+        <div className="season-pulse">
+          <span>Templates <strong>{NARRATIVE_TEMPLATES.length}</strong></span>
+          <span>Template issues <strong>{templateIssues.length}</strong></span>
+          <span>Cadence chance <strong>{cadence ? Math.round(cadence.decisionChance * 100) : 0}%</strong></span>
+          <span>Max active <strong>{cadence?.maxActiveEvents ?? 0}</strong></span>
+          <span>Assistant recs <strong>{assistantPreview?.recommendations.length ?? 0}</strong></span>
+          <span>Action queue <strong>{actionQueue.length}</strong></span>
+          <span>Room badges <strong>{roomBadgeCount}</strong></span>
+        </div>
+        <div className="season-pulse">
+          {(["relaxed", "standard", "demanding", "hardcore"] as const).map((difficulty) => {
+            const tuning = createDifficultyTuning(difficulty, franchise.gmProfile.gameMode, franchise.gmProfile.storyFrequency);
+            return (
+              <span key={difficulty}>
+                {difficulty} <strong>owner {tuning.ownerPatienceMultiplier} | media {tuning.mediaPressureMultiplier} | story {tuning.storyEventMultiplier}</strong>
+              </span>
+            );
+          })}
+        </div>
+        {samplePressEvent && (
+          <article className="news-item news-item--medium">
+            <small>Sample press event</small>
+            <strong>{samplePressEvent.headline}</strong>
+            <p>{samplePressEvent.body}</p>
+          </article>
+        )}
+        {assistantPreview && (
+          <div className="asset-list asset-list--compact">
+            {assistantPreview.recommendations.slice(0, 5).map((recommendation) => (
+              <article key={recommendation.id}>
+                <strong>{recommendation.title}</strong>
+                <span>{recommendation.priority} | {recommendation.targetRoomId} | {recommendation.body}</span>
+              </article>
+            ))}
+          </div>
+        )}
+        {templateIssues.length > 0 && (
+          <WarningCallout title="Template Validator">
+            {templateIssues.slice(0, 8).map((issue) => (
+              <p key={issue}>{issue}</p>
+            ))}
+          </WarningCallout>
+        )}
       </section>
 
       {playtest && (

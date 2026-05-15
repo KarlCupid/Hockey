@@ -1,5 +1,6 @@
 import { getCurrentPick } from "./draftExecution";
 import { getPendingExpiringPlayers } from "./contractNegotiation";
+import { getNextBestAction } from "./actionQueue";
 import { validateRosterForGame } from "./rosterRules";
 import { nextGameForTeam } from "../simulation/simulateGame";
 import type { FranchiseState, SeasonPhase } from "../types";
@@ -50,6 +51,8 @@ export function getPhaseDescription(franchise: FranchiseState): string {
 }
 
 export function getRecommendedNextAction(franchise: FranchiseState): string {
+  const nextAction = getNextBestAction(franchise);
+  if (nextAction && (nextAction.priority === "urgent" || nextAction.blocking)) return nextAction.label;
   const phase = franchise.seasonPhase;
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId);
   if (phase === "regularSeason") {
@@ -163,6 +166,10 @@ export function getDangerWarnings(franchise: FranchiseState, action = "advance")
   if (selected) {
     const roster = validateRosterForGame(selected);
     if (roster.errors.length) warnings.push(`Roster Office warning: ${roster.errors[0]}`);
+  }
+  const pressure = franchise.difficultyTuning?.ownerPatienceMultiplier ?? 1;
+  if (pressure >= 1.18 && franchise.ownerState.jobSecurity < 55) {
+    warnings.push("Difficulty pressure is making owner movement more volatile.");
   }
   return warnings;
 }

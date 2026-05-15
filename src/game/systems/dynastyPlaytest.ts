@@ -11,11 +11,19 @@ import { signProspect } from "./prospects";
 import { advanceSeasonPhase, completeRegularSeason } from "./seasonLifecycle";
 import { simulatePlayoffsUntil } from "./playoffs";
 import { validateDynastyInvariants, type DynastyInvariantReport } from "./dynastyInvariants";
-import { generatePhaseDecisionEvents, generatePlayoffDecisionEvents, mergeDecisionEvents, resolveDecisionEvent } from "./decisionEvents";
+import { generateDecisionEvents, generatePlayoffDecisionEvents, mergeDecisionEvents, resolveDecisionEvent } from "./decisionEvents";
 import { generateAgentsForPlayers, generateInitialPlayerRelationships, generateInitialTeamDynamics, getTeamDynamics } from "./relationships";
 import { defaultMediaState } from "./fanMedia";
 import { createStoryArcDecisionEvent, updateStoryArcs } from "./storyArcs";
-import type { ContractOffer, FranchiseState } from "../types";
+import { generateAssistantGmReport } from "./assistantGm";
+import { getUrgentActionCount } from "./actionQueue";
+import {
+  applyMediaPressureDrift,
+  applyNaturalSentimentDecay,
+  applyRelationshipDrift,
+  applyTeamChemistryDrift
+} from "./livingOpsTuning";
+import type { ContractOffer, FranchiseSetupOptions, FranchiseState } from "../types";
 
 export interface PlaytestReport {
   seed: string;
@@ -44,6 +52,11 @@ export interface PlaytestReport {
     mediaPressureTrend: Array<{ seasonYear: number; value: number }>;
     fanSentimentTrend: Array<{ seasonYear: number; value: number }>;
     playerTrustRange: Array<{ seasonYear: number; low: number; high: number }>;
+    assistantGmRecommendationsGenerated: number;
+    urgentActionsGenerated: number;
+    capPressureTrend: Array<{ seasonYear: number; value: number }>;
+    contractAcceptanceRate: number;
+    ownerGoalCompletionRate: number;
     contractPressureEvents: number;
     tradeRumorEvents: number;
     playoffPressureEvents: number;
@@ -52,9 +65,14 @@ export interface PlaytestReport {
   finalFranchise: FranchiseState;
 }
 
-export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, selectedTeamId = "harbor-city"): PlaytestReport {
+export function runDynastyPlaytest(
+  seed = "phase4-playtest",
+  seasons = 3,
+  selectedTeamId = "harbor-city",
+  setupOptions: FranchiseSetupOptions = {}
+): PlaytestReport {
   const rng = new SeededRng(seed);
-  let franchise = createFranchise(selectedTeamId, seed);
+  let franchise = createFranchise(selectedTeamId, { ...setupOptions, seed });
   const warnings: string[] = [];
   const errors: string[] = [];
   const invariantReports: DynastyInvariantReport[] = [];
@@ -79,10 +97,19 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     mediaPressureTrend: [],
     fanSentimentTrend: [],
     playerTrustRange: [],
+    assistantGmRecommendationsGenerated: 0,
+    urgentActionsGenerated: 0,
+    capPressureTrend: [],
+    contractAcceptanceRate: 0,
+    ownerGoalCompletionRate: 0,
     contractPressureEvents: 0,
     tradeRumorEvents: 0,
     playoffPressureEvents: 0
   };
+  let contractAttempts = 0;
+  let contractAccepted = 0;
+  let ownerGoalsMet = 0;
+  let ownerGoalsTotal = 0;
 
   const check = (label: string) => {
     franchise = refreshLivingOpsForPlaytest(franchise, `${seed}-${label}`);
@@ -130,7 +157,11 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     check(`${seasonYear} draft`);
 
     franchise = maybeSignProspect(franchise);
+    const reSignBefore = franchise.transactionLog.filter((item) => item.type === "contract" && item.headline === "Contract signed").length;
     franchise = maybeReSignPlayer(franchise, rng);
+    const reSignAfter = franchise.transactionLog.filter((item) => item.type === "contract" && item.headline === "Contract signed").length;
+    contractAttempts += 1;
+    if (reSignAfter > reSignBefore) contractAccepted += 1;
     const previousReSignPhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-resigning-${season}`));
     franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousReSignPhase, franchise.seasonPhase, `${seed}-resign-story-${season}`);
@@ -183,8 +214,17 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     prospectSignings.push({ seasonYear, count: franchise.rosterMoveHistory.filter((move) => move.type === "signProspect" || move.reason.includes("prospect")).length });
     invalidGameRosters.push({ seasonYear, teams: franchise.league.teams.filter((team) => validateRosterForGame(team).errors.length > 0).length });
     capOverTeams.push({ seasonYear, teams: franchise.league.teams.filter((team) => calculateCapSpace(team) < 0).length });
+    const assistantReport = generateAssistantGmReport(franchise, { type: "weekly", date: franchise.league.currentDate });
+    livingOps.assistantGmRecommendationsGenerated += assistantReport.recommendations.length;
+    livingOps.urgentActionsGenerated += getUrgentActionCount(franchise);
+    franchise = { ...franchise, assistantGmReports: [assistantReport, ...franchise.assistantGmReports].slice(0, 20) };
+    ownerGoalsMet += franchise.ownerState.seasonGoals.filter((goal) => goal.status === "met").length;
+    ownerGoalsTotal += franchise.ownerState.seasonGoals.length;
     recordLivingOpsSnapshot(franchise, livingOps, seasonYear);
   }
+
+  livingOps.contractAcceptanceRate = contractAttempts ? contractAccepted / contractAttempts : 0;
+  livingOps.ownerGoalCompletionRate = ownerGoalsTotal ? ownerGoalsMet / ownerGoalsTotal : 0;
 
   return {
     seed,
@@ -270,18 +310,24 @@ function tickPhaseStoryPlaytest(
   nextPhase: FranchiseState["seasonPhase"],
   seed: string
 ): FranchiseState {
-  let next = mergeDecisionEvents(franchise, generatePhaseDecisionEvents(franchise, previousPhase, nextPhase, new SeededRng(seed)));
+  let next = mergeDecisionEvents(franchise, generateDecisionEvents(franchise, { kind: "phase", previousPhase, nextPhase }, new SeededRng(seed)));
   return tickStoryPlaytest(next, livingOps, `${seed}-arcs`);
 }
 
 function tickStoryPlaytest(franchise: FranchiseState, livingOps: PlaytestReport["livingOps"], seed: string): FranchiseState {
   const beforeEventIds = new Set(franchise.decisionEvents.map((event) => event.id));
   const beforeArcIds = new Set(franchise.storyArcs.map((arc) => arc.id));
-  let next = updateStoryArcs(franchise, new SeededRng(seed));
+  let next = applyNaturalSentimentDecay(franchise);
+  next = applyMediaPressureDrift(next);
+  next = applyTeamChemistryDrift(next);
+  next = applyRelationshipDrift(next);
+  next = updateStoryArcs(next, new SeededRng(seed));
   const storyEvents = next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc, new SeededRng(`${seed}-${arc.id}`)) ?? []);
-  next = mergeDecisionEvents(next, storyEvents);
+  const cadenceEvents = generateDecisionEvents(next, {}, new SeededRng(`${seed}-cadence`));
+  next = mergeDecisionEvents(next, [...storyEvents, ...cadenceEvents]);
   const active = next.decisionEvents.filter((event) => event.status === "active");
   next = active.reduce((state, event) => resolveDecisionEvent(state, event.id, preferredPlaytestOption(event), new SeededRng(`${seed}-resolve-${event.id}`)), next);
+  next = applyTeamChemistryDrift(applyMediaPressureDrift(applyNaturalSentimentDecay(next)));
   const newEvents = next.decisionEvents.filter((event) => !beforeEventIds.has(event.id));
   livingOps.eventsGenerated += newEvents.length;
   livingOps.highSeverityEvents += newEvents.filter((event) => event.severity === "high" || event.severity === "critical").length;
@@ -300,10 +346,13 @@ function preferredPlaytestOption(event: { options: Array<{ id: string; tone: str
 function recordLivingOpsSnapshot(franchise: FranchiseState, livingOps: PlaytestReport["livingOps"], seasonYear: number) {
   const dynamics = getTeamDynamics(franchise, franchise.selectedTeamId);
   const trustValues = Object.values(franchise.playerRelationships).map((relationship) => relationship.trust);
+  const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId);
+  const capPressure = team ? Math.max(0, Math.round((1 - calculateCapSpace(team) / Math.max(1, team.capCeiling)) * 100)) : 0;
   livingOps.ownerTrustTrend.push({ seasonYear, value: dynamics.ownerTrust });
   livingOps.teamChemistryTrend.push({ seasonYear, value: dynamics.chemistry });
   livingOps.mediaPressureTrend.push({ seasonYear, value: franchise.mediaState.pressure });
   livingOps.fanSentimentTrend.push({ seasonYear, value: dynamics.fanSentiment });
+  livingOps.capPressureTrend.push({ seasonYear, value: capPressure });
   livingOps.playerTrustRange.push({
     seasonYear,
     low: trustValues.length ? Math.min(...trustValues) : 0,

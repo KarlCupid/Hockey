@@ -1,4 +1,4 @@
-# Phase 4 And Phase 5 Playtest Report
+# Phase 4 Through Phase 7 Playtest Report
 
 ## Scope
 
@@ -146,3 +146,61 @@
 - Events are intentionally conservative: the system favors deduped, room-specific, high-signal decisions over daily noise.
 - Warnings still appear in broad multi-season reports because the harness records nonfatal roster/economy balance pressure; no fatal Phase 6 invariant errors were reported.
 - Press, owner, agent, player, and team conversations are fictional text-choice systems with bounded consequences, not full dialogue simulation.
+
+## Phase 7 Scope
+
+- Build: Phase 7 game feel, difficulty, narrative content, Assistant GM, action queue, setup wizard, and playtest tuning.
+- Harness: `generatePhase7BalanceReport("harbor-city")`, which runs five-season dry runs for six difficulty/story/mode scenarios.
+- Tests: `src/tests/phase7GameFeel.test.ts`.
+- Primary target: keep Phase 6 stability while making multi-season playtests less flat through configurable pressure, richer fictional content, Assistant GM guidance, and better "what should I do next?" UX.
+
+## Phase 7 Difficulty And Story Comparison
+
+| Scenario | Events | High Severity | Story Arcs Started/Resolved | Media Trend | Assistant GM Recs | Urgent Actions | Fatal Errors |
+| --- | ---: | ---: | --- | --- | ---: | ---: | ---: |
+| relaxed / quiet | 12 | 3 | 9 / 2 | 13, 2, 6, 2, 2 | 34 | 0 | 0 |
+| standard / normal | 33 | 2 | 7 / 4 | 6, 6, 6, 6, 6 | 32 | 0 | 0 |
+| demanding / normal | 38 | 2 | 10 / 3 | 7, 7, 7, 7, 7 | 35 | 0 | 0 |
+| hardcore / dramatic | 56 | 2 | 7 / 3 | 13, 13, 13, 13, 13 | 25 | 0 | 0 |
+| rebuildChallenge / normal | 36 | 2 | 11 / 2 | 6, 6, 6, 6, 6 | 33 | 0 | 0 |
+| pressureCooker / dramatic | 63 | 3 | 10 / 3 | 14, 14, 14, 14, 14 | 31 | 0 | 0 |
+
+## Phase 7 Trends
+
+- Standard/normal generated 33 decision events over five seasons, up from the Phase 6 sample's 6 events.
+- Dramatic pressure scenarios generated the most story cadence: 56 events for hardcore/dramatic and 63 for pressureCooker/dramatic.
+- Quiet mode remained lower-noise than dramatic modes while still producing enough events to avoid the old ultra-flat stress run.
+- Media pressure no longer stayed pinned at 0 in the comparison. Standard/normal held a low but visible 6/100 floor after calm auto-resolution, while dramatic pressure modes held 13-14/100.
+- Owner trust stayed high in the sampled runs because the deterministic playtest GM auto-resolves decisions with mostly transparent/supportive choices and Harbor City often succeeds. It no longer sits at exactly 100 in the Phase 7 comparison.
+- Team chemistry varied in multiple runs, especially relaxed/quiet and pressureCooker/dramatic, showing roster/story churn can now push it off the cap.
+- Fan sentiment remained stable in this particular deterministic comparison because snapshots occur after new-season reset and the auto-resolved sample avoids star-trade/playoff-miss swings. This remains a tuning watch item.
+- Assistant GM recommendations appeared in every five-season comparison run.
+- Urgent action count was 0 in the comparison because the harness repairs blocking rosters and auto-resolves decisions; targeted tests cover invalid roster, pending draft pick, and high-severity decision urgency.
+- Fatal invariant errors were 0 across all six Phase 7 scenarios.
+
+## Phase 7 Cap, Contracts, And Goals
+
+- Cap pressure trend examples:
+  - relaxed / quiet: 88, 67, 54, 54, 55.
+  - standard / normal: 97, 96, 99, 96, 99.
+  - hardcore / dramatic: 125, 89, 87, 69, 65.
+  - pressureCooker / dramatic: 100, 84, 85, 81, 80.
+- Contract acceptance rates in the comparison ranged from 0.4 to 1.0, with stricter difficulty generally lowering acceptance.
+- Owner goal completion rate was 0.0 in the sampled comparison because end-of-run snapshots occur after goals refresh; owner goal completion remains covered by focused owner-goal tests and is still a reporting target for future tuning.
+
+## Phase 7 Verification
+
+- `cmd /c npm test`: passed with 10 test files and 146 tests.
+- `cmd /c npm run build`: passed. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Schema 5 saves hydrate to schema 6 with GM profile, difficulty tuning, Assistant GM reports, and narrative template version.
+- Narrative template validation passes and blocks obvious real hockey branding terms.
+- Five-season standard/normal playtest has zero fatal invariant errors.
+- Hardcore/dramatic produces more events and pressure than relaxed/quiet in deterministic samples.
+
+## Phase 7 Known Limitations
+
+- Difficulty/game modes are simplified tuning layers, not a complete job-security or market-economy simulator.
+- Narrative templates are short fictional procedural text snippets, not full dialogue trees.
+- Assistant GM reports are advisory and do not autopilot roster, contract, trade, lineup, or phase decisions.
+- Fan sentiment needs more targeted star-trade, playoff-miss, and success/failure sampling in future tuning.
+- Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, audio, and playable on-ice hockey remain out of scope.

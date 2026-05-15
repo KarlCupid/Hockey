@@ -46,6 +46,26 @@ export function HelpOverlay() {
             <p>Press conferences, owner meetings, agent calls, rumors, and locker-room issues present choices with previews and simplified consequences.</p>
           </article>
           <article>
+            <h3>Difficulty & Modes</h3>
+            <p>Relaxed through Hardcore adjust pressure, negotiations, cadence, and guidance. Sandbox is forgiving; Pressure Cooker, Rebuild, and Contender saves reshape expectations.</p>
+          </article>
+          <article>
+            <h3>GM Backgrounds</h3>
+            <p>Your background adds small trait modifiers to meetings, media, contracts, scouting, development, trade reads, or owner trust.</p>
+          </article>
+          <article>
+            <h3>Assistant GM</h3>
+            <p>The Assistant GM is advisory. Reports call out roster, cap, contract, story, phase, staff, scouting, and development risks with room links.</p>
+          </article>
+          <article>
+            <h3>Action Queue</h3>
+            <p>The GM Office queue and TopBar count identify blocking work, urgent decisions, and the next useful room without automating the save.</p>
+          </article>
+          <article>
+            <h3>Narrative Frequency</h3>
+            <p>Quiet, Normal, and Dramatic story settings change how often fictional template events surface while keeping active-event caps in place.</p>
+          </article>
+          <article>
             <h3>Story Arcs</h3>
             <p>Goalie controversy, role demands, rookie buzz, trade rumors, owner pressure, rivalries, and playoff pressure can escalate or cool down over time.</p>
           </article>

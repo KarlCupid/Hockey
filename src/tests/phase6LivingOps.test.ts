@@ -39,7 +39,7 @@ describe("Phase 6 relationships, agents, and dynamics", () => {
     const franchise = createFranchise("harbor-city", "phase6-new");
     const playerIds = franchise.league.teams.flatMap((team) => team.roster.map((player) => player.id));
 
-    expect(franchise.schemaVersion).toBe(5);
+    expect(franchise.schemaVersion).toBe(6);
     expect(Object.keys(franchise.playerRelationships).length).toBeGreaterThanOrEqual(playerIds.length);
     expect(franchise.agents.length).toBeGreaterThan(0);
     expect(Object.keys(franchise.teamDynamics)).toHaveLength(franchise.league.teams.length);
@@ -225,10 +225,10 @@ describe("Phase 6 integrations and save migration", () => {
     const restored = importSaveFromJson(JSON.stringify(legacy));
     const roundtrip = importSaveFromJson(exportSaveToJson(restored));
 
-    expect(restored.schemaVersion).toBe(5);
+    expect(restored.schemaVersion).toBe(6);
     expect(Object.keys(restored.playerRelationships).length).toBeGreaterThan(0);
     expect(restored.decisionEvents.some((event) => event.playerIds?.includes("missing-player"))).toBe(false);
-    expect(roundtrip.schemaVersion).toBe(5);
+    expect(roundtrip.schemaVersion).toBe(6);
   });
 });
 

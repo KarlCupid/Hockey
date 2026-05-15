@@ -1460,6 +1460,52 @@ textarea {
   font-size: 0.72rem;
 }
 
+.ops-map__badge {
+  position: absolute;
+  right: -0.4rem;
+  top: -0.45rem;
+  display: grid;
+  place-items: center;
+  min-width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  padding: 0 0.22rem;
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 0.62rem;
+  font-weight: 900;
+}
+
+.ops-map__badge--warning,
+.ops-map__badge--danger {
+  background: var(--warn);
+}
+
+.ops-map__badge--danger {
+  background: var(--bad);
+  color: #fff;
+}
+
+.ops-map__directory-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.ops-map__directory-badges b,
+.status-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.12rem 0.38rem;
+  color: var(--accent);
+  font-size: 0.68rem;
+}
+
+.status-pill--warning {
+  color: var(--warn);
+  border-color: rgba(245, 198, 91, 0.42);
+}
+
 .first-day {
   left: 1rem;
   top: 5.4rem;
@@ -1536,6 +1582,7 @@ textarea {
 }
 
 .segmented-control button.is-active,
+.segmented-control button.is-selected,
 .broadcast-controls button.is-active {
   border-color: var(--accent);
   background: rgba(97, 201, 255, 0.24);
@@ -1869,6 +1916,114 @@ textarea {
 
 .decision-card--medium {
   border-color: rgba(245, 198, 91, 0.42);
+}
+
+.assistant-report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0.8rem;
+}
+
+.assistant-report-card,
+.queue-item,
+.profile-card,
+.settings-subpanel,
+.setup-panel {
+  display: grid;
+  gap: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.85rem;
+}
+
+.assistant-report-card header,
+.assistant-report-card footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.65rem;
+  align-items: start;
+  flex-wrap: wrap;
+}
+
+.assistant-report-card p,
+.queue-item span,
+.assistant-rec span,
+.profile-card span,
+.setup-option-grid span {
+  margin: 0;
+  color: #d6e5f1;
+}
+
+.assistant-rec--urgent,
+.queue-item--urgent {
+  border-color: rgba(255, 126, 138, 0.58);
+}
+
+.assistant-rec--high,
+.queue-item--high {
+  border-color: rgba(245, 198, 91, 0.48);
+}
+
+.button-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.setup-panel {
+  width: min(1040px, calc(100vw - 2rem));
+  margin: 0 auto;
+}
+
+.setup-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.setup-steps button,
+.setup-option-grid button {
+  text-align: left;
+}
+
+.setup-steps button.is-active,
+.setup-option-grid button.is-selected {
+  border-color: var(--accent);
+  background: rgba(97, 201, 255, 0.16);
+}
+
+.setup-steps button.is-disabled {
+  opacity: 0.52;
+}
+
+.setup-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.65rem;
+}
+
+.setup-option-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.setup-option-grid button {
+  display: grid;
+  gap: 0.35rem;
+  min-height: 118px;
+  align-content: start;
+}
+
+.field-label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+}
+
+.field-label input {
+  width: min(420px, 100%);
 }
 
 .decision-options {

@@ -13,6 +13,7 @@
 - Phase 4 hardens the existing client-only dynasty loop through invariants, dry-run playtests, balance reporting, save repair, fictional identity, settings/help, lazy loading, and targeted visual polish instead of adding another large rule-system layer.
 - Phase 5 turns rosters into an organization-level ecosystem with active roster, scratches, affiliate, injured reserve, prospect pipeline, AI roster repair, training camp setup, and affiliate development while keeping waivers and other real-world CBA complexity out of scope.
 - Phase 6 adds a living hockey-operations layer through fictional meetings, relationships, media/fan/owner pressure, agent dynamics, story arcs, and decision events while avoiding another real-world CBA/rules layer.
+- Phase 7 improves game feel through difficulty/game modes, GM identity, narrative templates, Assistant GM guidance, action queues, room badges, setup presets, cadence tuning, and broader playtest reporting without adding real-world CBA complexity.
 
 ## Files Added
 
@@ -25,6 +26,8 @@
 - Phase 5 UI/tests: `src/components/rooms/RosterOfficePanel.tsx`, `src/tests/phase5RosterEcosystem.test.ts`
 - Phase 6 living-ops systems: `src/game/systems/relationships.ts`, `src/game/systems/decisionEvents.ts`, `src/game/systems/storyArcs.ts`, `src/game/systems/pressConferences.ts`, `src/game/systems/ownerMeetings.ts`, `src/game/systems/playerMeetings.ts`, `src/game/systems/agentInteractions.ts`, `src/game/systems/fanMedia.ts`
 - Phase 6 UI/tests: `src/components/rooms/PressRoomPanel.tsx`, `src/components/rooms/OwnerSuitePanel.tsx`, `src/components/rooms/AgentDeskPanel.tsx`, `src/components/rooms/PlayerMeetingPanel.tsx`, `src/components/hud/DecisionEventCard.tsx`, `src/components/hud/StoryArcCard.tsx`, `src/components/hud/RelationshipBadge.tsx`, `src/components/hud/TeamDynamicsPanel.tsx`, `src/tests/phase6LivingOps.test.ts`
+- Phase 7 systems/content: `src/game/systems/difficulty.ts`, `src/game/systems/gmProfile.ts`, `src/game/systems/livingOpsTuning.ts`, `src/game/systems/assistantGm.ts`, `src/game/systems/actionQueue.ts`, `src/game/systems/narrativeTemplateEngine.ts`, `src/game/content/narrativeTemplates.ts`
+- Phase 7 UI/tests: `src/components/hud/AssistantGmReportCard.tsx`, updated setup wizard/GM Office/TopBar/Operations Map/Settings/Help/Dev Tools/facility, and `src/tests/phase7GameFeel.test.ts`
 
 ## V1.1 Changes
 
@@ -113,6 +116,20 @@
 - Updated save hydration/repair so schema 4 and older saves receive living-ops defaults, invalid decision/story references are removed, and relationship/dynamic values are clamped.
 - Updated dynasty invariants and the dry-run playtest harness with living-ops checks, deterministic auto-resolution, event/story counts, owner trust, chemistry, media, fan, and player-trust trends.
 
+## Phase 7 Game Feel, Difficulty, Narrative Content, Assistant GM, and Playtest Tuning Changes
+
+- Added schema version 6 state for GM profile, difficulty tuning, Assistant GM reports, and narrative template version, with save hydration/repair for schema 5 and older saves.
+- Added a five-step new-franchise setup wizard covering fictional team selection, GM name/background/avatar, game mode, difficulty, story frequency, and opening preset.
+- Added difficulty/game-mode/story-frequency tuning for owner/media/fan pressure, trade strictness, contract demands, free-agent interest, injury/development/story multipliers, cap pressure, job-security volatility, and Assistant GM help level.
+- Added GM background traits and applied them to contract negotiation, press/media outcomes, owner trust, player meetings, and relationship outcomes.
+- Added a 140+ item fictional narrative template library plus a renderer/selector/validator that creates decision events and news without real hockey branding.
+- Added living-ops cadence tuning with natural decay away from extreme values, bounded media pressure floors, relationship drift, chemistry drift, and deterministic story-frequency sampling.
+- Added Assistant GM report/recommendation generation for roster blockers, cap pressure, expiring stars, prospects, owner risk, pending decisions, story arcs, draft/free-agency phases, staff vacancies, trade block signals, idle scouting, and missing development plans.
+- Added Master Action Queue, urgent action count, next-best action helper, and room badges for GM Office, TopBar, and Operations Map.
+- Updated Dev Tools with template validation, cadence/tuning comparison, sample narrative events, Assistant GM previews, action queue inspection, and difficulty playtest entry points.
+- Updated dynasty playtest reporting with Assistant GM recommendation counts, urgent actions, cap pressure trend, contract acceptance rate, owner goal completion rate, and difficulty/story setup options.
+- Added a subtle Assistant GM terminal and setup plaque to the 3D facility using primitive local geometry only.
+
 ## Verification
 
 - Passed: `npm install`
@@ -154,6 +171,15 @@
 - Passed: `cmd /c npm test` with 9 test files and 120 tests after Phase 6 living-ops changes.
 - Passed: `cmd /c npm run build` after Phase 6 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
 - Ran deterministic five-season story stress with seed `phase6-five-season`: 0 fatal invariant errors, 6 decision events generated, 2 high-severity events, 6 story arcs started, 2 story arcs resolved, 0 active events left after dry-run auto-resolution, and 5 final story arcs within the cap.
+- Passed: `cmd /c npm test` with 10 test files and 146 tests after Phase 7 changes.
+- Passed: `cmd /c npm run build` after Phase 7 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Ran deterministic Phase 7 difficulty/story comparison via `generatePhase7BalanceReport("harbor-city")`:
+  - `relaxed / quiet`: 12 events, 3 high-severity, 9/2 arcs, media trend 13/2/6/2/2, 34 Assistant GM recommendations, 0 fatal errors.
+  - `standard / normal`: 33 events, 2 high-severity, 7/4 arcs, media trend 6/6/6/6/6, 32 Assistant GM recommendations, 0 fatal errors.
+  - `demanding / normal`: 38 events, 2 high-severity, 10/3 arcs, media trend 7/7/7/7/7, 35 Assistant GM recommendations, 0 fatal errors.
+  - `hardcore / dramatic`: 56 events, 2 high-severity, 7/3 arcs, media trend 13/13/13/13/13, 25 Assistant GM recommendations, 0 fatal errors.
+  - `rebuildChallenge / normal`: 36 events, 2 high-severity, 11/2 arcs, media trend 6/6/6/6/6, 33 Assistant GM recommendations, 0 fatal errors.
+  - `pressureCooker / dramatic`: 63 events, 3 high-severity, 10/3 arcs, media trend 14/14/14/14/14, 31 Assistant GM recommendations, 0 fatal errors.
 
 ## Known Limitations
 
@@ -173,3 +199,6 @@
 - Phase 6 conversations, relationships, agent behavior, media pressure, fan sentiment, and story arcs are fictional text-choice management approximations, not full dialogue simulation.
 - Decision-event generation is intentionally capped and conservative, so not every roster or league change creates a meeting.
 - Browser screenshot capture can time out on the current WebGL scene in the Codex in-app Browser; DOM and console smoke checks still passed.
+- Phase 7 difficulty/game modes are simplified prototype tuning layers rather than exhaustive management simulations.
+- Phase 7 narrative templates are procedural fictional snippets, not hand-authored full dialogue trees.
+- The Assistant GM is advisory and does not auto-manage roster, line, trade, contract, or phase decisions.

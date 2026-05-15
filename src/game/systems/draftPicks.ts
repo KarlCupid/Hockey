@@ -5,13 +5,16 @@ const ROUND_VALUES: Record<number, number> = {
   1: 420,
   2: 245,
   3: 145,
-  4: 85
+  4: 85,
+  5: 55,
+  6: 38,
+  7: 26
 };
 
-export function generateInitialDraftPicks(teams: Team[], seasonYear: number): DraftPick[] {
+export function generateInitialDraftPicks(teams: Team[], seasonYear: number, draftRounds = DRAFT_PICK_ROUNDS): DraftPick[] {
   return teams.flatMap((team) =>
     Array.from({ length: DRAFT_PICK_SEASONS }, (_, seasonOffset) => seasonYear + seasonOffset).flatMap((year) =>
-      Array.from({ length: DRAFT_PICK_ROUNDS }, (_, index) => {
+      Array.from({ length: draftRounds }, (_, index) => {
         const round = index + 1;
         return {
           id: `${year}-r${round}-${team.id}`,

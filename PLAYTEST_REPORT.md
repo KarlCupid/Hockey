@@ -269,7 +269,7 @@
 - Out-of-range ratings are flagged and repair clamps them.
 - Data-pack export/import roundtrip passes.
 - Custom 12-team league generation creates valid team IDs, schedule IDs, cap settings, team branding metadata, scouting draft class, staff, owner state, relationships, Assistant GM report, and save metadata.
-- Unsupported non-12 team counts are rejected for Phase 9 dynasty starts with clear validation messaging.
+- At Phase 9 release, unsupported non-12 team counts were rejected for dynasty starts with clear validation messaging.
 - Built-in scenario starts validate and apply cap crunch, injuries, owner pressure, initial decision events, and story arcs.
 - Custom franchise first-game simulation, save/load, bug-report metadata, and invariant checks pass.
 - A two-season custom mini playtest completes without fatal invariant errors after save-hydration refreshes relationship/agent state across roster churn.
@@ -277,8 +277,35 @@
 
 ## Phase 9 Notes
 
-- Full-dynasty custom starts currently prioritize 12-team leagues because core invariants, playoffs, standings presentation, and long-run balance are tuned around the existing 12-team league.
-- Experimental 8-, 10-, and 16-team templates are recognized by validation language but rejected for starting a franchise until broader lifecycle support is added.
+- At the end of Phase 9, full-dynasty custom starts prioritized 12-team leagues because core invariants, playoffs, standings presentation, and long-run balance were tuned around the existing 12-team league.
+- Phase 10 supersedes this limitation by supporting 8-, 10-, 12-, and 16-team full-dynasty starts through validated fictional rule presets.
 - Scenario consequences are simplified setup modifiers, not full alternate-rule simulations.
 - Data packs are local JSON only. There is no backend, online sharing, cloud save, authentication, or external asset upload.
 - The real-world content filter is a basic obvious-term scan and not a legal guarantee.
+
+## Phase 10 Scope
+
+- Build: generalized fictional league rules, 8/10/12/16 custom league sizes, schedule generation, top4/top6/top8/top10-play-in playoff formats, rule-set driven draft rounds/class sizes, Data Pack v2 validation/repair, Rules tab controls, and save schema 8 hydration.
+- Harness: `src/tests/phase10LeagueRules.test.ts` plus `npm run test:smoke`.
+- Primary target: make Custom League Lab starts survive the full dynasty lifecycle without backend services, online sharing, real hockey content, or added CBA complexity.
+
+## Phase 10 Verification
+
+- `cmd /c npx vitest run --config vitest.config.ts src/tests/phase10LeagueRules.test.ts`: passed with 11 tests.
+- `cmd /c npm run test:smoke`: passed with Phase 8, Phase 9, and Phase 10 smoke coverage.
+- `cmd /c npm test`: passed with 13 test files and 186 tests.
+- `cmd /c npm run build`: passed. Vite still reports the known large `three-r3f` dependency chunk warning.
+- In-app Browser smoke against the production `dist` build confirmed the start screen, Custom League Lab, Rules tab, 16-team rule update, supported status, and no captured console errors.
+- Rule presets validate for 8-, 10-, 12-, and 16-team leagues; unsupported 14-team packs are rejected.
+- Schedules validate deterministic team IDs, no self-games, expected games per team, and home/away warning reports.
+- Playoff brackets resolve champions for top4, top6 with byes, top8, and 16-team top10 with play-in.
+- Draft orders use rule-set rounds, honor traded picks, avoid duplicate AI selections, and size draft classes from the rule set.
+- Custom 8-, 10-, 12-, and 16-team franchises create, pass invariants, simulate a first game, export/import saves, and preserve rule-set metadata.
+- Two-season custom dry runs for 8-, 10-, and 16-team leagues complete without fatal invariant errors.
+
+## Phase 10 Notes
+
+- Data packs remain local JSON only. There is no backend, online sharing, cloud save, authentication, or external asset upload.
+- Unsupported rule combinations are rejected or repaired toward the nearest supported format instead of silently starting unsafe leagues.
+- The real-world content filter remains a basic obvious-term scan and not a legal guarantee.
+- Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, professional audio, and playable on-ice hockey remain out of scope.

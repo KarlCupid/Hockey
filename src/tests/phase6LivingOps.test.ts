@@ -33,13 +33,14 @@ import { scratchPlayer } from "../game/systems/rosterManagement";
 import { getPlayerRosterStatus } from "../game/systems/rosterRules";
 import { exportSaveToJson, importSaveFromJson, serializeFranchise } from "../game/systems/saves";
 import { createStoryArcDecisionEvent, detectStoryArcTriggers, resolveStoryArc, updateStoryArcs } from "../game/systems/storyArcs";
+import { SCHEMA_VERSION } from "../game/constants";
 
 describe("Phase 6 relationships, agents, and dynamics", () => {
   it("hydrates a new franchise with relationships, agents, and team dynamics", () => {
     const franchise = createFranchise("harbor-city", "phase6-new");
     const playerIds = franchise.league.teams.flatMap((team) => team.roster.map((player) => player.id));
 
-    expect(franchise.schemaVersion).toBe(7);
+    expect(franchise.schemaVersion).toBe(SCHEMA_VERSION);
     expect(Object.keys(franchise.playerRelationships).length).toBeGreaterThanOrEqual(playerIds.length);
     expect(franchise.agents.length).toBeGreaterThan(0);
     expect(Object.keys(franchise.teamDynamics)).toHaveLength(franchise.league.teams.length);
@@ -225,10 +226,10 @@ describe("Phase 6 integrations and save migration", () => {
     const restored = importSaveFromJson(JSON.stringify(legacy));
     const roundtrip = importSaveFromJson(exportSaveToJson(restored));
 
-    expect(restored.schemaVersion).toBe(7);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
     expect(Object.keys(restored.playerRelationships).length).toBeGreaterThan(0);
     expect(restored.decisionEvents.some((event) => event.playerIds?.includes("missing-player"))).toBe(false);
-    expect(roundtrip.schemaVersion).toBe(7);
+    expect(roundtrip.schemaVersion).toBe(SCHEMA_VERSION);
   });
 });
 

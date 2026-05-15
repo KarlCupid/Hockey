@@ -1,4 +1,5 @@
 import type { LeagueState, Player, ScheduleGame, Team } from "../types";
+import { normalizeLeagueRuleSet } from "./leagueRules";
 import { recordString, sortStandings } from "./standings";
 
 export interface SeasonPulse {
@@ -30,7 +31,8 @@ export function createSeasonPulse(league: LeagueState, selectedTeamId: string): 
   const team = standings.find((candidate) => candidate.id === selectedTeamId) ?? standings[0];
   const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
   const gamesPlayed = Math.max(1, team.stats.gamesPlayed);
-  const pointsPace = `${Math.round((team.record.points / gamesPlayed) * 22)} pts`;
+  const ruleSet = normalizeLeagueRuleSet(league.ruleSet);
+  const pointsPace = `${Math.round((team.record.points / gamesPlayed) * ruleSet.gamesPerTeam)} pts`;
   const topScorer = bestSkater(team);
   const bestGoalie = bestGoalieFor(team);
   return {
@@ -40,13 +42,14 @@ export function createSeasonPulse(league: LeagueState, selectedTeamId: string): 
     ownerPatience: band(team.ownerPatience, "Impatient", "Measuring", "Patient"),
     topScorer: `${topScorer.displayName} (${topScorer.stats.points} pts)`,
     bestGoalie: `${bestGoalie.displayName} (${goalieSavePct(bestGoalie)})`,
-    biggestConcern: biggestConcern(team, rank)
+    biggestConcern: biggestConcern(team, rank, ruleSet.playoffTeamCount)
   };
 }
 
 export function createSeasonCompleteSummary(league: LeagueState, selectedTeamId: string): SeasonCompleteSummary {
   const team = league.teams.find((candidate) => candidate.id === selectedTeamId) ?? league.teams[0];
   const rank = sortStandings(league.teams).findIndex((candidate) => candidate.id === team.id) + 1;
+  const ruleSet = normalizeLeagueRuleSet(league.ruleSet);
   const topScorer = bestSkater(team);
   const bestGoalie = bestGoalieFor(team);
   return {
@@ -58,9 +61,12 @@ export function createSeasonCompleteSummary(league: LeagueState, selectedTeamId:
     bestGoalie: `${bestGoalie.displayName}, ${bestGoalie.stats.goalieWins} wins, ${goalieSavePct(bestGoalie)} SV%`,
     bestWin: findExtremeResult(league, team, "best"),
     worstLoss: findExtremeResult(league, team, "worst"),
-    ownerReaction: rank <= 4 ? "Ownership sees proof of concept, but the next phase needs sharper expectations." : "Ownership wants the process to translate into the table sooner.",
+    ownerReaction:
+      rank <= Math.max(2, Math.floor(ruleSet.playoffTeamCount / 2))
+        ? "Ownership sees proof of concept, but the next phase needs sharper expectations."
+        : "Ownership wants the process to translate into the table sooner.",
     fanReaction: team.fanConfidence >= 60 ? "Fans believe the room is moving forward." : "Fans want a clearer identity by camp.",
-    phaseTwoNote: "Phase 2 will add playoffs, offseason decisions, draft, scouting, and the bigger franchise loop."
+    phaseTwoNote: `${ruleSet.label}: top ${ruleSet.playoffTeamCount} playoff line, ${ruleSet.draftRounds} draft rounds, ${ruleSet.gamesPerTeam}-game season.`
   };
 }
 
@@ -85,11 +91,11 @@ function goalieSavePct(player: Player): string {
   return shots > 0 ? (player.stats.saves / shots).toFixed(3) : ".---";
 }
 
-function biggestConcern(team: Team, rank: number): string {
+function biggestConcern(team: Team, rank: number, playoffTeamCount: number): string {
   const diff = team.record.goalsFor - team.record.goalsAgainst;
   const tired = team.roster.filter((player) => player.fatigue >= 76).length;
   const unhappy = team.roster.filter((player) => player.morale <= 40).length;
-  if (rank > 8) return "Standings pressure is ahead of the plan.";
+  if (rank > playoffTeamCount) return "Standings pressure is ahead of the plan.";
   if (diff < -8) return "Goal differential is asking hard questions.";
   if (tired >= 4) return "Workload is starting to cost the room jump.";
   if (unhappy >= 3) return "Morale needs attention before the schedule bites.";

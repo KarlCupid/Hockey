@@ -2,6 +2,7 @@ import { SCHEMA_VERSION } from "../constants";
 import type { BugReport, FranchiseState, RoomId } from "../types";
 import { exportSaveToJson, validateSaveIntegrity } from "./saves";
 import { validateDynastyInvariants } from "./dynastyInvariants";
+import { getRuleSetDescription, normalizeLeagueRuleSet } from "./leagueRules";
 import { summarizeTelemetry } from "./localTelemetry";
 
 export interface BugReportOptions {
@@ -24,6 +25,7 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
     currentPhase: franchise.seasonPhase,
     selectedTeamId: franchise.selectedTeamId,
     customLeagueName: franchise.customLeagueName,
+    ruleSetSummary: getRuleSetDescription(normalizeLeagueRuleSet(franchise.league.ruleSet)),
     dataPackMetadata: franchise.dataPackMetadata,
     lastRoom: options.lastRoom,
     recentTelemetry: (franchise.localTelemetry ?? []).slice(0, 40),
@@ -58,6 +60,7 @@ export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: Ro
     `Phase: ${report.currentPhase}`,
     `Team: ${report.selectedTeamId}`,
     `Custom league: ${report.customLeagueName ?? "standard fictional league"}`,
+    `Rules: ${report.ruleSetSummary ?? "standard fictional rules"}`,
     `Data pack: ${report.dataPackMetadata?.dataPackName ?? "none"}`,
     `Last room: ${report.lastRoom ?? "unknown"}`,
     `Integrity: ${report.saveIntegritySummary}`,

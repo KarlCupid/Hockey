@@ -20,6 +20,7 @@ import type {
   Player,
   PlayerDevelopmentPath,
   PlayerRelationship,
+  PlayoffState,
   ProspectRights,
   RosterStatus,
   SaveSlotMetadata,
@@ -36,8 +37,10 @@ import { normalizeAchievements } from "./achievements";
 import { contractSummary, createContractForPlayer } from "./contracts";
 import { validateDynastyInvariants } from "./dynastyInvariants";
 import { generateInitialDraftPicks } from "./draftPicks";
+import { normalizeLeagueRuleSet } from "./leagueRules";
 import { createDefaultOwnerState } from "./owner";
 import { createPlayoffState } from "./playoffs";
+import { validateSchedule } from "../generators/generateSchedule";
 import { generateScoutingAssignments, rankDraftBoard } from "./scouting";
 import { generateStaffForLeague } from "./staff";
 import { recordString } from "./standings";
@@ -113,7 +116,13 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     input.league.teams.filter((team) => team.roster.some((player) => !validRosterStatus(player.rosterStatus))).map((team) => team.id)
   );
   const teamsWithContracts = input.league.teams.map((team) => hydrateTeamPlayers(team, input.franchiseId));
-  const generatedPicks = generateInitialDraftPicks(teamsWithContracts, seasonYear);
+  const hydratedRuleSet = normalizeLeagueRuleSet(input.league.ruleSet ?? {
+    teamCount: teamsWithContracts.length,
+    gamesPerTeam: gamesPerTeamFromSchedule(input),
+    playoffTeamCount: input.playoffState?.qualifiedTeamIds?.length,
+    draftRounds: input.offseasonState?.draftState?.draftRounds
+  });
+  const generatedPicks = generateInitialDraftPicks(teamsWithContracts, seasonYear, hydratedRuleSet.draftRounds);
   const teamsWithAssets = teamsWithContracts.map((team) => {
     const existing = Array.isArray(team.draftPicks) ? team.draftPicks : [];
     const draftPicks = existing.length ? existing : generatedPicks.filter((pick) => pick.ownerTeamId === team.id);
@@ -152,6 +161,8 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     league: {
       ...input.league,
       teams: teamsWithAssets,
+      ruleSet: hydratedRuleSet,
+      scheduleReport: validateSchedule(input.league.schedule ?? [], teamsWithAssets, hydratedRuleSet),
       recentResults: input.league.recentResults ?? [],
       completed: input.league.completed ?? input.league.schedule.every((game) => game.played)
     },
@@ -195,7 +206,7 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
   const livingBase = hydrateLivingOpsState({
     ...ownerBase,
     ownerState,
-    playoffState: input.playoffState ?? (phase === "playoffs" ? createPlayoffState(ownerBase.league) : undefined),
+    playoffState: hydratePlayoffState(input.playoffState, ownerBase.league, phase),
     offseasonState: input.offseasonState,
     freeAgencyState: input.freeAgencyState,
     scouting,
@@ -481,6 +492,12 @@ function hydrateTeamPlayers(team: Team, franchiseId: string): Team {
   };
 }
 
+function gamesPerTeamFromSchedule(input: FranchiseState): number {
+  const firstTeamId = input.league.teams[0]?.id;
+  if (!firstTeamId) return 22;
+  return input.league.schedule.filter((game) => game.homeTeamId === firstTeamId || game.awayTeamId === firstTeamId).length || 22;
+}
+
 function hydratePlayerContract(player: Player, franchiseId: string): Player {
   const contract = player.contract ?? createContractForPlayer(player, new SeededRng(`${franchiseId}-${player.id}-contract`));
   return {
@@ -498,7 +515,8 @@ function hydratePlayerContract(player: Player, franchiseId: string): Player {
 
 function hydrateScouting(input: FranchiseState): ScoutingState {
   const existing = input.scouting;
-  const draftClass = existing?.draftClass?.length ? existing.draftClass : generateDraftClass(`${input.franchiseId}-draft`);
+  const ruleSet = normalizeLeagueRuleSet(input.league.ruleSet);
+  const draftClass = existing?.draftClass?.length ? existing.draftClass : generateDraftClass(`${input.franchiseId}-draft`, ruleSet.draftClassSize);
   return {
     draftClass,
     assignments: existing?.assignments?.length ? existing.assignments : generateScoutingAssignments(),
@@ -514,6 +532,20 @@ function hydrateSeasonPhase(input: FranchiseState): FranchiseState["seasonPhase"
   if (!completed) return "regularSeason";
   if (input.playoffState?.completed) return "seasonReview";
   return "playoffs";
+}
+
+function hydratePlayoffState(playoffState: PlayoffState | undefined, league: FranchiseState["league"], phase: FranchiseState["seasonPhase"]): PlayoffState | undefined {
+  if (!playoffState) return phase === "playoffs" ? createPlayoffState(league) : undefined;
+  const ruleSet = normalizeLeagueRuleSet(league.ruleSet);
+  return {
+    ...playoffState,
+    format: playoffState.format ?? ruleSet.playoffFormat,
+    seriesFormat: playoffState.seriesFormat ?? ruleSet.playoffSeriesFormat,
+    playoffTeamCount: playoffState.playoffTeamCount ?? ruleSet.playoffTeamCount,
+    byes: playoffState.byes,
+    playInGames: playoffState.playInGames,
+    recentPlayoffResults: playoffState.recentPlayoffResults ?? []
+  };
 }
 
 function hydrateStaffState(input: FranchiseState, teams: Team[]): StaffState {
@@ -611,6 +643,7 @@ function emptyOwnerState(input: FranchiseState): OwnerState {
 function collectMissingFieldRepairs(input: FranchiseState): string[] {
   const repaired: string[] = [];
   if (input.schemaVersion !== SCHEMA_VERSION) repaired.push("schemaVersion");
+  if (!input.league.ruleSet) repaired.push("league.ruleSet");
   if (!(input as Partial<FranchiseState>).gmProfile) repaired.push("gmProfile");
   if ((input as Partial<FranchiseState>).gmProfile && !validGameDifficulty((input as Partial<FranchiseState>).gmProfile?.difficulty)) {
     repaired.push("gmProfile.difficulty");

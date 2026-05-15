@@ -15,4 +15,6 @@
 - Phase 8 explicitly allows tutorial/onboarding, achievements/milestones, local/generated audio, accessibility improvements, release-candidate QA, playtest telemetry summaries, bug-report export, and polish.
 - Phase 9 explicitly allows local custom league creation, fictional data packs, scenario editor, team creator, roster/player editor, draft class editor, custom branding, and local JSON import/export.
 - All Phase 9 data packs must be validated before use and must reject or clearly flag obvious real-world restricted hockey branding terms.
+- Phase 10 explicitly allows generalized fictional league rules, 8/10/12/16 custom league sizes, custom schedule/playoff/draft formats, cap/roster rule presets, and data-pack v2 validation/repair.
+- Phase 10 rule combinations must be validated before use and unsupported combinations should be rejected or warned with clear user-facing reasons.
 - Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

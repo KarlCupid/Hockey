@@ -15,7 +15,8 @@
 - Phase 6 adds a living hockey-operations layer through fictional meetings, relationships, media/fan/owner pressure, agent dynamics, story arcs, and decision events while avoiding another real-world CBA/rules layer.
 - Phase 7 improves game feel through difficulty/game modes, GM identity, narrative templates, Assistant GM guidance, action queues, room badges, setup presets, cadence tuning, and broader playtest reporting without adding real-world CBA complexity.
 - Phase 8 focuses on release-candidate usability, tutorialization, generated/local audio, achievements, accessibility, diagnostics, and QA rather than adding another hockey rules layer.
-- Phase 9 increases replayability through local-only fictional customization: custom 12-team league starts, data packs, scenarios, team branding, roster/player editor helpers, draft-class editor helpers, validation/repair, and JSON import/export. It keeps unsupported league sizes rejected until the full dynasty lifecycle supports them.
+- Phase 9 increased replayability through local-only fictional customization: custom 12-team league starts, data packs, scenarios, team branding, roster/player editor helpers, draft-class editor helpers, validation/repair, and JSON import/export.
+- Phase 10 generalizes those custom starts to supported 8-, 10-, 12-, and 16-team fictional rule sets with schedule, playoff, draft, cap, roster, and Data Pack v2 validation.
 
 ## Files Added
 
@@ -222,6 +223,11 @@
 - Passed: `cmd /c npm run test:smoke` with 2 test files and 29 smoke/release/customization tests.
 - Passed: `cmd /c npm run build` after Phase 9 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
 - Attempted in-app Browser QA against `http://127.0.0.1:5179/` and `http://localhost:5179/`; the automation browser blocked local URL navigation in this session, so no browser workaround was used. Verification for Phase 9 relies on the full Vitest suite, smoke suite, TypeScript check, and production build.
+- Passed: `cmd /c npx vitest run --config vitest.config.ts src/tests/phase10LeagueRules.test.ts` with 11 Phase 10 league-rule tests covering 8/10/12/16 custom starts, schedules, playoffs, drafts, data-pack repair, saves, and dry runs.
+- Passed: `cmd /c npm run test:smoke` with Phase 8, Phase 9, and Phase 10 smoke coverage after adding Phase 10 to the smoke script.
+- Passed: `cmd /c npm test` with 13 test files and 186 tests after Phase 10 changes.
+- Passed: `cmd /c npm run build` after Phase 10 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Passed in-app Browser smoke against the production `dist` build served locally: start screen rendered, Custom League Lab opened, Rules tab rendered, 16-team rule selection updated schedule/draft previews, supported status stayed visible, and console error capture was clean.
 
 ## Known Limitations
 
@@ -248,7 +254,7 @@
 - Phase 8 achievements are local-only and not platform achievements.
 - Phase 8 audio is generated/local placeholder sound design, not final professional audio.
 - Phase 8 telemetry and bug reports are local-only and never sent anywhere automatically.
-- Phase 9 data packs are local JSON only and are never uploaded or shared online by the app.
-- Phase 9 real-world content filtering is a basic obvious-term safety scan, not a legal guarantee.
-- Phase 9 full-dynasty custom starts currently support 12-team leagues. The validator rejects or flags 8-, 10-, and 16-team starts until standings, playoffs, tuning, and lifecycle systems are broadened.
-- Phase 9 generated branding uses CSS/SVG-style previews only. There are no image uploads, real logos, licensed marks, or external assets.
+- Phase 9/10 data packs are local JSON only and are never uploaded or shared online by the app.
+- Phase 9/10 real-world content filtering is a basic obvious-term safety scan, not a legal guarantee.
+- Phase 10 full-dynasty custom starts support 8-, 10-, 12-, and 16-team fictional leagues through supported rule presets. Unsupported combinations such as 14-team starts, invalid playoff formats, and too-small draft classes are rejected or repaired with warnings.
+- Phase 9/10 generated branding uses CSS/SVG-style previews only. There are no image uploads, real logos, licensed marks, or external assets.

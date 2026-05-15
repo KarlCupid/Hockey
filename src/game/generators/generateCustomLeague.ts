@@ -47,27 +47,33 @@ import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../sys
 import { autoFillBestLineup } from "../systems/lineupValidation";
 import { autoSetInitialRosterStatuses } from "../systems/rosterManagement";
 import { validateDataPack } from "../systems/dataPackValidation";
-import { createDefaultDataPack } from "../systems/dataPacks";
+import { createCustomTeamDefinition, createDefaultDataPack } from "../systems/dataPacks";
 import { applyScenarioToFranchise } from "../systems/scenarios";
 import { createDefaultTutorialState } from "../systems/tutorial";
 import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
-
-const DYNASTY_COMPATIBLE_TEAM_COUNT = 12;
+import { normalizeLeagueRuleSet, validateLeagueRuleSet } from "../systems/leagueRules";
+import { generateScheduleForRuleSet, validateSchedule } from "./generateSchedule";
 
 export function generateLeagueFromTemplate(template: CustomLeagueTemplate, seed = template.id): LeagueState {
-  if (template.teamCount !== DYNASTY_COMPATIBLE_TEAM_COUNT || template.teams.length !== DYNASTY_COMPATIBLE_TEAM_COUNT) {
-    throw new Error("Phase 9 custom dynasty starts currently require exactly 12 fictional teams.");
+  const ruleSet = normalizeLeagueRuleSet(template.rules ?? template);
+  const ruleReport = validateLeagueRuleSet(template.rules ?? template);
+  if (!ruleReport.supported || ruleReport.errors.length) {
+    throw new Error(`Unsupported custom league rules: ${ruleReport.errors[0] ?? "choose 8, 10, 12, or 16 teams with a supported schedule/playoff/draft format."}`);
+  }
+  if (template.teams.length > ruleSet.teamCount) {
+    throw new Error(`Custom league has ${template.teams.length} teams but ${ruleSet.label} expects ${ruleSet.teamCount}.`);
   }
   const rng = new SeededRng(seed);
-  const teams = template.teams.map((definition, index) => generateTeamFromDefinition(definition, index, rng));
-  const picks = generateInitialDraftPicks(teams, template.seasonYear);
+  const definitions = fillMissingTeamDefinitions(template.teams, ruleSet.teamCount);
+  const teams = definitions.map((definition, index) => generateTeamFromDefinition(definition, index, rng, ruleSet));
+  const picks = generateInitialDraftPicks(teams, template.seasonYear, ruleSet.draftRounds);
   const teamsWithFrontOffice = teams.map((team) => {
     const withPicks = {
       ...team,
-      capCeiling: template.capCeiling,
-      capFloor: template.capFloor,
-      activeRosterMinimum: template.rulesPreset.rosterActiveMin,
-      activeRosterLimit: template.rulesPreset.rosterActiveMax,
+      capCeiling: ruleSet.capCeiling,
+      capFloor: ruleSet.capFloor,
+      activeRosterMinimum: ruleSet.activeRosterMin,
+      activeRosterLimit: ruleSet.activeRosterMax,
       draftPicks: picks.filter((pick) => pick.ownerTeamId === team.id),
       teamNeeds: inferTeamNeeds(team)
     };
@@ -79,19 +85,22 @@ export function generateLeagueFromTemplate(template: CustomLeagueTemplate, seed 
     };
   });
 
+  const schedule = generateScheduleForRuleSet(teamsWithFrontOffice, ruleSet, seed);
   return {
     id: `custom-league-${template.id}-${seed}`,
     seasonYear: template.seasonYear,
     currentDayIndex: 0,
     currentDate: START_DATE,
     teams: teamsWithFrontOffice,
-    schedule: generateSchedule(teamsWithFrontOffice, template.scheduleLength),
+    schedule,
+    ruleSet,
+    scheduleReport: validateSchedule(schedule, teamsWithFrontOffice, ruleSet),
     recentResults: [],
     completed: false
   };
 }
 
-export function generateTeamFromDefinition(definition: CustomTeamDefinition, index: number, rng: SeededRng): Team {
+export function generateTeamFromDefinition(definition: CustomTeamDefinition, index: number, rng: SeededRng, ruleSet = normalizeLeagueRuleSet(definition)): Team {
   const roster = definition.players?.length ? mergeCustomPlayers(definition, index, rng) : generateRosterFromStrategy(definition, rng);
   const base: Team = {
     id: definition.id,
@@ -118,16 +127,16 @@ export function generateTeamFromDefinition(definition: CustomTeamDefinition, ind
     tactics: { ...DEFAULT_TACTICS },
     record: emptyRecord(),
     stats: emptyTeamStats(),
-    capCeiling: SALARY_CAP_CEILING,
-    capFloor: SALARY_CAP_FLOOR,
+    capCeiling: ruleSet.capCeiling,
+    capFloor: ruleSet.capFloor,
     draftPicks: [],
     tradeBlock: [],
     untouchables: [],
     teamNeeds: [],
     affiliate: undefined as never,
     rosterMoveLog: [],
-    activeRosterLimit: ACTIVE_ROSTER_LIMIT,
-    activeRosterMinimum: ACTIVE_ROSTER_MINIMUM
+    activeRosterLimit: ruleSet.activeRosterMax,
+    activeRosterMinimum: ruleSet.activeRosterMin
   };
   base.affiliate = {
     ...generateAffiliateForTeam(base),
@@ -151,22 +160,26 @@ export function generateRosterFromStrategy(teamDef: CustomTeamDefinition, rng: S
 }
 
 export function applyCustomLeagueRules(franchise: FranchiseState, template: CustomLeagueTemplate): FranchiseState {
+  const ruleSet = normalizeLeagueRuleSet(template.rules ?? template);
   const league = {
     ...franchise.league,
     seasonYear: template.seasonYear,
+    ruleSet,
     teams: franchise.league.teams.map((team) => ({
       ...team,
-      capCeiling: template.capCeiling,
-      capFloor: template.capFloor,
-      activeRosterMinimum: template.rulesPreset.rosterActiveMin,
-      activeRosterLimit: template.rulesPreset.rosterActiveMax
+      capCeiling: ruleSet.capCeiling,
+      capFloor: ruleSet.capFloor,
+      activeRosterMinimum: ruleSet.activeRosterMin,
+      activeRosterLimit: ruleSet.activeRosterMax
     }))
   };
+  const schedule = generateScheduleForRuleSet(league.teams, ruleSet);
   return {
     ...franchise,
     league: {
       ...league,
-      schedule: generateSchedule(league.teams, template.scheduleLength)
+      schedule,
+      scheduleReport: validateSchedule(schedule, league.teams, ruleSet)
     },
     currentSeasonId: `${template.seasonYear}-${franchise.selectedTeamId}`,
     updatedAt: new Date().toISOString()
@@ -184,9 +197,15 @@ export function createCustomFranchiseFromDataPack(
     throw new Error(`Data pack is not valid for a custom franchise start: ${report.errors[0] ?? report.duplicateIdWarnings[0] ?? "Unknown validation issue"}`);
   }
   const template = pack.leagueTemplate ?? createDefaultDataPack().leagueTemplate!;
-  const selected = selectedTeamId && template.teams.some((team) => team.id === selectedTeamId) ? selectedTeamId : template.teams[0].id;
+  const ruleSet = normalizeLeagueRuleSet(template.rules ?? template);
+  const normalizedTemplate = {
+    ...template,
+    rules: ruleSet,
+    teams: fillMissingTeamDefinitions(template.teams ?? [], ruleSet.teamCount)
+  };
+  const selected = selectedTeamId && normalizedTemplate.teams.some((team) => team.id === selectedTeamId) ? selectedTeamId : normalizedTemplate.teams[0].id;
   const seed = settings.seed ?? `${pack.id}-${selected}-${Date.now()}`;
-  const league = generateLeagueFromTemplate(template, seed);
+  const league = generateLeagueFromTemplate(normalizedTemplate, seed);
   const now = new Date().toISOString();
   const base = createFranchise(selected, {
     ...settings,
@@ -198,7 +217,7 @@ export function createCustomFranchiseFromDataPack(
     avatarStyle: settings.avatarStyle ?? gmProfile?.avatarStyle,
     gameMode: settings.gameMode ?? gmProfile?.gameMode
   });
-  const draftClass = pack.draftClass?.prospects?.length ? pack.draftClass.prospects : generateDraftClass(`${seed}-draft`);
+  const draftClass = ensureDraftClassSize(pack.draftClass?.prospects?.length ? pack.draftClass.prospects : generateDraftClass(`${seed}-draft`, ruleSet.draftClassSize), ruleSet.draftClassSize, seed);
   const initial: FranchiseState = {
     ...base,
     schemaVersion: SCHEMA_VERSION,
@@ -320,6 +339,46 @@ export function createCustomFranchiseFromDataPack(
     assistantGmReports: [generateAssistantGmReport(withScenario, { type: "daily", date: withScenario.league.currentDate })]
   };
   return evaluateAchievements(withAssistant, { type: pack.scenario ? "scenarioStarted" : "customLeagueStarted" });
+}
+
+function fillMissingTeamDefinitions(teams: CustomTeamDefinition[], teamCount: number): CustomTeamDefinition[] {
+  if (teams.length >= teamCount) return teams.slice(0, teamCount);
+  const fallbackTeams = createDefaultDataPack().leagueTemplate?.teams ?? [];
+  const existingIds = new Set(teams.map((team) => team.id));
+  const additions: CustomTeamDefinition[] = [];
+  for (let index = teams.length; index < teamCount; index += 1) {
+    const fallback = fallbackTeams[index % fallbackTeams.length];
+    const generated = fallback
+      ? { ...fallback, id: uniqueTeamId(fallback.id, existingIds), rivalryTeamIds: [] }
+      : createCustomTeamDefinition({
+          id: `generated-club-${index + 1}`,
+          city: `Fictional City ${index + 1}`,
+          nickname: `Club ${index + 1}`,
+          abbreviation: `T${String(index + 1).padStart(2, "0")}`.slice(0, 4),
+          primaryColor: index % 2 === 0 ? "#61c9ff" : "#f4c95d",
+          secondaryColor: "#102033",
+          marketSize: "Medium",
+          index
+        });
+    additions.push(generated);
+  }
+  return [...teams, ...additions];
+}
+
+function uniqueTeamId(baseId: string, existingIds: Set<string>): string {
+  let next = baseId;
+  let suffix = 2;
+  while (existingIds.has(next)) {
+    next = `${baseId}-${suffix}`;
+    suffix += 1;
+  }
+  existingIds.add(next);
+  return next;
+}
+
+function ensureDraftClassSize<T>(prospects: T[], count: number, seed: string): T[] {
+  if (prospects.length >= count) return prospects.slice(0, Math.max(prospects.length, count));
+  return [...prospects, ...(generateDraftClass(`${seed}-draft-fill`, count - prospects.length) as T[])];
 }
 
 function mergeCustomPlayers(teamDef: CustomTeamDefinition, teamIndex: number, rng: SeededRng): Player[] {

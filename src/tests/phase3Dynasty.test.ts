@@ -17,6 +17,8 @@ import { tickScouting } from "../game/systems/scouting";
 import { deserializeFranchise, serializeFranchise } from "../game/systems/saves";
 import { simulateGame } from "../game/simulation/simulateGame";
 import { emptyStats } from "../game/generators/generatePlayers";
+import { SCHEMA_VERSION } from "../game/constants";
+import { createDefaultRuleSet } from "../game/systems/leagueRules";
 import type { ContractOffer, FranchiseState, Player, Team } from "../game/types";
 
 describe("Phase 3 season lifecycle and saves", () => {
@@ -31,7 +33,7 @@ describe("Phase 3 season lifecycle and saves", () => {
 
     const restored = deserializeFranchise(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(7);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
     expect(restored.seasonPhase).toBe("regularSeason");
     expect(restored.ownerState.seasonGoals).toHaveLength(3);
     expect(restored.staffState.teamStaff[restored.selectedTeamId].length).toBeGreaterThanOrEqual(7);
@@ -69,7 +71,7 @@ describe("Phase 3 season lifecycle and saves", () => {
     expect(next.league.seasonYear).toBe(franchise.league.seasonYear + 1);
     expect(next.league.schedule.length).toBe(franchise.league.schedule.length);
     expect(next.league.schedule.every((game) => !game.played)).toBe(true);
-    expect(next.scouting.draftClass).toHaveLength(72);
+    expect(next.scouting.draftClass).toHaveLength(createDefaultRuleSet().draftClassSize);
   });
 
   it("validates repaired dynasty state without warnings", () => {
@@ -490,7 +492,7 @@ describe("Phase 3 staff, player lifecycle, owner, history, and serialization", (
     const franchise = createFranchise("harbor-city", "phase3-serialize");
     const restored = deserializeFranchise(serializeFranchise(franchise));
 
-    expect(restored.schemaVersion).toBe(7);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
     expect(restored.seasonPhase).toBe("regularSeason");
     expect(restored.staffState.teamStaff[restored.selectedTeamId]).toHaveLength(7);
   });

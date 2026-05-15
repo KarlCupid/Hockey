@@ -8,6 +8,8 @@ import { assignDevelopmentPlan, calculateDevelopmentProgress, tickDevelopment } 
 import { getVisibleProspectReport, generateScoutingAssignments, tickScouting, toggleWatchlist } from "../game/systems/scouting";
 import { applyTrade, calculatePickTradeValue, calculatePlayerTradeValue, evaluateTrade } from "../game/systems/trades";
 import { deserializeFranchise, serializeFranchise } from "../game/systems/saves";
+import { SCHEMA_VERSION } from "../game/constants";
+import { createDefaultRuleSet } from "../game/systems/leagueRules";
 import type { DevelopmentPlan, FranchiseState, Player, Team, TradeProposal } from "../game/types";
 
 describe("Phase 2 contracts and draft picks", () => {
@@ -219,8 +221,8 @@ describe("Phase 2 development and saves", () => {
     });
 
     const restored = deserializeFranchise(JSON.stringify(legacy));
-    expect(restored.schemaVersion).toBe(7);
-    expect(restored.scouting.draftClass).toHaveLength(72);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
+    expect(restored.scouting.draftClass).toHaveLength(createDefaultRuleSet().draftClassSize);
     expect(restored.league.teams[0].draftPicks).toHaveLength(8);
     expect(restored.league.teams[0].roster[0].contract.capHit).toBeGreaterThan(0);
   });
@@ -230,7 +232,7 @@ describe("Phase 2 development and saves", () => {
     const restored = deserializeFranchise(serializeFranchise(franchise));
     const plain = JSON.parse(JSON.stringify(restored)) as FranchiseState;
 
-    expect(plain.scouting.draftClass.length).toBe(72);
+    expect(plain.scouting.draftClass.length).toBe(createDefaultRuleSet().draftClassSize);
     expect(plain.development.plans).toEqual([]);
     expect(plain.league.teams[0].draftPicks[0].ownerTeamId).toBe(plain.league.teams[0].id);
   });

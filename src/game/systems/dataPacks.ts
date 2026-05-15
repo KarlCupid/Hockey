@@ -30,6 +30,7 @@ import {
   validateTeamDefinitions,
   detectRealWorldContent
 } from "./dataPackValidation";
+import { createRuleSetForTeamCount, normalizeLeagueRuleSet } from "./leagueRules";
 
 export {
   createDataPackSummary,
@@ -48,7 +49,7 @@ export {
   validateTeamDefinitions
 };
 
-export const DATA_PACK_VERSION = 1;
+export const DATA_PACK_VERSION = 2;
 
 export function createDefaultDataPack(): DataPack {
   const now = new Date().toISOString();
@@ -58,7 +59,7 @@ export function createDefaultDataPack(): DataPack {
     id: "built-in-fictional-standard",
     type: "full",
     name: "Built-in Fictional League",
-    description: "A local editable version of the standard 12-team fictional Franchise Ice league.",
+    description: "A local editable version of the standard fictional Franchise Ice league with Phase 10 rules.",
     authorLabel: "Franchise Ice",
     createdAt: now,
     updatedAt: now,
@@ -70,7 +71,7 @@ export function createDefaultDataPack(): DataPack {
       id: "built-in-fictional-2026-draft",
       seasonYear: 2026,
       name: "Fictional 2026 Draft Class",
-      prospects: generateDraftClass("phase9-built-in-draft")
+      prospects: generateDraftClass("phase9-built-in-draft", createRuleSetForTeamCount(12).draftClassSize)
     }
   };
   const validation = validateDataPack(pack);
@@ -80,6 +81,10 @@ export function createDefaultDataPack(): DataPack {
 export function createDataPackFromCurrentLeague(franchise: FranchiseState): DataPack {
   const now = new Date().toISOString();
   const teams = franchise.league.teams.map(teamToCustomDefinition);
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet ?? {
+    teamCount: teams.length,
+    gamesPerTeam: userGamesForTeam(franchise.league.teams[0]?.id ?? "", franchise)
+  });
   const pack: DataPack = {
     schemaVersion: SCHEMA_VERSION,
     dataPackVersion: DATA_PACK_VERSION,
@@ -97,13 +102,14 @@ export function createDataPackFromCurrentLeague(franchise: FranchiseState): Data
       name: franchise.customLeagueName ?? "Current Fictional League",
       description: "Snapshot of current fictional teams, rosters, branding colors, and rules.",
       seasonYear: franchise.league.seasonYear,
-      teamCount: teams.length,
-      scheduleLength: userGamesForTeam(franchise.league.teams[0]?.id ?? "", franchise),
-      playoffTeamCount: franchise.playoffState?.qualifiedTeamIds.length ?? 8,
-      playoffSeriesLength: 5,
-      draftRounds: DRAFT_PICK_ROUNDS,
-      capCeiling: franchise.league.teams[0]?.capCeiling ?? SALARY_CAP_CEILING,
-      capFloor: franchise.league.teams[0]?.capFloor ?? SALARY_CAP_FLOOR,
+      rules: ruleSet,
+      teamCount: ruleSet.teamCount,
+      scheduleLength: ruleSet.gamesPerTeam,
+      playoffTeamCount: ruleSet.playoffTeamCount,
+      playoffSeriesLength: ruleSet.playoffSeriesLength,
+      draftRounds: ruleSet.draftRounds,
+      capCeiling: ruleSet.capCeiling,
+      capFloor: ruleSet.capFloor,
       teams,
       rulesPreset: createLeagueRulesPreset("fictional-export", "Exported Fictional Rules", teams.length)
     },
@@ -119,6 +125,7 @@ export function createDataPackFromCurrentLeague(franchise: FranchiseState): Data
 }
 
 export function createDefaultLeagueTemplate(): CustomLeagueTemplate {
+  const rules = createRuleSetForTeamCount(12);
   const teams = FICTIONAL_TEAMS.map((entry, index) => {
     const [id, city, nickname, abbreviation, primaryColor, secondaryColor, marketSize, teamPersonality] = entry;
     return createCustomTeamDefinition({
@@ -136,35 +143,37 @@ export function createDefaultLeagueTemplate(): CustomLeagueTemplate {
   return {
     id: "fictional-standard-12",
     name: "Fictional Standard 12",
-    description: "A 12-team fictional league compatible with the current dynasty systems.",
+    description: "A 12-team fictional league using the default Phase 10 dynasty rules.",
     seasonYear: 2026,
-    teamCount: 12,
-    scheduleLength: REGULAR_SEASON_DAYS,
-    playoffTeamCount: 8,
-    playoffSeriesLength: 5,
-    draftRounds: DRAFT_PICK_ROUNDS,
-    capCeiling: SALARY_CAP_CEILING,
-    capFloor: SALARY_CAP_FLOOR,
+    rules,
+    teamCount: rules.teamCount,
+    scheduleLength: rules.gamesPerTeam,
+    playoffTeamCount: rules.playoffTeamCount,
+    playoffSeriesLength: rules.playoffSeriesLength,
+    draftRounds: rules.draftRounds,
+    capCeiling: rules.capCeiling,
+    capFloor: rules.capFloor,
     teams,
     rulesPreset: createLeagueRulesPreset("fictional-standard", "Fictional Standard", 12)
   };
 }
 
 export function createLeagueRulesPreset(id: string, label: string, teamCount = 12): LeagueRulesPreset {
+  const rules = createRuleSetForTeamCount(teamCount);
   return {
     id,
     label,
     description:
       teamCount === 12
-        ? "Stable client-only fictional dynasty rules for the current Phase 9 custom league start."
-        : "Experimental custom size. Validation will reject dynasty starts until broader lifecycle support is added.",
-    teamCount,
-    scheduleLength: teamCount === 12 ? REGULAR_SEASON_DAYS : teamCount === 8 ? 14 : teamCount === 10 ? 22 : 44,
-    playoffTeamCount: teamCount >= 12 ? 8 : 4,
-    playoffSeriesLength: 5,
-    draftRounds: DRAFT_PICK_ROUNDS,
-    capCeiling: SALARY_CAP_CEILING,
-    capFloor: SALARY_CAP_FLOOR,
+        ? "Stable client-only fictional dynasty rules for the standard custom league start."
+        : "Phase 10 custom-size fictional dynasty rules with supported schedule, playoff, and draft settings.",
+    teamCount: rules.teamCount,
+    scheduleLength: rules.gamesPerTeam,
+    playoffTeamCount: rules.playoffTeamCount,
+    playoffSeriesLength: rules.playoffSeriesLength,
+    draftRounds: rules.draftRounds,
+    capCeiling: rules.capCeiling,
+    capFloor: rules.capFloor,
     rosterActiveMin: 20,
     rosterActiveMax: 23,
     affiliateEnabled: true,

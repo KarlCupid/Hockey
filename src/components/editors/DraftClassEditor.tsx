@@ -43,12 +43,16 @@ export function autoBalanceDraftClass(pack: CustomDraftClassPack, teamCount = 12
 
 export function DraftClassEditor({
   pack,
+  teamCount = 12,
+  rounds = 4,
   onChange
 }: {
   pack: CustomDraftClassPack;
+  teamCount?: number;
+  rounds?: number;
   onChange: (pack: CustomDraftClassPack) => void;
 }) {
-  const validation = useMemo(() => validateDraftClassPack(pack), [pack]);
+  const validation = useMemo(() => validateDraftClassPack(pack, teamCount, rounds), [pack, teamCount, rounds]);
   const updateProspect = (prospectId: string, patch: Partial<Prospect>) => {
     onChange({
       ...pack,
@@ -58,9 +62,10 @@ export function DraftClassEditor({
   return (
     <section className="editor-panel">
       <div className="button-row">
-        <button type="button" onClick={() => onChange(createDraftClassPack(`${pack.id}-random`, pack.seasonYear))}>Randomize class</button>
-        <button type="button" onClick={() => onChange(autoBalanceDraftClass(pack))}>Auto-balance class</button>
+        <button type="button" onClick={() => onChange(createDraftClassPack(`${pack.id}-random`, pack.seasonYear, Math.max(72, teamCount * rounds * 2)))}>Randomize class</button>
+        <button type="button" onClick={() => onChange(autoBalanceDraftClass(pack, teamCount, rounds))}>Auto-balance class</button>
       </div>
+      <p className="muted">Minimum {teamCount * rounds} prospects for {teamCount} teams and {rounds} rounds. Recommended {teamCount * rounds * 2}.</p>
       <div className="validation-pill-list">
         {validation.length ? validation.slice(0, 5).map((message) => <span key={message} className="validation-pill validation-pill--warning">{message}</span>) : <span className="validation-pill validation-pill--ok">Draft class validates</span>}
       </div>

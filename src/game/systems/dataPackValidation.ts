@@ -1,4 +1,11 @@
 import { SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SCHEMA_VERSION } from "../constants";
+import { generateDraftClass } from "../generators/generateDraftClass";
+import {
+  nearestSupportedLeagueSize,
+  normalizeLeagueRuleSet,
+  playoffTeamCountForFormat,
+  validateLeagueRuleSet
+} from "./leagueRules";
 import type {
   Contract,
   CustomLeagueTemplate,
@@ -12,11 +19,10 @@ import type {
   ScenarioModifier
 } from "../types";
 
-const DATA_PACK_VERSION = 1;
+const DATA_PACK_VERSION = 2;
 const VALID_TYPES = ["league", "scenario", "branding", "roster", "draftClass", "full"];
 const VALID_TEAM_COUNTS = [8, 10, 12, 16];
-const DYNASTY_COMPATIBLE_TEAM_COUNTS = [12];
-const VALID_PLAYOFF_COUNTS = [4, 6, 8];
+const VALID_PLAYOFF_COUNTS = [4, 6, 8, 10];
 const VALID_DRAFT_ROUNDS = [3, 4, 5, 7];
 const VALID_POSITIONS: Position[] = ["LW", "C", "RW", "LD", "RD", "G"];
 const VALID_SCENARIO_MODIFIERS: ScenarioModifier["type"][] = [
@@ -93,10 +99,15 @@ export function validateDataPack(pack: unknown): DataPackValidationReport {
 
   if (candidate.leagueTemplate) {
     const leagueErrors = validateLeagueTemplate(candidate.leagueTemplate);
+    const ruleReport = validateLeagueRuleSet(candidate.leagueTemplate.rules ?? candidate.leagueTemplate);
     report.errors.push(...leagueErrors.errors);
     report.warnings.push(...leagueErrors.warnings);
     report.duplicateIdWarnings.push(...leagueErrors.duplicateIdWarnings);
     report.balanceWarnings.push(...leagueErrors.balanceWarnings);
+    if (!ruleReport.supported) {
+      report.unsupportedReasons.push(...ruleReport.errors);
+      report.suggestedFixes.push("Repair to nearest supported format: 8, 10, 12, or 16 teams with a matching schedule, playoff, and draft preset.");
+    }
   } else if (candidate.type === "league" || candidate.type === "full") {
     report.errors.push("League or full data packs require leagueTemplate.");
   }
@@ -114,6 +125,13 @@ export function validateDataPack(pack: unknown): DataPackValidationReport {
 
   if (candidate.draftClass) {
     report.errors.push(...validateDraftClass(candidate.draftClass.prospects));
+    if (candidate.leagueTemplate) {
+      const rules = normalizeLeagueRuleSet(candidate.leagueTemplate.rules ?? candidate.leagueTemplate);
+      const required = rules.teamCount * rules.draftRounds;
+      const preferred = rules.draftClassSize;
+      if ((candidate.draftClass.prospects?.length ?? 0) < required) report.errors.push(`Draft class needs at least ${required} prospects for this rule set.`);
+      if ((candidate.draftClass.prospects?.length ?? 0) < preferred) report.warnings.push(`Draft class is below the recommended ${preferred} prospects for this rule set.`);
+    }
   } else if (candidate.type === "draftClass") {
     report.errors.push("Draft class data packs require draftClass.");
   }
@@ -160,12 +178,20 @@ export function repairDataPack(pack: DataPack): { pack: DataPack; report: DataPa
     };
   }
   if (repaired.draftClass) {
+    const rules = repaired.leagueTemplate ? normalizeLeagueRuleSet(repaired.leagueTemplate.rules ?? repaired.leagueTemplate) : undefined;
+    const requiredProspects = rules?.draftClassSize ?? 0;
+    const repairedProspects = repairDraftClass(repaired.draftClass.prospects, repairedFields);
+    const filledProspects =
+      requiredProspects > repairedProspects.length
+        ? [...repairedProspects, ...generateDraftClass(`${repaired.id}-draft-repair`, requiredProspects - repairedProspects.length)]
+        : repairedProspects;
+    if (filledProspects.length !== repairedProspects.length) repairedFields.push("draftClass.prospects");
     repaired.draftClass = {
       ...repaired.draftClass,
       id: safeId(repaired.draftClass.id || `${repaired.id}-draft`, "draft"),
       seasonYear: clampNumber(repaired.draftClass.seasonYear, 2026, 2200, 2026),
       name: cleanedText(repaired.draftClass.name || `${repaired.name} Draft Class`, 72),
-      prospects: repairDraftClass(repaired.draftClass.prospects, repairedFields)
+      prospects: filledProspects
     };
   }
 
@@ -307,18 +333,8 @@ export function validateScenario(scenario: Partial<ScenarioDefinition>): string[
 
 export function validateLeagueBalance(template: Partial<CustomLeagueTemplate>): string[] {
   const messages: string[] = [];
-  if (!VALID_TEAM_COUNTS.includes(Number(template.teamCount))) messages.push("Team count must be 8, 10, 12, or 16.");
-  if (!DYNASTY_COMPATIBLE_TEAM_COUNTS.includes(Number(template.teamCount))) {
-    messages.push("Current dynasty systems fully support 12-team custom leagues; other league sizes are rejected for Phase 9 starts.");
-  }
-  if (!VALID_PLAYOFF_COUNTS.includes(Number(template.playoffTeamCount))) messages.push("Playoff teams must be 4, 6, or 8.");
-  if (Number(template.playoffTeamCount) >= Number(template.teamCount)) messages.push("Playoff teams must be fewer than total teams.");
-  if (![14, 16, 18, 20, 22, 30, 44].includes(Number(template.scheduleLength))) messages.push("Schedule length is outside supported short/standard/long values.");
-  if (!VALID_DRAFT_ROUNDS.includes(Number(template.draftRounds))) messages.push("Draft rounds must be 3, 4, 5, or 7.");
-  if (!Number.isFinite(template.capCeiling) || !Number.isFinite(template.capFloor)) messages.push("Cap ceiling/floor must be numeric.");
-  if (Number(template.capFloor) >= Number(template.capCeiling)) messages.push("Cap floor must be below cap ceiling.");
-  if (Number(template.capCeiling) < 70_000_000 || Number(template.capCeiling) > 140_000_000) messages.push("Cap ceiling is outside safe bounds.");
-  if (Number(template.capFloor) < 35_000_000 || Number(template.capFloor) > 100_000_000) messages.push("Cap floor is outside safe bounds.");
+  const rules = validateLeagueRuleSet(template.rules ?? template);
+  messages.push(...rules.errors, ...rules.warnings);
   return messages;
 }
 
@@ -378,19 +394,23 @@ function validateLeagueTemplate(template: Partial<CustomLeagueTemplate>) {
   const warnings: string[] = [];
   const duplicateIdWarnings: string[] = [];
   const balanceWarnings = validateLeagueBalance(template);
+  const ruleReport = validateLeagueRuleSet(template.rules ?? template);
   if (!template.id) errors.push("League template is missing id.");
   if (!template.name) errors.push("League template is missing name.");
   if (!Number.isFinite(template.seasonYear) || template.seasonYear! < 2026) errors.push("League seasonYear must be 2026 or later.");
   if (!Array.isArray(template.teams)) errors.push("League template teams must be an array.");
+  if (!ruleReport.supported) errors.push(...ruleReport.errors);
   if (template.teams) {
-    if (template.teamCount !== template.teams.length) errors.push("League teamCount must match teams length.");
+    const rules = ruleReport.normalizedRuleSet ?? normalizeLeagueRuleSet(template.rules ?? template);
+    if (template.teamCount !== rules.teamCount) errors.push("League teamCount must match ruleSet team count.");
+    if (template.teams.length > rules.teamCount) errors.push("League template has more teams than the selected ruleSet supports.");
+    if (template.teams.length < rules.teamCount) warnings.push(`League template has ${template.teams.length} teams; repair/generation will fill to ${rules.teamCount}.`);
     const teamMessages = validateTeamDefinitions(template.teams);
     errors.push(...teamMessages.filter((message) => !message.toLowerCase().includes("duplicate")));
     duplicateIdWarnings.push(...teamMessages.filter((message) => message.toLowerCase().includes("duplicate")));
   }
-  if (!template.rulesPreset) errors.push("League template is missing rulesPreset.");
-  if (balanceWarnings.length) errors.push(...balanceWarnings.filter((message) => message.includes("rejected")));
-  warnings.push(...balanceWarnings.filter((message) => !message.includes("rejected")));
+  if (!template.rules && !template.rulesPreset) warnings.push("League template is missing Phase 10 ruleSet; legacy fields will be normalized.");
+  warnings.push(...balanceWarnings);
   return { errors, warnings, duplicateIdWarnings, balanceWarnings };
 }
 
@@ -415,10 +435,13 @@ function validateContract(contract: Contract, label: string): string[] {
 }
 
 function repairLeagueTemplate(template: CustomLeagueTemplate, repairedFields: string[]): CustomLeagueTemplate {
-  const teamCount = clampToAllowed(template.teamCount, VALID_TEAM_COUNTS, 12);
-  const scheduleLength = clampNumber(template.scheduleLength, 14, 44, 22);
-  const capCeiling = clampNumber(template.capCeiling, 70_000_000, 140_000_000, SALARY_CAP_CEILING);
-  const capFloor = clampNumber(template.capFloor, 35_000_000, Math.min(100_000_000, capCeiling - 1_000_000), SALARY_CAP_FLOOR);
+  const requestedTeamCount = Number(template.rules?.teamCount ?? template.teamCount);
+  const teamCount = VALID_TEAM_COUNTS.includes(requestedTeamCount) ? requestedTeamCount : nearestSupportedLeagueSize(requestedTeamCount);
+  const ruleSet = normalizeLeagueRuleSet({ ...(template.rules ?? template), teamCount });
+  const capCeiling = clampNumber(ruleSet.capCeiling, 70_000_000, 140_000_000, SALARY_CAP_CEILING);
+  const capFloor = clampNumber(ruleSet.capFloor, 35_000_000, Math.min(100_000_000, capCeiling - 1_000_000), SALARY_CAP_FLOOR);
+  const repairedTeams = repairTeamDefinitions(template.teams ?? [], repairedFields);
+  const teams = fillTeamDefinitions(repairedTeams, teamCount, repairedFields).slice(0, teamCount);
   repairedFields.push("leagueTemplate.rules");
   return {
     ...template,
@@ -427,28 +450,33 @@ function repairLeagueTemplate(template: CustomLeagueTemplate, repairedFields: st
     description: cleanedText(template.description || "A local fictional custom league.", 220),
     seasonYear: clampNumber(template.seasonYear, 2026, 2200, 2026),
     teamCount,
-    scheduleLength,
-    playoffTeamCount: clampToAllowed(template.playoffTeamCount, VALID_PLAYOFF_COUNTS, Math.min(8, teamCount - 2)),
-    playoffSeriesLength: clampToAllowed(template.playoffSeriesLength, [3, 5, 7], 5),
-    draftRounds: clampToAllowed(template.draftRounds, VALID_DRAFT_ROUNDS, 4),
+    rules: {
+      ...ruleSet,
+      capCeiling,
+      capFloor
+    },
+    scheduleLength: ruleSet.gamesPerTeam,
+    playoffTeamCount: playoffTeamCountForFormat(ruleSet.playoffFormat),
+    playoffSeriesLength: ruleSet.playoffSeriesLength,
+    draftRounds: ruleSet.draftRounds,
     capCeiling,
     capFloor,
-    teams: repairTeamDefinitions(template.teams ?? [], repairedFields).slice(0, teamCount),
+    teams,
     rulesPreset: {
       ...template.rulesPreset,
       id: safeId(template.rulesPreset?.id || "fictional-standard", "rules"),
-      label: cleanedText(template.rulesPreset?.label || "Fictional Standard", 48),
-      description: cleanedText(template.rulesPreset?.description || "Stable 12-team fictional dynasty rules.", 140),
+      label: cleanedText(template.rulesPreset?.label || ruleSet.label, 48),
+      description: cleanedText(template.rulesPreset?.description || ruleSet.description, 140),
       teamCount,
-      scheduleLength,
-      playoffTeamCount: clampToAllowed(template.rulesPreset?.playoffTeamCount ?? template.playoffTeamCount, VALID_PLAYOFF_COUNTS, 8),
-      playoffSeriesLength: clampToAllowed(template.rulesPreset?.playoffSeriesLength ?? template.playoffSeriesLength, [3, 5, 7], 5),
-      draftRounds: clampToAllowed(template.rulesPreset?.draftRounds ?? template.draftRounds, VALID_DRAFT_ROUNDS, 4),
+      scheduleLength: ruleSet.gamesPerTeam,
+      playoffTeamCount: ruleSet.playoffTeamCount,
+      playoffSeriesLength: ruleSet.playoffSeriesLength,
+      draftRounds: ruleSet.draftRounds,
       capCeiling,
       capFloor,
-      rosterActiveMin: clampNumber(template.rulesPreset?.rosterActiveMin, 18, 23, 20),
-      rosterActiveMax: clampNumber(template.rulesPreset?.rosterActiveMax, 20, 30, 23),
-      affiliateEnabled: template.rulesPreset?.affiliateEnabled !== false,
+      rosterActiveMin: ruleSet.activeRosterMin,
+      rosterActiveMax: ruleSet.activeRosterMax,
+      affiliateEnabled: ruleSet.affiliateEnabled,
       tradeDifficultyModifier: clampNumber(template.rulesPreset?.tradeDifficultyModifier, 0.5, 1.8, 1),
       developmentPaceModifier: clampNumber(template.rulesPreset?.developmentPaceModifier, 0.5, 1.8, 1),
       injuryModifier: clampNumber(template.rulesPreset?.injuryModifier, 0.4, 2, 1)
@@ -487,6 +515,47 @@ function repairTeamDefinitions(teams: CustomTeamDefinition[], repairedFields: st
     },
     players: team.players ? repairPlayerDefinitions(team.players, repairedFields) : undefined
   }));
+}
+
+function fillTeamDefinitions(teams: CustomTeamDefinition[], teamCount: number, repairedFields: string[]): CustomTeamDefinition[] {
+  if (teams.length >= teamCount) return teams;
+  const existingIds = new Set(teams.map((team) => team.id));
+  const generated = Array.from({ length: teamCount - teams.length }, (_, offset) => {
+    const index = teams.length + offset;
+    const id = uniqueId(`generated-club-${index + 1}`, existingIds);
+    return {
+      id,
+      city: `Fictional City ${index + 1}`,
+      nickname: `Club ${index + 1}`,
+      fullName: `Fictional City ${index + 1} Club ${index + 1}`,
+      abbreviation: `T${String(index + 1).padStart(2, "0")}`.slice(0, 4),
+      marketSize: "Medium" as const,
+      primaryColor: index % 2 === 0 ? "#61c9ff" : "#f4c95d",
+      secondaryColor: "#102033",
+      accentColor: "#f5fbff",
+      teamPersonality: "Generated fictional depth club",
+      ownerPatience: 60,
+      fanConfidence: 58,
+      arenaName: "Fictional Ice Hall",
+      affiliateName: `Club ${index + 1} Reserve`,
+      rivalryTeamIds: [],
+      branding: {
+        crestShape: "shield",
+        crestInitials: `T${String(index + 1).padStart(2, "0")}`.slice(0, 4),
+        jerseyPattern: "double",
+        homeJersey: "Generated home concept",
+        awayJersey: "Generated away concept",
+        alternateJersey: "Generated alternate concept",
+        arenaMood: "new fictional market",
+        broadcastStyle: "glass",
+        chant: "Rise up",
+        colorValidationWarnings: []
+      },
+      rosterStrategy: "balanced" as const
+    };
+  });
+  if (generated.length) repairedFields.push("leagueTemplate.teams");
+  return [...teams, ...generated];
 }
 
 function repairPlayerDefinitions(players: CustomPlayerDefinition[], repairedFields: string[]): CustomPlayerDefinition[] {
@@ -539,8 +608,11 @@ function repairDraftClass(prospects: Prospect[], repairedFields: string[]): Pros
 function emptyReport(): DataPackValidationReport {
   return {
     valid: false,
+    supported: false,
     errors: [],
     warnings: [],
+    unsupportedReasons: [],
+    suggestedFixes: [],
     repairedFields: [],
     realWorldContentFlags: [],
     duplicateIdWarnings: [],
@@ -552,11 +624,16 @@ function emptyReport(): DataPackValidationReport {
 function finishReport(report: DataPackValidationReport): DataPackValidationReport {
   const errors = Array.from(new Set(report.errors));
   const realWorldContentFlags = Array.from(new Set(report.realWorldContentFlags));
+  const unsupportedReasons = Array.from(new Set(report.unsupportedReasons.length ? report.unsupportedReasons : errors.filter((message) => message.toLowerCase().includes("unsupported"))));
+  const supported = unsupportedReasons.length === 0;
   return {
     ...report,
-    valid: errors.length === 0 && realWorldContentFlags.length === 0 && report.duplicateIdWarnings.length === 0,
+    valid: supported && errors.length === 0 && realWorldContentFlags.length === 0 && report.duplicateIdWarnings.length === 0,
+    supported,
     errors,
     warnings: Array.from(new Set(report.warnings)),
+    unsupportedReasons,
+    suggestedFixes: Array.from(new Set(report.suggestedFixes)),
     repairedFields: Array.from(new Set(report.repairedFields)),
     realWorldContentFlags,
     duplicateIdWarnings: Array.from(new Set(report.duplicateIdWarnings)),

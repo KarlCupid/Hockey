@@ -16,6 +16,7 @@ import { generateAssistantGmReport } from "../game/systems/assistantGm";
 import { validateDynastyInvariants } from "../game/systems/dynastyInvariants";
 import { applyGameToStandings } from "../game/systems/standings";
 import { exportSaveToJson, importSaveFromJson } from "../game/systems/saves";
+import { SCHEMA_VERSION } from "../game/constants";
 import {
   completeTutorialStep,
   createDefaultTutorialState,
@@ -56,7 +57,7 @@ const ALL_ROOMS: RoomId[] = [
 describe("Phase 8 tutorial and guide", () => {
   it("creates, completes, dismisses, resets, hints, and serializes tutorial state", () => {
     let franchise = createFranchise("harbor-city", "phase8-tutorial");
-    expect(franchise.schemaVersion).toBe(7);
+    expect(franchise.schemaVersion).toBe(SCHEMA_VERSION);
     expect(franchise.tutorialState).toEqual(createDefaultTutorialState("firstFranchise"));
     expect(getCurrentTutorialStep(franchise)?.id).toBe("move-facility");
 
@@ -208,7 +209,7 @@ describe("Phase 8 release-candidate smoke flow", () => {
     expect(franchise.achievements.find((item) => item.id === "first-win")?.unlockedAt).toBeTruthy();
 
     const restored = importSaveFromJson(exportSaveToJson(franchise));
-    expect(restored.schemaVersion).toBe(7);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
     expect(restored.tutorialState).toBeTruthy();
     expect(restored.achievements.length).toBeGreaterThan(10);
     expect(validateDynastyInvariants(restored).errors).toHaveLength(0);
@@ -216,7 +217,7 @@ describe("Phase 8 release-candidate smoke flow", () => {
     const report = runDynastyPlaytest("phase8-mini-playtest", 2, "harbor-city", { storyFrequency: "normal" });
     expect(report.seasonsCompleted).toBe(2);
     expect(report.errors).toHaveLength(0);
-    expect(report.finalFranchise.schemaVersion).toBe(7);
+    expect(report.finalFranchise.schemaVersion).toBe(SCHEMA_VERSION);
     expect(report.livingOps.ownerGoalCompletionRate).toBeGreaterThanOrEqual(0);
   });
 });

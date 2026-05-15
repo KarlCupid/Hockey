@@ -19,6 +19,65 @@ export type SeasonPhase =
   | "trainingCamp"
   | "preseason"
   | "completed";
+export type LeagueSize = 8 | 10 | 12 | 16;
+export type ScheduleFormat = "doubleRoundRobin" | "balancedShort" | "balancedStandard" | "balancedLong";
+export type PlayoffFormat = "top4" | "top6WithByes" | "top8" | "top10WithPlayIn";
+export type PlayoffSeriesFormat = "singleGame" | "bestOf3" | "bestOf5" | "bestOf7";
+
+export interface DraftFormat {
+  rounds: number;
+  prospectsPerPickMultiplier: number;
+  lotteryTeams: number;
+}
+
+export interface LeagueRuleSet {
+  id: string;
+  label: string;
+  description: string;
+  teamCount: LeagueSize;
+  scheduleFormat: ScheduleFormat;
+  gamesPerTeam: number;
+  playoffTeamCount: number;
+  playoffFormat: PlayoffFormat;
+  playoffSeriesFormat: PlayoffSeriesFormat;
+  playoffSeriesLength: number;
+  draftRounds: number;
+  draftClassSize: number;
+  draftFormat: DraftFormat;
+  capCeiling: number;
+  capFloor: number;
+  activeRosterMin: number;
+  activeRosterMax: number;
+  affiliateEnabled: boolean;
+  tradeDeadlineDayIndex?: number;
+  seasonStartDate: string;
+}
+
+export interface ScheduleGenerationReport {
+  valid: boolean;
+  gamesPerTeam: Record<string, number>;
+  totalGames: number;
+  homeAwayBalanceWarnings: string[];
+  duplicateMatchupWarnings: string[];
+  errors: string[];
+}
+
+export interface PlayoffFormatValidation {
+  valid: boolean;
+  format: PlayoffFormat;
+  teamCount: number;
+  playoffTeamCount: number;
+  warnings: string[];
+  errors: string[];
+}
+
+export interface LeagueRuleValidationReport {
+  valid: boolean;
+  warnings: string[];
+  errors: string[];
+  supported: boolean;
+  normalizedRuleSet?: LeagueRuleSet;
+}
 export type GameDifficulty = "relaxed" | "standard" | "demanding" | "hardcore";
 export type StoryFrequency = "quiet" | "normal" | "dramatic";
 export type GameMode = "sandbox" | "standardDynasty" | "pressureCooker" | "rebuildChallenge" | "contenderChallenge";
@@ -200,6 +259,7 @@ export interface BugReport {
   currentPhase: SeasonPhase;
   selectedTeamId: string;
   customLeagueName?: string;
+  ruleSetSummary?: string;
   dataPackMetadata?: FranchiseState["dataPackMetadata"];
   lastRoom?: RoomId;
   recentTelemetry: LocalTelemetryEvent[];
@@ -1001,6 +1061,8 @@ export interface LeagueState {
   currentDate: string;
   teams: Team[];
   schedule: ScheduleGame[];
+  ruleSet: LeagueRuleSet;
+  scheduleReport?: ScheduleGenerationReport;
   recentResults: string[];
   completed: boolean;
 }
@@ -1228,6 +1290,11 @@ export interface PlayoffState {
   qualifiedTeamIds: string[];
   bracket: PlayoffSeries[];
   currentRound: number;
+  format: PlayoffFormat;
+  seriesFormat: PlayoffSeriesFormat;
+  playoffTeamCount: number;
+  byes?: Record<number, string[]>;
+  playInGames?: PlayoffGame[];
   championTeamId?: string;
   completed: boolean;
   recentPlayoffResults: string[];
@@ -1257,6 +1324,9 @@ export interface DraftState {
   selections: DraftSelection[];
   userPickPending: boolean;
   completed: boolean;
+  draftRounds?: number;
+  draftClassSize?: number;
+  leagueRuleSetId?: string;
 }
 
 export interface DraftPickContext {
@@ -1540,6 +1610,7 @@ export interface CustomLeagueTemplate {
   name: string;
   description: string;
   seasonYear: number;
+  rules?: LeagueRuleSet;
   teamCount: number;
   scheduleLength: number;
   playoffTeamCount: number;
@@ -1705,8 +1776,11 @@ export interface ScenarioModifier {
 
 export interface DataPackValidationReport {
   valid: boolean;
+  supported: boolean;
   errors: string[];
   warnings: string[];
+  unsupportedReasons: string[];
+  suggestedFixes: string[];
   repairedFields: string[];
   realWorldContentFlags: string[];
   duplicateIdWarnings: string[];

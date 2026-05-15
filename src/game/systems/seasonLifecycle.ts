@@ -1,7 +1,6 @@
 import { generateDraftClass } from "../generators/generateDraftClass";
 import { emptyRecord, emptyTeamStats } from "../generators/generateLeague";
-import { generateSchedule } from "../generators/generateSchedule";
-import { DRAFT_PICK_ROUNDS } from "../constants";
+import { generateScheduleForRuleSet, validateSchedule } from "../generators/generateSchedule";
 import { SeededRng } from "../rng";
 import { simulateGame } from "../simulation/simulateGame";
 import { repairAllTeamRosters } from "./aiRosterManagement";
@@ -22,6 +21,7 @@ import {
   runRetirements
 } from "./playerLifecycle";
 import { createPlayoffState } from "./playoffs";
+import { normalizeLeagueRuleSet } from "./leagueRules";
 import { applyGameToStandings } from "./standings";
 import { generateStaffMarket, tickStaffContracts } from "./staff";
 import { runTrainingCampRosterSetup } from "./trainingCamp";
@@ -97,7 +97,7 @@ export function advanceSeasonPhase(franchise: FranchiseState, rng = new SeededRn
           type: "draft" as const,
           date: franchise.league.currentDate,
           headline: "Draft Room: Lottery order locked",
-          body: "The bottom four clubs shuffled for top-four drama; traded picks still draft for their current owners.",
+          body: `The bottom ${normalizeLeagueRuleSet(franchise.league.ruleSet).draftFormat.lotteryTeams} clubs shuffled for lottery drama; traded picks still draft for their current owners.`,
           severity: "medium" as const,
           teamId: franchise.selectedTeamId
         },
@@ -279,12 +279,13 @@ export function recoverFatigueAndInjuries(franchise: FranchiseState): FranchiseS
 
 export function generateNewSeasonSchedule(franchise: FranchiseState, forcedYear?: number): FranchiseState {
   const seasonYear = forcedYear ?? franchise.league.seasonYear + 1;
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const teams = franchise.league.teams.map((team) => ({
     ...team,
     record: emptyRecord(),
     stats: emptyTeamStats()
   }));
-  const schedule = generateSchedule(teams).map((game) => withSeasonYear(game, seasonYear));
+  const schedule = generateScheduleForRuleSet(teams, ruleSet).map((game) => withSeasonYear(game, seasonYear));
   return {
     ...franchise,
     league: {
@@ -295,6 +296,8 @@ export function generateNewSeasonSchedule(franchise: FranchiseState, forcedYear?
       currentDate: schedule[0]?.date ?? `${seasonYear}-10-03`,
       teams,
       schedule,
+      ruleSet,
+      scheduleReport: validateSchedule(schedule, teams, ruleSet),
       recentResults: [],
       completed: false
     }
@@ -302,7 +305,8 @@ export function generateNewSeasonSchedule(franchise: FranchiseState, forcedYear?
 }
 
 export function generateNewDraftClassForSeason(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-new-draft`)): FranchiseState {
-  const draftClass = generateDraftClass(`${franchise.franchiseId}-draft-${franchise.league.seasonYear}-${rng.next()}`);
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  const draftClass = generateDraftClass(`${franchise.franchiseId}-draft-${franchise.league.seasonYear}-${rng.next()}`, ruleSet.draftClassSize);
   return {
     ...franchise,
     scouting: {
@@ -324,15 +328,17 @@ export function validateDynastyState(franchise: FranchiseState): string[] {
   franchise.league.teams.forEach((team) => {
     if (!franchise.prospectPools[team.id]) warnings.push(`Missing prospect pool for ${team.fullName}.`);
   });
-  if (franchise.offseasonState?.draftState && franchise.offseasonState.draftState.draftOrder.length < franchise.league.teams.length * DRAFT_PICK_ROUNDS) {
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  if (franchise.offseasonState?.draftState && franchise.offseasonState.draftState.draftOrder.length < franchise.league.teams.length * ruleSet.draftRounds) {
     warnings.push("Draft order is shorter than expected.");
   }
   return warnings;
 }
 
 function ensureFutureDraftPicks(franchise: FranchiseState, seasonYear: number): FranchiseState {
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const existingIds = new Set(franchise.league.teams.flatMap((team) => team.draftPicks.map((pick) => pick.id)));
-  const generated = generateInitialDraftPicks(franchise.league.teams, seasonYear);
+  const generated = generateInitialDraftPicks(franchise.league.teams, seasonYear, ruleSet.draftRounds);
   const additions = generated.filter((pick) => pick.seasonYear >= seasonYear && !existingIds.has(pick.id));
   const teams = franchise.league.teams.map((team) => ({
     ...team,

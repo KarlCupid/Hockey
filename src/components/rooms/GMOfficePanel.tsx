@@ -21,6 +21,7 @@ import { getMasterActionQueue, getUrgentActionCount } from "../../game/systems/a
 import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
 import { getGmProfileSummary } from "../../game/systems/gmProfile";
 import { getAchievementSummary } from "../../game/systems/achievements";
+import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
 import { getRecentMilestones } from "../../game/systems/milestones";
 import { getCurrentTutorialStep, getTutorialSteps } from "../../game/systems/tutorial";
 import type { FranchiseState } from "../../game/types";
@@ -58,6 +59,7 @@ export function GMOfficePanel() {
   }, [markChecklistItem]);
   if (!franchise) return null;
   const team = selectedTeam(franchise);
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const opponent = upcomingOpponent(franchise);
   const playoffGame = getCurrentUserPlayoffGame(franchise);
   const userSchedule = franchise.league.schedule
@@ -389,7 +391,7 @@ export function GMOfficePanel() {
           <h3>Calendar & Recent Results</h3>
           <div className="calendar-card">
             <strong>{franchise.league.currentDate}</strong>
-            <span>Regular season day {franchise.league.currentDayIndex + 1} of 22</span>
+            <span>Regular season day {franchise.league.currentDayIndex + 1} of {ruleSet.gamesPerTeam}</span>
           </div>
           <h4>Schedule</h4>
           <div className="schedule-list">

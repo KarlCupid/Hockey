@@ -1,6 +1,7 @@
 import { sortStandings } from "../../game/systems/standings";
 import { createSeasonCompleteSummary, createSeasonPulse } from "../../game/systems/seasonSummary";
 import { createFranchiseTimeline } from "../../game/systems/history";
+import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
 import { getAchievementSummary } from "../../game/systems/achievements";
 import { getRecentMilestones } from "../../game/systems/milestones";
 import { useFranchiseStore } from "../../store/franchiseStore";
@@ -9,6 +10,7 @@ export function StandingsPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   if (!franchise) return null;
   const standings = sortStandings(franchise.league.teams);
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const selectedTeam = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const pulse = createSeasonPulse(franchise.league, franchise.selectedTeamId);
   const timeline = createFranchiseTimeline(franchise);
@@ -59,7 +61,7 @@ export function StandingsPanel() {
       <section className="panel-section">
         <h3>Selected Team Pulse</h3>
         <div className="season-pulse">
-          <span>Current rank <strong>{pulse.rank}/12</strong></span>
+          <span>Current rank <strong>{pulse.rank}/{franchise.league.teams.length}</strong></span>
           <span>Points pace <strong>{pulse.pointsPace}</strong></span>
           <span>Fan confidence <strong>{pulse.fanConfidence}</strong></span>
           <span>Owner patience <strong>{pulse.ownerPatience}</strong></span>
@@ -70,13 +72,17 @@ export function StandingsPanel() {
           {franchise.dataPackMetadata?.scenarioName && <span>Scenario <strong>{franchise.dataPackMetadata.scenarioName}</strong></span>}
         </div>
         <h3>Current Playoff Picture</h3>
-        <p className="muted">{franchise.seasonPhase === "playoffs" ? "Best-of-five fictional league bracket." : "Top eight qualify for the simplified best-of-five playoffs."}</p>
+        <p className="muted">
+          {franchise.seasonPhase === "playoffs"
+            ? `${ruleSet.playoffTeamCount}-team ${seriesLabel(ruleSet.playoffSeriesFormat)} bracket.`
+            : `Top ${ruleSet.playoffTeamCount} qualify for the simplified ${seriesLabel(ruleSet.playoffSeriesFormat)} playoffs.`}
+        </p>
         <div className="hunt-list">
-          {standings.slice(0, 8).map((team, index) => (
+          {standings.slice(0, ruleSet.playoffTeamCount).map((team, index) => (
             <article className={team.id === selectedTeam.id ? "is-selected" : ""} key={team.id}>
               <span>#{index + 1}</span>
               <strong>{team.fullName}</strong>
-              <small>{index < 8 ? "Playoff line" : "In the hunt"} | {team.record.points} pts</small>
+              <small>{index < ruleSet.playoffTeamCount ? "Playoff line" : "In the hunt"} | {team.record.points} pts</small>
             </article>
           ))}
         </div>
@@ -101,7 +107,7 @@ export function StandingsPanel() {
         {franchise.league.completed ? (
           <SeasonSummary selectedTeamId={franchise.selectedTeamId} />
         ) : (
-          <p className="empty-state">Season summary unlocks after Game 22. Right now every point is still up for argument.</p>
+          <p className="empty-state">Season summary unlocks after Game {ruleSet.gamesPerTeam}. Right now every point is still up for argument.</p>
         )}
         <h3>Recent League Results</h3>
         {franchise.league.recentResults.length ? (
@@ -185,7 +191,7 @@ function SeasonSummary({ selectedTeamId }: { selectedTeamId: string }) {
     <div className="season-summary">
       <strong>{team.fullName}: Season Complete</strong>
       <span>Final record: {summary.finalRecord}</span>
-      <span>League rank: {summary.leagueRank}/12</span>
+      <span>League rank: {summary.leagueRank}/{franchise.league.teams.length}</span>
       <span>Goals for/against: {summary.goalsFor}/{summary.goalsAgainst}</span>
       <span>Top scorer: {summary.topScorer}</span>
       <span>Best goalie: {summary.bestGoalie}</span>
@@ -196,4 +202,11 @@ function SeasonSummary({ selectedTeamId }: { selectedTeamId: string }) {
       <span>{summary.phaseTwoNote}</span>
     </div>
   );
+}
+
+function seriesLabel(format: string): string {
+  if (format === "singleGame") return "single-game";
+  if (format === "bestOf3") return "best-of-3";
+  if (format === "bestOf7") return "best-of-7";
+  return "best-of-5";
 }

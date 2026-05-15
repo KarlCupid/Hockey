@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { generateBalanceReport, type BalanceReport } from "../../game/systems/balanceReport";
-import { createDefaultDataPack, createDataPackFromCurrentLeague, createDataPackSummary, validateDataPack } from "../../game/systems/dataPacks";
+import { createDefaultDataPack, createDataPackFromCurrentLeague, createDataPackSummary, createLeagueRulesPreset, repairDataPack, validateDataPack } from "../../game/systems/dataPacks";
 import { createCustomFranchiseFromDataPack } from "../../game/generators/generateCustomLeague";
 import { getBuiltInScenarios, createScenarioDataPack, validateBuiltInScenarios } from "../../game/systems/scenarios";
 import { runOwnerGoalBalanceSample, type OwnerGoalBalanceSample } from "../../game/systems/ownerBalance";
@@ -14,6 +14,7 @@ import { getMasterActionQueue, getRoomBadges } from "../../game/systems/actionQu
 import { generateAssistantGmReport } from "../../game/systems/assistantGm";
 import { createDifficultyTuning } from "../../game/systems/difficulty";
 import { getEventCadenceTuning } from "../../game/systems/livingOpsTuning";
+import { createRuleSetForTeamCount, getRuleSetDescription } from "../../game/systems/leagueRules";
 import {
   createDecisionEventFromTemplate,
   getTemplateContextFromFranchise,
@@ -24,6 +25,7 @@ import { SeededRng } from "../../game/rng";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
+import type { DataPack, LeagueSize } from "../../game/types";
 
 export function DevToolsPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
@@ -89,6 +91,15 @@ export function DevToolsPanel() {
           const custom = createCustomFranchiseFromDataPack(pack, pack.leagueTemplate?.teams[0]?.id, undefined, { seed: "dev-custom-dry-run" });
           setDataPackReport(`Custom dry run: ${custom.customLeagueName} | teams=${custom.league.teams.length} | errors=${validateDynastyInvariants(custom).errors.length}`);
         }}>Custom league dry run</Button>
+        <Button onClick={() => {
+          const sizes: LeagueSize[] = [8, 10, 12, 16];
+          const reports = sizes.map((size) => {
+            const pack = createDevRulePack(size);
+            const custom = createCustomFranchiseFromDataPack(pack, pack.leagueTemplate?.teams[0]?.id, undefined, { seed: `dev-phase10-${size}` });
+            return `${size}: ${getRuleSetDescription(custom.league.ruleSet)} | errors=${validateDynastyInvariants(custom).errors.length}`;
+          });
+          setDataPackReport(`Custom rule matrix | ${reports.join(" / ")}`);
+        }}>Custom rules matrix</Button>
         <Button onClick={() => {
           const scenario = getBuiltInScenarios().find((item) => item.id === "cap-crunch") ?? getBuiltInScenarios()[0];
           const pack = createScenarioDataPack(scenario, createDefaultDataPack());
@@ -213,6 +224,8 @@ export function DevToolsPanel() {
           <div className="season-pulse">
             <span>Seed <strong>{playtest.seed}</strong></span>
             <span>Seasons <strong>{playtest.seasonsCompleted}</strong></span>
+            <span>Rules <strong>{playtest.playoffFormatUsed}</strong></span>
+            <span>Schedule warnings <strong>{playtest.customScheduleWarnings.length}</strong></span>
             <span>Warnings <strong>{playtest.warnings.length}</strong></span>
             <span>Errors <strong>{playtest.errors.length}</strong></span>
           </div>
@@ -282,4 +295,30 @@ export function DevToolsPanel() {
       )}
     </div>
   );
+}
+
+function createDevRulePack(size: LeagueSize): DataPack {
+  const pack = createDefaultDataPack();
+  const rules = createRuleSetForTeamCount(size);
+  return repairDataPack({
+    ...pack,
+    id: `dev-rule-pack-${size}`,
+    name: `${size}-Team Dev Rule Pack`,
+    leagueTemplate: {
+      ...pack.leagueTemplate!,
+      id: `dev-league-${size}`,
+      name: `${size}-Team Dev League`,
+      description: `Dev-only ${size}-team fictional rule-set smoke pack.`,
+      rules,
+      teamCount: rules.teamCount,
+      scheduleLength: rules.gamesPerTeam,
+      playoffTeamCount: rules.playoffTeamCount,
+      playoffSeriesLength: rules.playoffSeriesLength,
+      draftRounds: rules.draftRounds,
+      capCeiling: rules.capCeiling,
+      capFloor: rules.capFloor,
+      teams: pack.leagueTemplate!.teams.slice(0, size),
+      rulesPreset: createLeagueRulesPreset(`dev-${size}`, `${size}-Team Dev`, size)
+    }
+  }).pack;
 }

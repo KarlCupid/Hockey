@@ -268,11 +268,21 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     id: "system-custom-league-lab",
     title: "Custom League Lab",
     category: "basics",
-    summary: "Create local fictional leagues, scenarios, rosters, draft classes, and data packs.",
+    summary: "Create local fictional leagues, rule sets, scenarios, rosters, draft classes, and data packs.",
     body:
-      "Phase 9 adds a Custom League Lab for local-only fictional content. Data packs are JSON files you can validate, repair, import, export, and start from. The current full-dynasty custom start supports 12-team fictional leagues; other sizes are flagged until broader lifecycle support is added. The real-world content filter catches obvious restricted terms but is not a legal guarantee.",
+      "Custom League Lab works with local-only fictional content. Data packs are JSON files you can validate, repair, import, export, and start from. Phase 10 supports full-dynasty custom starts for 8-, 10-, 12-, and 16-team leagues with supported schedule, playoff, draft, cap, roster, and affiliate rule presets. Unsupported combinations are rejected or repaired with clear reasons. The real-world content filter catches obvious restricted terms but is not a legal guarantee.",
     relatedRoomIds: ["saves", "devTools", "gm"],
     relatedActions: ["customLeague", "dataPack", "scenarioStart"]
+  },
+  {
+    id: "system-custom-rules",
+    title: "Custom league rules",
+    category: "seasonLifecycle",
+    summary: "Rule sets control league size, schedule, playoffs, draft, cap, roster limits, and affiliates.",
+    body:
+      "Supported custom rule sets are intentionally bounded so the dynasty loop remains stable. Choose 8, 10, 12, or 16 teams, then select a supported schedule length, playoff format, playoff series length, draft rounds, draft class size, cap ceiling/floor, active roster limits, and affiliate setting. Validation explains unsupported formats before a franchise can start.",
+    relatedRoomIds: ["saves", "standings", "scouting"],
+    relatedActions: ["customLeague", "dataPack", "advancePhase"]
   }
 ];
 

@@ -23,11 +23,11 @@ npm run build
 
 - Vite + React + TypeScript app
 - React Three Fiber third-person operations hub with WASD movement
-- Fictional 12-team league with 22-game regular season per team
+- Fictional league rules with 8-, 10-, 12-, and 16-team custom dynasty support
 - Fictional rosters, player morale, form, fatigue, injuries, stats, and roles
 - Structured contracts, salary cap, draft pick inventories, and tradeable pick assets
 - Trade War Room with player/pick proposal building, cap validation, need fit, and AI accept/reject feedback
-- Scouting Department with a 72-player fictional draft class, assignments, watchlist, fuzzy reports, and certainty growth
+- Scouting Department with fictional draft classes sized by league rules, assignments, watchlist, fuzzy reports, and certainty growth
 - Development Office with player development plans, progress ticks, workload risk, and small attribute growth
 - Phase 3 dynasty lifecycle with playoffs, champion history, draft execution, prospect pools, re-signing, free agency, staff hiring, owner goals, retirements, aging, and new-season generation
 - Phase 4 beta hardening with dynasty invariant checks, deterministic multi-season playtests, balance reporting, save integrity repair, settings/help, fictional branding, and panel-level code splitting
@@ -36,6 +36,7 @@ npm run build
 - Phase 7 game-feel layer with setup wizard, GM profile/background traits, difficulty, game modes, story frequency, narrative templates, Assistant GM reports, action queue, room badges, and broader playtest tuning
 - Phase 8 release-candidate UX with guided tutorial, Learn the Game guide, achievements, milestones, generated local audio, accessibility controls, local telemetry, bug-report export, broadcast polish, and smoke tests
 - Phase 9 replayability tools with Custom League Lab, local fictional data packs, scenario starts, team creator, roster/player editor helpers, draft class editor helpers, data-pack validation/repair, and JSON import/export
+- Phase 10 custom rules support with generalized league sizes, schedule generation, playoff formats, draft rounds/class sizing, Data Pack v2 validation, and multi-season custom dry runs
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -156,17 +157,29 @@ Schema version 7 hydrates older saves with tutorial state, achievements, milesto
 Phase 9 makes the fictional dynasty more replayable without adding backend services or real hockey content:
 
 - Start screen now includes `Custom League Lab` alongside New Franchise, Continue, and Load Franchise.
-- Create and edit local fictional 12-team league packs with custom cities, nicknames, abbreviations, colors, generated crests, jersey concepts, arena names, affiliates, market size, owner patience, fan confidence, and roster strategy.
+- Create and edit local fictional league packs with custom cities, nicknames, abbreviations, colors, generated crests, jersey concepts, arena names, affiliates, market size, owner patience, fan confidence, and roster strategy.
 - Edit fictional roster/player definitions and draft-class packs through typed helpers and validation.
 - Start from built-in fictional scenarios such as Rebuild on the Clock, Cap Crunch, Prospect Pipeline, Goalie Crisis, Playoff Push, Injury Storm, Draft Capital Empire, Rivalry Revenge, and Chaos Room.
 - Import/export data packs as local JSON only. Imported packs are stored locally in IndexedDB/localForage and never sent to a server.
 - Validate and repair packs before use. Validation checks schema shape, fictional-only flag, duplicate IDs, colors, abbreviations, positions, rating bounds, contracts, cap/rules feasibility, draft-class depth, scenario references, JSON serializability, and obvious restricted real-world hockey terms.
 - The real-world content filter is intentionally basic. It catches obvious terms such as NHL, National Hockey League, Stanley Cup, several club names, and a small famous-player blocklist, but it is not a legal guarantee.
-- Full dynasty compatibility currently prioritizes 12-team custom leagues. Experimental 8-, 10-, and 16-team templates are flagged/rejected for franchise starts until standings, playoffs, tuning, and long-run balance are broadened.
+
+## Phase 10 Generalized League Rules And Data Pack v2
+
+Phase 10 broadens Phase 9 custom starts into full-dynasty fictional league rules:
+
+- Supported full-dynasty custom league sizes are 8, 10, 12, and 16 teams.
+- Rule sets define schedule format, games per team, playoff team count, playoff format, playoff series format, draft rounds, draft class size, cap ceiling/floor, active roster limits, affiliates, trade deadline day, and season start date.
+- Supported playoff formats include top 4, top 6 with byes, top 8, and top 10 with play-in where the league size allows it.
+- Schedule generation validates team IDs, self-games, day indices, games per team, home/away balance warnings, and repeated matchup warnings.
+- Draft execution now uses the active rule set for rounds, lottery size, order length, traded-pick ownership, draft class sizing, and history.
+- Data Pack v2 validation repairs missing rule sets, fills supported team counts where safe, flags unsupported 14-team style packs, validates draft and playoff combinations, and keeps the real-world term scan in place.
+- Custom League Lab adds a Rules tab for team count, schedule/playoff/draft/cap/roster/affiliate settings, validation, and repair to the nearest supported format.
+- Schema version 8 hydrates older saves by adding a default 12-team rule set when missing.
 
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, and data packs are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, data packs, and custom rule presets are simplified fictional prototype systems.
 
 ## Controls
 
@@ -184,4 +197,4 @@ This prototype intentionally avoids backend services, authentication, real hocke
 
 ## Save Data
 
-Saves and imported data packs are local-only through IndexedDB/localForage. There are three manual save slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, local bug-report export, and Data Pack Library access. Older saves hydrate to schema version 7 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, owner goal outcome history, and optional custom data-pack metadata.
+Saves and imported data packs are local-only through IndexedDB/localForage. There are three manual save slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, local bug-report export, and Data Pack Library access. Older saves hydrate to schema version 8 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, owner goal outcome history, optional custom data-pack metadata, and league rule sets.

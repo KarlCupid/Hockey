@@ -34,6 +34,7 @@ import { createPlayerMeeting } from "../game/systems/playerMeetings";
 import { createPressConference } from "../game/systems/pressConferences";
 import { getPlayerRelationship } from "../game/systems/relationships";
 import { exportSaveToJson, importSaveFromJson } from "../game/systems/saves";
+import { SCHEMA_VERSION } from "../game/constants";
 import type { DecisionEvent, FranchiseState, GMBackground, NarrativeTemplate, Player, Team } from "../game/types";
 
 describe("Phase 7 difficulty and game modes", () => {
@@ -76,7 +77,7 @@ describe("Phase 7 difficulty and game modes", () => {
   it("start presets produce valid franchise state", () => {
     const franchise = createFranchise("harbor-city", { seed: "phase7-preset", startPreset: "capCrunched", difficulty: "demanding" });
 
-    expect(franchise.schemaVersion).toBe(7);
+    expect(franchise.schemaVersion).toBe(SCHEMA_VERSION);
     expect(franchise.gmProfile.difficulty).toBe("demanding");
     expect(franchise.league.teams.find((team) => team.id === franchise.selectedTeamId)?.capCeiling).toBeLessThan(96_000_000);
   });
@@ -326,7 +327,7 @@ describe("Phase 7 save migration and playtest reports", () => {
     delete legacy.narrativeTemplateVersion;
     const restored = importSaveFromJson(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(7);
+    expect(restored.schemaVersion).toBe(SCHEMA_VERSION);
     expect(restored.gmProfile.difficulty).toBe("standard");
     expect(restored.assistantGmReports.length).toBeGreaterThan(0);
 
@@ -347,7 +348,7 @@ describe("Phase 7 save migration and playtest reports", () => {
     const report = runDynastyPlaytest("phase7-serialize-playtest", 1, "harbor-city", { storyFrequency: "normal" });
 
     expect(roundtrip.gmProfile.displayName).toBe("Morgan Vale");
-    expect(JSON.parse(exportSaveToJson(report.finalFranchise)).schemaVersion).toBe(7);
+    expect(JSON.parse(exportSaveToJson(report.finalFranchise)).schemaVersion).toBe(SCHEMA_VERSION);
   });
 
   it("five-season standard/normal playtest has zero fatal invariant errors and Assistant GM recommendations", () => {

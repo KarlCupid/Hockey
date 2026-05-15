@@ -40,11 +40,13 @@ const PERSONALITIES: Personality[] = [
 
 export function generateDraftClass(seed = "phase-two-draft-class", count = 72): Prospect[] {
   const rng = new SeededRng(seed);
-  const prospects = Array.from({ length: count }, (_, index) => createProspect(index, rng));
+  const cleanedSeed = cleanId(seed);
+  const idPrefix = `${cleanedSeed.slice(0, 24) || "draft"}-${hashSeed(seed)}`;
+  const prospects = Array.from({ length: count }, (_, index) => createProspect(index, rng, idPrefix));
   return prospects.sort((a, b) => a.publicRank - b.publicRank);
 }
 
-function createProspect(index: number, rng: SeededRng): Prospect {
+function createProspect(index: number, rng: SeededRng, idPrefix: string): Prospect {
   const rank = index + 1;
   const position = pickPosition(index, rng);
   const { firstName, lastName, displayName } = generateDisplayName(rng);
@@ -57,7 +59,7 @@ function createProspect(index: number, rng: SeededRng): Prospect {
   const certainty = clamp(rng.int(18, 42) + (risk === "Low" ? 6 : 0) - (risk === "Boom/Bust" ? 5 : 0), 10, 58);
 
   return {
-    id: `prospect-${rank}-${firstName.toLowerCase()}-${lastName.toLowerCase()}`,
+    id: `prospect-${idPrefix}-${rank}-${firstName.toLowerCase()}-${lastName.toLowerCase()}`,
     firstName,
     lastName,
     displayName,
@@ -86,6 +88,19 @@ function createProspect(index: number, rng: SeededRng): Prospect {
       scoutNotes: [`Public lists have ${displayName} near pick ${rank}.`]
     }
   };
+}
+
+function cleanId(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+function hashSeed(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
 }
 
 function pickPosition(index: number, rng: SeededRng): Position {

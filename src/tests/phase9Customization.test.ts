@@ -12,6 +12,7 @@ import {
   createDataPackFromCurrentLeague,
   createDefaultDataPack,
   createDefaultLeagueTemplate,
+  createLeagueRulesPreset,
   exportDataPackJson,
   importDataPackJson,
   repairDataPack,
@@ -27,6 +28,7 @@ import { simulatePlayoffsUntil } from "../game/systems/playoffs";
 import { autoCompleteDraft } from "../game/systems/draftExecution";
 import { advanceFreeAgencyDay } from "../game/systems/freeAgency";
 import { repairAllTeamRosters } from "../game/systems/aiRosterManagement";
+import { createRuleSetForTeamCount } from "../game/systems/leagueRules";
 import { createDefaultEditorTeam, hasSafeGeneratedBranding, validateEditorTeam } from "../components/editors/TeamCreator";
 import {
   autoBalanceCustomRoster,
@@ -80,27 +82,52 @@ describe("Phase 9 data-pack validation and safety", () => {
     expect(validateDataPack(realWorldPack).realWorldContentFlags).toEqual(expect.arrayContaining(["NHL", "Maple Leafs"]));
   });
 
-  it("roundtrips data-pack JSON and rejects unsupported team counts honestly", () => {
+  it("roundtrips data-pack JSON and validates supported custom team counts honestly", () => {
     const pack = createDefaultDataPack();
     const imported = importDataPackJson(exportDataPackJson(pack));
     expect(imported.report.valid).toBe(true);
     expect(imported.pack?.name).toBe(pack.name);
 
     const template = createDefaultLeagueTemplate();
-    const experimental: DataPack = {
+    const eightTeamRules = createRuleSetForTeamCount(8);
+    const supported: DataPack = {
       ...pack,
       leagueTemplate: {
         ...template,
         id: "experimental-8",
         name: "Experimental 8",
-        teamCount: 8,
+        rules: eightTeamRules,
+        teamCount: eightTeamRules.teamCount,
+        scheduleLength: eightTeamRules.gamesPerTeam,
+        playoffTeamCount: eightTeamRules.playoffTeamCount,
+        playoffSeriesLength: eightTeamRules.playoffSeriesLength,
+        draftRounds: eightTeamRules.draftRounds,
+        capCeiling: eightTeamRules.capCeiling,
+        capFloor: eightTeamRules.capFloor,
         teams: template.teams.slice(0, 8),
-        rulesPreset: { ...template.rulesPreset, teamCount: 8 }
+        rulesPreset: createLeagueRulesPreset("fictional-8-test", "Fictional 8 Test", 8)
       }
     };
-    const report = validateDataPack(experimental);
-    expect(report.valid).toBe(false);
-    expect([...report.errors, ...report.balanceWarnings].join(" ")).toContain("12-team");
+    const supportedReport = validateDataPack(supported);
+    expect(supportedReport.valid, supportedReport.errors.join("; ")).toBe(true);
+    expect(supportedReport.supported).toBe(true);
+
+    const unsupported: DataPack = {
+      ...pack,
+      leagueTemplate: {
+        ...template,
+        id: "experimental-14",
+        name: "Experimental 14",
+        teamCount: 14,
+        teams: template.teams,
+        rules: undefined,
+        rulesPreset: { ...template.rulesPreset, teamCount: 14 }
+      }
+    };
+    const unsupportedReport = validateDataPack(unsupported);
+    expect(unsupportedReport.valid).toBe(false);
+    expect(unsupportedReport.supported).toBe(false);
+    expect([...unsupportedReport.errors, ...unsupportedReport.unsupportedReasons].join(" ")).toContain("8, 10, 12, or 16");
   });
 });
 
@@ -288,15 +315,29 @@ describe("Phase 9 acceptance checklist spot checks", () => {
     expect(validateDataPack(duplicate).duplicateIdWarnings.length).toBeGreaterThan(0);
   });
 
-  it("rejects unsupported custom team counts for dynasty starts", () => {
+  it("starts supported custom team counts and rejects unsupported dynasty counts", () => {
     const pack = createDefaultDataPack();
+    const eightTeamRules = createRuleSetForTeamCount(8);
+    const eightTeamLeague = generateLeagueFromTemplate({
+      ...pack.leagueTemplate!,
+      rules: eightTeamRules,
+      teamCount: eightTeamRules.teamCount,
+      scheduleLength: eightTeamRules.gamesPerTeam,
+      playoffTeamCount: eightTeamRules.playoffTeamCount,
+      playoffSeriesLength: eightTeamRules.playoffSeriesLength,
+      draftRounds: eightTeamRules.draftRounds,
+      teams: pack.leagueTemplate!.teams.slice(0, 8),
+      rulesPreset: createLeagueRulesPreset("fictional-8-spot", "Fictional 8 Spot", 8)
+    });
+    expect(eightTeamLeague.teams).toHaveLength(8);
     expect(() =>
       generateLeagueFromTemplate({
         ...pack.leagueTemplate!,
-        teamCount: 8,
-        teams: pack.leagueTemplate!.teams.slice(0, 8)
+        teamCount: 14,
+        rules: undefined,
+        teams: pack.leagueTemplate!.teams
       })
-    ).toThrow(/12 fictional teams/);
+    ).toThrow(/8, 10, 12, or 16/);
   });
 
   it("validates a custom team branding preview source", () => {

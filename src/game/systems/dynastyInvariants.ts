@@ -1,8 +1,11 @@
 import { SCHEMA_VERSION } from "../constants";
+import { validateSchedule as validateGeneratedSchedule } from "../generators/generateSchedule";
 import { autoFillBestLineup, validateLineup } from "./lineupValidation";
 import { calculateActiveRosterCapHit, calculateAffiliateCommitments, calculateTeamCapHit } from "./contracts";
 import { getPlayerRosterStatus, validateRosterForGame } from "./rosterRules";
 import { TUNING } from "./tuning";
+import { normalizeLeagueRuleSet, validateLeagueRuleSet } from "./leagueRules";
+import { validatePlayoffState as validatePlayoffStateRules } from "./playoffs";
 import type { DraftSelection, FranchiseState, Player, SeasonPhase, StaffMember, Team } from "../types";
 
 export interface DynastyInvariantIssue {
@@ -55,8 +58,13 @@ export function validateDynastyInvariants(franchise: FranchiseState): DynastyInv
     warnings.push(issue("schema.version", `Save schema is v${franchise.schemaVersion}; current runtime hydrates to v${SCHEMA_VERSION}.`, "schemaVersion"));
   }
 
-  if (teams.length !== TUNING.dynasty.requiredTeams) {
-    errors.push(issue("league.teamCount", `Expected exactly ${TUNING.dynasty.requiredTeams} teams, found ${teams.length}.`, "league.teams"));
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  const ruleReport = validateLeagueRuleSet(franchise.league.ruleSet ?? { teamCount: teams.length });
+  if (!ruleReport.supported) {
+    errors.push(...ruleReport.errors.map((message) => issue("league.rulesUnsupported", message, "league.ruleSet")));
+  }
+  if (teams.length !== ruleSet.teamCount) {
+    errors.push(issue("league.teamCount", `Rule set expects ${ruleSet.teamCount} teams, found ${teams.length}.`, "league.teams"));
   }
 
   teams.forEach((team, teamIndex) => {
@@ -216,14 +224,24 @@ function validateStandings(team: Team, teamPath: string, errors: DynastyInvarian
 }
 
 function validateSchedule(franchise: FranchiseState, teamIds: Set<string>, errors: DynastyInvariantIssue[]) {
+  const report = validateGeneratedSchedule(franchise.league.schedule, franchise.league.teams, normalizeLeagueRuleSet(franchise.league.ruleSet));
+  report.errors.forEach((message) => errors.push(issue("schedule.ruleValidation", message, "league.schedule")));
   franchise.league.schedule.forEach((game, index) => {
     if (!teamIds.has(game.homeTeamId) || !teamIds.has(game.awayTeamId)) {
       errors.push(issue("schedule.invalidTeam", `Schedule game ${game.id} references invalid teams.`, `league.schedule[${index}]`));
+    }
+    if (game.homeTeamId === game.awayTeamId) {
+      errors.push(issue("schedule.selfGame", `Schedule game ${game.id} has a team playing itself.`, `league.schedule[${index}]`));
     }
   });
 }
 
 function validatePlayoffs(franchise: FranchiseState, teamIds: Set<string>, errors: DynastyInvariantIssue[]) {
+  if (franchise.playoffState) {
+    validatePlayoffStateRules(franchise.playoffState, franchise.league).forEach((message) => {
+      errors.push(issue("playoffs.ruleValidation", message, "playoffState"));
+    });
+  }
   franchise.playoffState?.bracket.forEach((series, seriesIndex) => {
     [series.homeSeedTeamId, series.awaySeedTeamId, series.winnerTeamId].filter(Boolean).forEach((teamId) => {
       if (!teamIds.has(teamId!)) errors.push(issue("playoffs.invalidSeriesTeam", `Playoff series ${series.id} references invalid team ${teamId}.`, `playoffState.bracket[${seriesIndex}]`));

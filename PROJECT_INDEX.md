@@ -40,7 +40,7 @@ npm run build
 - `src/game/rng.ts`: seeded deterministic RNG helpers
 - `src/game/generators/generateLeague.ts`: franchise and league creation
 - `src/game/generators/generatePlayers.ts`: fictional roster generation
-- `src/game/generators/generateSchedule.ts`: 22-game round-robin schedule
+- `src/game/generators/generateSchedule.ts`: generalized deterministic schedules for supported 8/10/12/16 team rule sets
 - `src/game/systems/lineupValidation.ts`: lineup validation, duplicate/injury checks, auto-fill, chemistry
 - `src/game/systems/tactics.ts`: tactic labels, descriptions, presets, and tactic identity summaries
 - `src/game/systems/standings.ts`: record and standings updates
@@ -84,9 +84,10 @@ npm run build
 - `src/game/systems/accessibility.ts`: keyboard shortcut registry, contrast/scale helpers, reduced-motion/flash checks, and settings summary
 - `src/game/systems/localTelemetry.ts`: capped local-only telemetry event buffer and summaries
 - `src/game/systems/bugReport.ts`: local bug-report and diagnostic summary generation
-- `src/game/systems/dataPacks.ts`: Phase 9 local fictional data-pack creation, export/import wrappers, current-league export, default league templates, and summaries
-- `src/game/systems/dataPackValidation.ts`: Phase 9 schema/safety validation, repair, real-world term flags, duplicate checks, league/rules balance checks, and JSON serializability guards
-- `src/game/generators/generateCustomLeague.ts`: Phase 9 custom 12-team league generation, roster strategy generation, rules application, and custom franchise creation from data packs
+- `src/game/systems/leagueRules.ts`: Phase 10 supported league-size presets, schedule/playoff/draft/cap/roster rule normalization, descriptions, warnings, and validation
+- `src/game/systems/dataPacks.ts`: Phase 9/10 local fictional data-pack creation, export/import wrappers, current-league export, default league templates, rule presets, and summaries
+- `src/game/systems/dataPackValidation.ts`: Phase 9/10 schema/safety validation, Data Pack v2 repair, real-world term flags, duplicate checks, league/rules balance checks, and JSON serializability guards
+- `src/game/generators/generateCustomLeague.ts`: Phase 9/10 custom league generation for supported 8/10/12/16 team starts, roster strategy generation, rules application, and custom franchise creation from data packs
 - `src/game/content/scenarioTemplates.ts`: Phase 9 built-in fictional scenario starts
 - `src/game/systems/scenarios.ts`: Phase 9 scenario validation helpers, scenario data-pack creation, and modifier application for cap, injuries, morale, owner/fan pressure, contracts, picks, prospects, and story seeds
 - `src/game/content/fictionalCities.ts`, `src/game/content/teamNamePools.ts`, `src/game/content/arenaNames.ts`, `src/game/content/rivalryFlavor.ts`: expanded fictional content pools for custom league creation and safety scans
@@ -107,8 +108,8 @@ npm run build
 - `src/game/systems/scouting.ts`: scouting assignments, certainty ticks, visible prospect reports, watchlist, and draft-board ordering
 - `src/game/systems/development.ts`: development plan assignment, progress ticks, attribute growth, veteran decline, and workload risk
 - `src/game/systems/seasonLifecycle.ts`: Phase 3 phase advancement, regular-season completion, offseason progression, new season setup, and dynasty validation
-- `src/game/systems/playoffs.ts`: top-eight best-of-five playoff bracket, game/series/round resolution, champion handling, and playoff news
-- `src/game/systems/draftExecution.ts`: draft lottery/order, traded-pick ownership, user/AI selections, draft grades, and draft history
+- `src/game/systems/playoffs.ts`: generalized top4, top6-with-byes, top8, and top10-play-in playoff brackets, game/series/round resolution, champion handling, and playoff news
+- `src/game/systems/draftExecution.ts`: rule-set aware draft lottery/order, traded-pick ownership, user/AI selections, draft grades, and draft history
 - `src/game/systems/prospects.ts`: prospect rights, pipeline summaries, and entry-contract prospect signing
 - `src/game/systems/contractNegotiation.ts`: simplified re-signing demands, offer evaluation, accepted contracts, UFA release, and RFA retention
 - `src/game/systems/freeAgency.ts`: seven-day fictional free-agent market, user offers, AI signings, and market news
@@ -116,7 +117,7 @@ npm run build
 - `src/game/systems/owner.ts`: owner goals, job security, goal progress, and owner evaluation messages
 - `src/game/systems/playerLifecycle.ts`: aging, contract decrement, retirements, recovery, season-stat archive/reset, and offseason progression/regression
 - `src/game/systems/history.ts`: season history, champions, awards, and franchise timeline helpers
-- `src/game/generators/generateDraftClass.ts`: fictional 72-player draft-class generation
+- `src/game/generators/generateDraftClass.ts`: fictional draft-class generation sized by active league rules
 - `src/game/assets/teamBranding.ts`: fictional team color, crest, jersey, arena mood, lower-third, and personality registry
 - `src/game/assets/jerseyTemplates.ts`: generated home/away/alternate jersey swatch data
 - `src/game/assets/portraitRegistry.ts`: deterministic fictional player portrait keys and visual variants
@@ -174,11 +175,11 @@ npm run build
 - `src/components/branding/TeamBrandCard.tsx`: team-selection and brand display card
 - `src/components/branding/PlayerPortrait.tsx`: deterministic fictional player portrait placeholders
 - `src/components/branding/BroadcastPackage.tsx`: branded scorebug and lower-third components
-- `src/components/editors/DataPackLibrary.tsx`: Phase 9 Custom League Lab for working packs, teams, rosters, draft classes, scenarios, validation, local import/export, and starting a custom franchise
+- `src/components/editors/DataPackLibrary.tsx`: Phase 9/10 Custom League Lab for working packs, Rules tab, teams, rosters, draft classes, scenarios, validation/repair, local import/export, and starting a custom franchise
 - `src/components/editors/TeamCreator.tsx`: Phase 9 fictional team creator and validation helpers
 - `src/components/editors/ColorPickerField.tsx`, `src/components/editors/CrestShapePicker.tsx`, `src/components/editors/JerseyPatternPicker.tsx`, `src/components/editors/TeamPreviewCard.tsx`: Phase 9 branding controls and generated preview components
 - `src/components/editors/RosterEditor.tsx`, `src/components/editors/PlayerEditor.tsx`: Phase 9 fictional roster/player editor helpers and compact editor rows
-- `src/components/editors/DraftClassEditor.tsx`: Phase 9 draft-class editor helpers, rank repair, class balancing, and table editor
+- `src/components/editors/DraftClassEditor.tsx`: Phase 9/10 draft-class editor helpers, rule-set minimum previews, rank repair, class balancing, and table editor
 - `src/components/rooms/DataPackLibraryPanel.tsx`: Phase 9 room wrapper for the Custom League Lab/Data Pack Library
 - `src/components/ui`: Phase 4 reusable button, card, section header, table, dialog, empty state, warning callout, progress bar, tabs, and filter bar primitives
 
@@ -205,6 +206,7 @@ npm run build
 - `src/tests/phase7GameFeel.test.ts`: Phase 7 coverage for difficulty/game modes, GM traits, narrative templates, cadence drift, Assistant GM, action queue, save migration, and five-season pressure/story playtests
 - `src/tests/phase8ReleaseCandidate.test.ts`: Phase 8 coverage for tutorial, guide, achievements, milestones, audio, broadcast, accessibility, telemetry, bug reports, fan/owner reporting, save roundtrip, invariants, and mini smoke playtest
 - `src/tests/phase9Customization.test.ts`: Phase 9 coverage for data-pack validation/repair, real-world term flags, custom league generation, scenario modifiers, editor helpers, local data-pack store, save/bug-report metadata, content safety, and a two-season custom mini playtest
+- `src/tests/phase10LeagueRules.test.ts`: Phase 10 coverage for league-rule presets, generalized schedules, playoff formats, draft sizing/traded picks, custom franchise generation, data-pack repair, schema 7 hydration, bug-report rule summaries, Rules tab helpers, and custom two-season dry runs
 
 ## Styles
 
@@ -218,8 +220,8 @@ npm run build
 - `PLAN.md`: implementation milestones
 - `IMPLEMENTATION_LOG.md`: decisions, verification, and known limitations
 - `PROJECT_INDEX.md`: this navigation index
-- `PLAYTEST_REPORT.md`: deterministic Phase 4, Phase 5, Phase 6, and Phase 7 playtest and balance report summary
-- `RELEASE_NOTES.md`: Phase 8 release-candidate playtest notes, run instructions, known limitations, and safety/licensing notes
+- `PLAYTEST_REPORT.md`: deterministic Phase 4 through Phase 10 playtest and balance report summary
+- `RELEASE_NOTES.md`: Phase 10 playtest notes, run instructions, known limitations, and safety/licensing notes
 
 ## Current Playable Flow
 
@@ -243,7 +245,7 @@ npm run build
 18. Track local achievements and franchise milestones in the GM Office and Trophy Hall.
 19. Export local diagnostics or a bug report from the Save Desk when playtesting.
 20. Validate, repair, export, import, save locally, and load later from the Save Desk.
-21. Or open `Custom League Lab` from the start screen to edit a fictional local data pack, validate it, and start a custom 12-team league or scenario.
+21. Or open `Custom League Lab` from the start screen to edit a fictional local data pack, validate rules, and start a supported 8-, 10-, 12-, or 16-team custom league or scenario.
 
 ## Useful Change Targets
 
@@ -254,7 +256,7 @@ npm run build
 - Add living-ops behavior: start with `relationships.ts`, `decisionEvents.ts`, or `storyArcs.ts`, preserve repeat-key dedupe/event caps, then expose the result through the appropriate room panel.
 - Add Phase 7 guidance/content behavior: start with `difficulty.ts`, `gmProfile.ts`, `livingOpsTuning.ts`, `assistantGm.ts`, `actionQueue.ts`, or `narrativeTemplateEngine.ts`, then expose it through GM Office, TopBar, Operations Map, Settings, Help, or Dev Tools.
 - Add Phase 8 onboarding/polish behavior: start with `tutorial.ts`, `guide.ts`, `achievements.ts`, `milestones.ts`, `broadcastStory.ts`, `accessibility.ts`, `localTelemetry.ts`, or `bugReport.ts`, then expose it through AppShell, Help, GM Office, Trophy Hall, Save Desk, Settings, or Game Result Center.
-- Add Phase 9 customization behavior: start with `dataPackValidation.ts`, `dataPacks.ts`, `generateCustomLeague.ts`, or `scenarios.ts`, then expose it through `DataPackLibrary.tsx`, Save Desk, Dev Tools, GM Office metadata, and tests.
+- Add Phase 9/10 customization behavior: start with `leagueRules.ts`, `dataPackValidation.ts`, `dataPacks.ts`, `generateCustomLeague.ts`, `generateSchedule.ts`, `playoffs.ts`, `draftExecution.ts`, or `scenarios.ts`, then expose it through `DataPackLibrary.tsx`, Save Desk, Dev Tools, GM Office metadata, and tests.
 - Add roster behavior: start with `src/game/systems/rosterRules.ts`, `src/game/systems/rosterManagement.ts`, and `src/game/systems/aiRosterManagement.ts`, then update `RosterOfficePanel.tsx` and affected transaction/signing flows.
 - Add dynasty-phase behavior: start in `src/game/systems/seasonLifecycle.ts`, keep the phase transition serializable, then expose a small store action and phase-aware GM Office control.
 - Add save metadata: update `src/game/systems/saves.ts` and `SaveLoadPanel.tsx`.
@@ -272,5 +274,6 @@ npm run build
 - Phase 7 includes simplified difficulty/game-mode settings, GM profile/background traits, Assistant GM reports, narrative templates, event-cadence tuning, franchise setup options, and broader playtest tuning.
 - Phase 8 includes tutorial/onboarding, Learn the Game guide content, achievements/milestones, local/generated audio, accessibility improvements, local telemetry, bug-report export, release-candidate smoke tests, fan sentiment sampling, owner goal reporting, and presentation polish.
 - Phase 9 includes local custom league creation, fictional data packs, scenario starts, team creator, roster/player editor helpers, draft class editor helpers, generated branding previews, local JSON import/export, and validation/repair.
-- Phase 9 full-dynasty custom starts currently prioritize 12-team leagues; unsupported league sizes must be clearly rejected or documented until broader systems are adapted.
+- Phase 10 includes generalized fictional league rules, supported 8/10/12/16 team custom starts, custom schedule/playoff/draft formats, cap/roster rule presets, Data Pack v2 validation/repair, and custom multi-season dry runs.
+- Unsupported custom rule combinations must be clearly rejected or documented with user-facing repair guidance.
 - Waivers, buyouts, retained salary, contract clauses, arbitration, offer sheets, online play, backend/cloud saves, real branding, and playable on-ice hockey remain out of scope.

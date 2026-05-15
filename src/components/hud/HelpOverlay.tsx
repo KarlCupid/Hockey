@@ -51,6 +51,10 @@ export function HelpOverlay() {
               <p>Local achievements and franchise milestones celebrate first wins, trades, draft picks, playoff moments, and dynasty progress.</p>
             </article>
             <article>
+              <h3>Custom Rules</h3>
+              <p>Custom League Lab supports validated 8-, 10-, 12-, and 16-team fictional rule sets with supported schedule, playoff, draft, cap, roster, and affiliate settings.</p>
+            </article>
+            <article>
               <h3>Audio</h3>
               <p>Audio uses local generated Web Audio cues only. It starts after a user gesture, respects volume settings, and fails quietly if unavailable.</p>
             </article>

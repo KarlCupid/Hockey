@@ -21,10 +21,12 @@ import { createDefaultTutorialState } from "../systems/tutorial";
 import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
 import { generateDraftClass } from "./generateDraftClass";
 import { generateRoster } from "./generatePlayers";
-import { generateSchedule } from "./generateSchedule";
+import { generateScheduleForRuleSet, validateSchedule } from "./generateSchedule";
+import { createDefaultRuleSet } from "../systems/leagueRules";
 
 export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueState {
   const rng = new SeededRng(seed);
+  const ruleSet = createDefaultRuleSet();
   const teams: Team[] = FICTIONAL_TEAMS.map((entry, index) => {
     const [id, city, nickname, abbreviation, primaryColor, secondaryColor, marketSize, teamPersonality] = entry;
     const roster = generateRoster(id, index, rng);
@@ -49,22 +51,22 @@ export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueSta
       tactics: { ...DEFAULT_TACTICS },
       record: emptyRecord(),
       stats: emptyTeamStats(),
-      capCeiling: SALARY_CAP_CEILING,
-      capFloor: SALARY_CAP_FLOOR,
+      capCeiling: ruleSet.capCeiling,
+      capFloor: ruleSet.capFloor,
       draftPicks: [],
       tradeBlock: [],
       untouchables: [],
       teamNeeds: [],
       affiliate: undefined as never,
       rosterMoveLog: [],
-      activeRosterLimit: ACTIVE_ROSTER_LIMIT,
-      activeRosterMinimum: ACTIVE_ROSTER_MINIMUM
+      activeRosterLimit: ruleSet.activeRosterMax,
+      activeRosterMinimum: ruleSet.activeRosterMin
     };
     team.affiliate = generateAffiliateForTeam(team);
     team.lines = autoFillBestLineup(team).lineup;
     return autoSetInitialRosterStatuses(team);
   });
-  const picks = generateInitialDraftPicks(teams, 2026);
+  const picks = generateInitialDraftPicks(teams, 2026, ruleSet.draftRounds);
   const teamsWithFrontOffice = teams.map((team) => {
     const withPicks = {
       ...team,
@@ -79,13 +81,16 @@ export function generateLeague(seed = "franchise-ice-vertical-slice"): LeagueSta
     };
   });
 
+  const schedule = generateScheduleForRuleSet(teamsWithFrontOffice, ruleSet, seed);
   return {
     id: `league-${seed}`,
     seasonYear: 2026,
     currentDayIndex: 0,
     currentDate: START_DATE,
     teams: teamsWithFrontOffice,
-    schedule: generateSchedule(teamsWithFrontOffice),
+    schedule,
+    ruleSet,
+    scheduleReport: validateSchedule(schedule, teamsWithFrontOffice, ruleSet),
     recentResults: [],
     completed: false
   };
@@ -111,7 +116,7 @@ export function createFranchise(
     createdAt: now
   });
   const difficultyTuning = createDifficultyTuning(gmProfile.difficulty, gmProfile.gameMode, gmProfile.storyFrequency);
-  const draftClass = applyStartPresetToDraftClass(generateDraftClass(`${seed}-draft`), options.startPreset ?? "balanced");
+  const draftClass = applyStartPresetToDraftClass(generateDraftClass(`${seed}-draft`, league.ruleSet.draftClassSize), options.startPreset ?? "balanced");
   const staffState = generateStaffForLeague(league.teams, new SeededRng(`${seed}-staff`));
   const prospectPools = Object.fromEntries(league.teams.map((team) => [team.id, []]));
   const base: FranchiseState = {

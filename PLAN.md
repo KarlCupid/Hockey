@@ -120,3 +120,14 @@
 - Integrate custom league/scenario metadata into saves, bug reports, GM Office, Trophy Hall, achievements, guide/help content, Dev Tools, and playtest coverage.
 - Document the supported custom-league range honestly: full dynasty compatibility prioritizes 12-team packs while unsupported league sizes are validated and rejected until broader lifecycle support is added.
 - Keep all content fictional-only and keep waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online, real branding, professional audio, and playable on-ice hockey out of scope.
+
+## Milestone 16: Phase 10 Generalized League Rules, Custom League Sizes, Schedule/Playoff Engine, and Data Pack v2
+
+- Add typed LeagueRuleSet presets for supported 8-, 10-, 12-, and 16-team fictional dynasty starts.
+- Generalize schedule generation, validation, playoff seeding/brackets/play-in, and draft rounds/class sizing around the active rule set.
+- Add Data Pack v2 validation/repair for missing rule sets, unsupported team counts, unsupported playoff/schedule/draft combinations, draft-class depth, scenario compatibility, and real-world term flags.
+- Expand Custom League Lab with a Rules tab for team count, schedule, playoff, draft, cap, roster, affiliate, validation, and repair controls.
+- Integrate custom rule summaries into saves, bug reports, TopBar, standings/playoff picture, owner goals, Assistant GM context, and guide/help content.
+- Add schema version 8 hydration so older saves and old data packs receive a safe default 12-team rule set when missing.
+- Add Phase 10 tests and smoke coverage for custom league generation, first-game simulation, save/export/import, two-season dry runs, and unsupported-rule rejection.
+- Keep all content fictional-only, local-only, serializable, and out of backend/cloud/online, real branding, waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, and playable on-ice hockey.

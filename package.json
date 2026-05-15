@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run --config vitest.config.ts",
-    "test:smoke": "vitest run --config vitest.config.ts src/tests/phase8ReleaseCandidate.test.ts src/tests/phase9Customization.test.ts",
+    "test:smoke": "vitest run --config vitest.config.ts src/tests/phase8ReleaseCandidate.test.ts src/tests/phase9Customization.test.ts src/tests/phase10LeagueRules.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

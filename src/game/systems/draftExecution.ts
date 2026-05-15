@@ -1,5 +1,5 @@
-import { DRAFT_PICK_ROUNDS } from "../constants";
 import { SeededRng } from "../rng";
+import { normalizeLeagueRuleSet } from "./leagueRules";
 import { sortStandings } from "./standings";
 import { convertProspectToRights } from "./prospects";
 import type {
@@ -15,16 +15,19 @@ import type {
 } from "../types";
 
 export function createDraftOrder(franchise: FranchiseState): DraftState {
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const contexts = buildPickContexts(franchise, baseOriginalTeamOrder(franchise));
-  const state = toDraftState(franchise.league.seasonYear, contexts, []);
+  const state = toDraftState(franchise.league.seasonYear, contexts, [], ruleSet);
   return { ...state, userPickPending: state.draftOrder[0] === franchise.selectedTeamId };
 }
 
 export function resolveDraftLottery(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-lottery-${franchise.league.seasonYear}`)): DraftState {
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const base = baseOriginalTeamOrder(franchise);
-  const topFour = shuffle(base.slice(0, 4), rng);
-  const contexts = buildPickContexts(franchise, [...topFour, ...base.slice(4)]);
-  const state = toDraftState(franchise.league.seasonYear, contexts, franchise.offseasonState?.draftState?.selections ?? []);
+  const lotteryTeams = ruleSet.draftFormat.lotteryTeams;
+  const lotteryOrder = shuffle(base.slice(0, lotteryTeams), rng);
+  const contexts = buildPickContexts(franchise, [...lotteryOrder, ...base.slice(lotteryTeams)]);
+  const state = toDraftState(franchise.league.seasonYear, contexts, franchise.offseasonState?.draftState?.selections ?? [], ruleSet);
   return { ...state, userPickPending: state.draftOrder[state.selections.length] === franchise.selectedTeamId };
 }
 
@@ -63,7 +66,7 @@ export function makeAiDraftSelection(franchise: FranchiseState, teamId: string, 
 export function autoDraftUntilUserPick(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-auto-draft`)): FranchiseState {
   let next = franchise;
   let safety = 0;
-  while (safety < 80) {
+  while (safety < ensureDraftState(next).draftOrder.length + 5) {
     const state = ensureDraftState(next);
     const pick = getCurrentPick(state, next);
     if (!pick || state.completed || pick.ownerTeamId === next.selectedTeamId) break;
@@ -76,7 +79,7 @@ export function autoDraftUntilUserPick(franchise: FranchiseState, rng = new Seed
 export function autoCompleteDraft(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-complete-draft`)): FranchiseState {
   let next = franchise;
   let safety = 0;
-  while (safety < 100) {
+  while (safety < ensureDraftState(next).draftOrder.length + 5) {
     const state = ensureDraftState(next);
     const pick = getCurrentPick(state, next);
     if (!pick || state.completed) break;
@@ -171,11 +174,12 @@ function makeSelection(franchise: FranchiseState, pick: DraftPickContext, prospe
   const selections = [...state.selections, selection];
   const completed = selections.length >= state.draftOrder.length;
   const nextIndex = selections.length;
-  const nextRound = Math.min(DRAFT_PICK_ROUNDS, Math.floor(nextIndex / franchise.league.teams.length) + 1);
+  const draftRounds = state.draftRounds ?? normalizeLeagueRuleSet(franchise.league.ruleSet).draftRounds;
+  const nextRound = Math.min(draftRounds, Math.floor(nextIndex / franchise.league.teams.length) + 1);
   const nextState: DraftState = {
     ...state,
     selections,
-    round: completed ? DRAFT_PICK_ROUNDS : nextRound,
+    round: completed ? draftRounds : nextRound,
     pickNumber: Math.min(state.draftOrder.length, nextIndex + 1),
     userPickPending: !completed && state.draftOrder[nextIndex] === franchise.selectedTeamId,
     completed
@@ -219,25 +223,29 @@ function ensureDraftState(franchise: FranchiseState): DraftState {
   return franchise.offseasonState?.draftState ?? createDraftOrder(franchise);
 }
 
-function toDraftState(year: number, contexts: DraftPickContext[], selections: DraftSelection[]): DraftState {
+function toDraftState(year: number, contexts: DraftPickContext[], selections: DraftSelection[], ruleSet = normalizeLeagueRuleSet()): DraftState {
   const completed = selections.length >= contexts.length;
   const next = contexts[selections.length];
   return {
     year,
-    round: next?.round ?? DRAFT_PICK_ROUNDS,
+    round: next?.round ?? ruleSet.draftRounds,
     pickNumber: next?.pickNumber ?? contexts.length,
     draftOrder: contexts.map((context) => context.ownerTeamId),
     pickContexts: contexts,
     selections,
     userPickPending: false,
-    completed
+    completed,
+    draftRounds: ruleSet.draftRounds,
+    draftClassSize: ruleSet.draftClassSize,
+    leagueRuleSetId: ruleSet.id
   };
 }
 
 function buildPickContexts(franchise: FranchiseState, originalTeamOrder: string[]): DraftPickContext[] {
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const allPicks = franchise.league.teams.flatMap((team) => team.draftPicks.filter((pick) => pick.seasonYear === franchise.league.seasonYear));
   const contexts: DraftPickContext[] = [];
-  for (let round = 1; round <= DRAFT_PICK_ROUNDS; round += 1) {
+  for (let round = 1; round <= ruleSet.draftRounds; round += 1) {
     originalTeamOrder.forEach((originalTeamId) => {
       const pick = allPicks.find((candidate) => candidate.round === round && candidate.originalTeamId === originalTeamId);
       if (pick) contexts.push(contextForPick(pick, contexts.length + 1));
@@ -260,7 +268,8 @@ function contextForPick(pick: DraftPick, pickNumber: number): DraftPickContext {
 
 function baseOriginalTeamOrder(franchise: FranchiseState): string[] {
   const standings = sortStandings(franchise.league.teams);
-  const playoffIds = new Set(franchise.playoffState?.qualifiedTeamIds ?? standings.slice(0, 8).map((team) => team.id));
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  const playoffIds = new Set(franchise.playoffState?.qualifiedTeamIds ?? standings.slice(0, ruleSet.playoffTeamCount).map((team) => team.id));
   const nonPlayoff = franchise.league.teams
     .filter((team) => !playoffIds.has(team.id))
     .sort(worstFirst)
@@ -270,6 +279,21 @@ function baseOriginalTeamOrder(franchise: FranchiseState): string[] {
     .sort(playoffPickSort(franchise))
     .map((team) => team.id);
   return [...nonPlayoff, ...playoff];
+}
+
+export function validateDraftState(draftState: DraftState, franchise: FranchiseState): string[] {
+  const messages: string[] = [];
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  const expectedPicks = franchise.league.teams.length * ruleSet.draftRounds;
+  if (draftState.draftOrder.length !== expectedPicks) messages.push(`Draft order has ${draftState.draftOrder.length} picks; expected ${expectedPicks}.`);
+  if ((draftState.draftRounds ?? ruleSet.draftRounds) !== ruleSet.draftRounds) messages.push("Draft state rounds do not match league rules.");
+  if ((draftState.draftClassSize ?? ruleSet.draftClassSize) < expectedPicks) messages.push("Draft class size is smaller than the draft order.");
+  const selectedProspects = new Set<string>();
+  draftState.selections.forEach((selection) => {
+    if (selectedProspects.has(selection.prospectId)) messages.push(`Duplicate drafted prospect: ${selection.prospectName}.`);
+    selectedProspects.add(selection.prospectId);
+  });
+  return messages;
 }
 
 function originalOrderFromDraftState(franchise: FranchiseState, _state: DraftState): string[] {

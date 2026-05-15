@@ -7,6 +7,7 @@ import { getPhaseLabel, getRecommendedNextAction } from "../../game/systems/phas
 import { validateRosterForGame } from "../../game/systems/rosterRules";
 import { getUrgentActionCount } from "../../game/systems/actionQueue";
 import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
+import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
 import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -35,6 +36,7 @@ export function TopBar() {
   if (!franchise) return null;
 
   const team = selectedTeam(franchise);
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
   const opponent = upcomingOpponent(franchise);
   const playoffGame = getCurrentUserPlayoffGame(franchise);
   const playoffOpponent = playoffGame ? franchise.league.teams.find((candidate) => candidate.id === (playoffGame.homeTeamId === team.id ? playoffGame.awayTeamId : playoffGame.homeTeamId)) : undefined;
@@ -52,7 +54,7 @@ export function TopBar() {
       <div className="top-bar__meta">
         <strong>{recordLabel(team)}</strong>
         <span>{franchise.league.currentDate}</span>
-        <span>{getPhaseLabel(franchise.seasonPhase)} | Game {Math.min(22, team.stats.gamesPlayed + 1)}/22</span>
+        <span>{getPhaseLabel(franchise.seasonPhase)} | Game {Math.min(ruleSet.gamesPerTeam, team.stats.gamesPlayed + 1)}/{ruleSet.gamesPerTeam}</span>
         <span>{getGameModeLabel(franchise.gmProfile.gameMode)} | {getDifficultyLabel(franchise.gmProfile.difficulty)} | {franchise.gmProfile.storyFrequency}</span>
         {franchise.customLeagueName && <span>{franchise.customLeagueName}{franchise.dataPackMetadata?.scenarioName ? ` | ${franchise.dataPackMetadata.scenarioName}` : ""}</span>}
       </div>

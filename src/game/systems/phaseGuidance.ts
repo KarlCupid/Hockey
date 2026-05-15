@@ -1,6 +1,7 @@
 import { getCurrentPick } from "./draftExecution";
 import { getPendingExpiringPlayers } from "./contractNegotiation";
 import { getNextBestAction } from "./actionQueue";
+import { normalizeLeagueRuleSet } from "./leagueRules";
 import { validateRosterForGame } from "./rosterRules";
 import { nextGameForTeam } from "../simulation/simulateGame";
 import type { FranchiseState, SeasonPhase } from "../types";
@@ -28,8 +29,8 @@ const PHASE_LABELS: Record<SeasonPhase, string> = {
 };
 
 const PHASE_DESCRIPTIONS: Record<SeasonPhase, string> = {
-  regularSeason: "Play the schedule, manage fatigue, tune lines, and bank enough points for the top-eight playoff line.",
-  playoffs: "Best-of-five series decide the champion. Every sim can swing the bracket and the franchise story.",
+  regularSeason: "Play the schedule, manage fatigue, tune lines, and bank enough points for the playoff line.",
+  playoffs: "Custom playoff series decide the champion. Every sim can swing the bracket and the franchise story.",
   seasonReview: "Archive the season, evaluate owner goals, and turn the year into history before the offseason opens.",
   retirements: "Veterans age, contracts tick down, recoveries process, and retirement decisions clear space on the board.",
   draftLottery: "The bottom clubs and traded picks settle the top of the draft order before the room goes on the clock.",
@@ -47,6 +48,13 @@ export function getPhaseLabel(phase: SeasonPhase): string {
 }
 
 export function getPhaseDescription(franchise: FranchiseState): string {
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  if (franchise.seasonPhase === "regularSeason") {
+    return `Play the ${ruleSet.gamesPerTeam}-game schedule, manage fatigue, tune lines, and bank enough points for the top-${ruleSet.playoffTeamCount} playoff line.`;
+  }
+  if (franchise.seasonPhase === "playoffs") {
+    return `${seriesLabel(ruleSet.playoffSeriesFormat)} series decide the champion in a ${ruleSet.playoffTeamCount}-team ${ruleSet.playoffFormat} bracket.`;
+  }
   return PHASE_DESCRIPTIONS[franchise.seasonPhase];
 }
 
@@ -133,7 +141,8 @@ export function getPhaseChecklist(franchise: FranchiseState): PhaseChecklistItem
 
 export function getAdvancePreview(franchise: FranchiseState, action = "advance"): string {
   const phase = franchise.seasonPhase;
-  if (phase === "regularSeason") return franchise.league.completed ? "Creates the top-eight playoff bracket." : "No phase advance is available until the schedule is complete.";
+  const ruleSet = normalizeLeagueRuleSet(franchise.league.ruleSet);
+  if (phase === "regularSeason") return franchise.league.completed ? `Creates the top-${ruleSet.playoffTeamCount} playoff bracket.` : "No phase advance is available until the schedule is complete.";
   if (phase === "playoffs") return franchise.playoffState?.completed ? "Moves the champion into season review." : "The bracket must crown a champion first.";
   if (phase === "seasonReview") return "Archives history, awards, champion notes, and owner evaluation.";
   if (phase === "retirements") return "Ages players, decrements contracts, recovers injuries/fatigue, and runs retirements.";
@@ -144,6 +153,13 @@ export function getAdvancePreview(franchise: FranchiseState, action = "advance")
   if (phase === "staffHiring") return "Locks current staff and opens training camp.";
   if (phase === "trainingCamp" || phase === "preseason") return "Resets stats, schedule, fatigue, owner goals, draft class, and starts the next season.";
   return "No further automatic changes.";
+}
+
+function seriesLabel(format: string): string {
+  if (format === "singleGame") return "Single-game";
+  if (format === "bestOf3") return "Best-of-3";
+  if (format === "bestOf7") return "Best-of-7";
+  return "Best-of-5";
 }
 
 export function getDangerWarnings(franchise: FranchiseState, action = "advance"): string[] {

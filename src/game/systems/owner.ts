@@ -1,4 +1,5 @@
 import { calculateCapSpace } from "./contracts";
+import { normalizeLeagueRuleSet } from "./leagueRules";
 import { sortStandings } from "./standings";
 import { SeededRng, clamp } from "../rng";
 import type { FranchiseState, NewsItem, OwnerGoal, OwnerState } from "../types";
@@ -8,10 +9,11 @@ export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRn
   const gameMode = franchise.gmProfile?.gameMode ?? "standardDynasty";
   const previous = franchise.history?.seasons?.[0];
   const standings = sortStandings(franchise.league.teams);
+  const playoffLine = normalizeLeagueRuleSet(franchise.league.ruleSet).playoffTeamCount;
   const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
   const averageOverall = team.roster.reduce((sum, player) => sum + player.overall, 0) / Math.max(1, team.roster.length);
-  const rebuilding = rank > 8 || averageOverall < 72 || team.record.points < Math.max(8, team.stats.gamesPlayed * 0.85);
-  const contender = rank > 0 && rank <= 4 && averageOverall >= 74;
+  const rebuilding = rank > playoffLine || averageOverall < 72 || team.record.points < Math.max(8, team.stats.gamesPlayed * 0.85);
+  const contender = rank > 0 && rank <= Math.max(2, Math.floor(playoffLine / 2)) && averageOverall >= 74;
   const performance: OwnerGoal[] = [
     {
       id: `goal-${franchise.league.seasonYear}-make-playoffs`,
@@ -117,10 +119,11 @@ export function generateOwnerGoals(franchise: FranchiseState, rng = new SeededRn
 export function updateOwnerGoalProgress(franchise: FranchiseState): OwnerState {
   const standings = sortStandings(franchise.league.teams);
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
+  const playoffLine = normalizeLeagueRuleSet(franchise.league.ruleSet).playoffTeamCount;
   const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
   const goals = franchise.ownerState.seasonGoals.map((goal) => {
     let progress = goal.progress;
-    if (goal.type === "makePlayoffs") progress = rank > 0 && rank <= 8 ? 1 : 0;
+    if (goal.type === "makePlayoffs") progress = rank > 0 && rank <= playoffLine ? 1 : 0;
     if (goal.type === "improveRecord") progress = team.record.points;
     if (goal.type === "stayUnderCap") progress = Math.max(0, calculateCapSpace(team));
     if (goal.type === "buildThroughDraft") {
@@ -164,6 +167,7 @@ export function evaluateJobSecurity(franchise: FranchiseState): OwnerState {
   const owner = updateOwnerGoalProgress(franchise);
   const standings = sortStandings(franchise.league.teams);
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
+  const playoffLine = normalizeLeagueRuleSet(franchise.league.ruleSet).playoffTeamCount;
   const rank = standings.findIndex((candidate) => candidate.id === team.id) + 1;
   const pointsPace = team.stats.gamesPlayed ? team.record.points / team.stats.gamesPlayed : 1;
   const rawDelta = owner.seasonGoals.reduce((sum, goal) => {
@@ -171,7 +175,7 @@ export function evaluateJobSecurity(franchise: FranchiseState): OwnerState {
     if (goal.status === "met") return sum + weight;
     if (goal.status === "failed") return sum - weight;
     return sum - Math.round(weight * 0.35);
-  }, rank > 0 && rank <= 4 ? 8 : rank > 0 && rank <= 8 ? 5 : pointsPace >= 1 ? 2 : -3);
+  }, rank > 0 && rank <= Math.max(2, Math.floor(playoffLine / 2)) ? 8 : rank > 0 && rank <= playoffLine ? 5 : pointsPace >= 1 ? 2 : -3);
   const volatility = franchise.difficultyTuning?.jobSecurityVolatility ?? 1;
   const patienceMultiplier = franchise.difficultyTuning?.ownerPatienceMultiplier ?? 1;
   const modeFloor = franchise.gmProfile?.gameMode === "sandbox" ? 35 : 0;

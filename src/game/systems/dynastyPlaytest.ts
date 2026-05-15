@@ -18,6 +18,7 @@ import { createStoryArcDecisionEvent, updateStoryArcs } from "./storyArcs";
 import { generateAssistantGmReport } from "./assistantGm";
 import { getUrgentActionCount } from "./actionQueue";
 import { createOwnerGoalReport } from "./ownerGoalReporting";
+import { getRuleSetDescription } from "./leagueRules";
 import {
   applyMediaPressureDrift,
   applyNaturalSentimentDecay,
@@ -29,6 +30,9 @@ import type { ContractOffer, FranchiseSetupOptions, FranchiseState } from "../ty
 export interface PlaytestReport {
   seed: string;
   seasonsCompleted: number;
+  ruleSetSummary: string;
+  playoffFormatUsed: string;
+  customScheduleWarnings: string[];
   warnings: string[];
   errors: string[];
   championHistory: string[];
@@ -231,6 +235,11 @@ export function runDynastyPlaytest(
   return {
     seed,
     seasonsCompleted: seasons,
+    ruleSetSummary: getRuleSetDescription(franchise.league.ruleSet),
+    playoffFormatUsed: franchise.league.ruleSet.playoffFormat,
+    customScheduleWarnings: franchise.league.scheduleReport
+      ? [...franchise.league.scheduleReport.homeAwayBalanceWarnings, ...franchise.league.scheduleReport.duplicateMatchupWarnings]
+      : [],
     warnings,
     errors,
     championHistory: franchise.history.champions.map((champion) => `${champion.seasonYear}: ${champion.teamName}`),

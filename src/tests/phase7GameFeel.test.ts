@@ -76,7 +76,7 @@ describe("Phase 7 difficulty and game modes", () => {
   it("start presets produce valid franchise state", () => {
     const franchise = createFranchise("harbor-city", { seed: "phase7-preset", startPreset: "capCrunched", difficulty: "demanding" });
 
-    expect(franchise.schemaVersion).toBe(6);
+    expect(franchise.schemaVersion).toBe(7);
     expect(franchise.gmProfile.difficulty).toBe("demanding");
     expect(franchise.league.teams.find((team) => team.id === franchise.selectedTeamId)?.capCeiling).toBeLessThan(96_000_000);
   });
@@ -317,7 +317,7 @@ describe("Phase 7 Assistant GM and action queue", () => {
 });
 
 describe("Phase 7 save migration and playtest reports", () => {
-  it("hydrates schema 5 saves to schema 6 and repairs missing or invalid GM fields", () => {
+  it("hydrates schema 5 saves to schema 7 and repairs missing or invalid GM fields", () => {
     const legacy = createFranchise("harbor-city", "phase7-legacy") as unknown as Partial<FranchiseState> & Record<string, unknown>;
     legacy.schemaVersion = 5;
     delete legacy.gmProfile;
@@ -326,7 +326,7 @@ describe("Phase 7 save migration and playtest reports", () => {
     delete legacy.narrativeTemplateVersion;
     const restored = importSaveFromJson(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(6);
+    expect(restored.schemaVersion).toBe(7);
     expect(restored.gmProfile.difficulty).toBe("standard");
     expect(restored.assistantGmReports.length).toBeGreaterThan(0);
 
@@ -347,7 +347,7 @@ describe("Phase 7 save migration and playtest reports", () => {
     const report = runDynastyPlaytest("phase7-serialize-playtest", 1, "harbor-city", { storyFrequency: "normal" });
 
     expect(roundtrip.gmProfile.displayName).toBe("Morgan Vale");
-    expect(JSON.parse(exportSaveToJson(report.finalFranchise)).schemaVersion).toBe(6);
+    expect(JSON.parse(exportSaveToJson(report.finalFranchise)).schemaVersion).toBe(7);
   });
 
   it("five-season standard/normal playtest has zero fatal invariant errors and Assistant GM recommendations", () => {

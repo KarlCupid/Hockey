@@ -17,6 +17,7 @@ This index is the quick map for navigating the `Franchise Ice` prototype on GitH
 npm install
 npm run dev
 npm test
+npm run test:smoke
 npm run build
 ```
 
@@ -25,10 +26,11 @@ npm run build
 - `index.html`: Vite HTML entry
 - `src/main.tsx`: React root mount
 - `src/app/App.tsx`: start screen, load screen, Phase 7 new-franchise setup wizard
-- `src/app/AppShell.tsx`: main facility shell, room modal routing, global controls
-- `src/store/franchiseStore.ts`: franchise state, save/load, lineup/tactics mutations, simulation application
+- `src/app/AppShell.tsx`: main facility shell, room modal routing, global controls, Phase 8 tutorial/hints/audio/shortcut wiring
+- `src/store/franchiseStore.ts`: franchise state, save/load, lineup/tactics mutations, simulation application, tutorial, telemetry, achievements, and bug-report export actions
 - `src/store/uiStore.ts`: active room and nearby room UI state
-- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, guide reset token, Phase 6 story-event preferences, and Phase 7 Assistant GM/badge/cadence settings
+- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, guide reset token, Phase 6 story-event preferences, Phase 7 Assistant GM/badge/cadence settings, and Phase 8 audio/accessibility/tutorial/telemetry settings
+- `src/store/audioStore.ts`: generated Web Audio engine wrapper and safe cue playback state
 
 ## Core Game Systems
 
@@ -70,6 +72,19 @@ npm run build
 - `src/game/systems/actionQueue.ts`: Phase 7 master action queue, urgent count, next-best action, and room badge generation
 - `src/game/systems/narrativeTemplateEngine.ts`: Phase 7 template rendering, deterministic selection, decision/news creation, validation, and franchise context extraction
 - `src/game/content/narrativeTemplates.ts`: Phase 7 fictional template library for press, owner, agent, player, team, media/fan, rivalry, playoff, draft, free agency, trade, development, and affiliate beats
+- `src/game/systems/tutorial.ts`: Phase 8 guided tutorial state, step completion/dismissal/reset, contextual hints, and hint gating
+- `src/game/content/guideTopics.ts`: Phase 8 Learn the Game codex content for major rooms and systems
+- `src/game/systems/guide.ts`: guide search, room/action lookup, starter topics, and coverage validation
+- `src/game/systems/achievements.ts`: local-only achievement registry, unlock/progress evaluation, and summary helpers
+- `src/game/systems/milestones.ts`: franchise milestone timeline creation/evaluation and recent milestone helpers
+- `src/game/audio/audioCues.ts`: generated/local-safe audio cue registry
+- `src/game/audio/audioEngine.ts`: Web Audio oscillator/noise cue engine with safe no-op fallback
+- `src/game/systems/broadcastStory.ts`: broadcast intro, turning point, narrative beats, three-stars presentation, fan reaction, and media prompt helpers
+- `src/game/systems/accessibility.ts`: keyboard shortcut registry, contrast/scale helpers, reduced-motion/flash checks, and settings summary
+- `src/game/systems/localTelemetry.ts`: capped local-only telemetry event buffer and summaries
+- `src/game/systems/bugReport.ts`: local bug-report and diagnostic summary generation
+- `src/game/systems/fanSentimentBalance.ts`: targeted fan sentiment scenario sampling for playtest tuning
+- `src/game/systems/ownerGoalReporting.ts`: owner goal outcome capture before refresh and completion reports
 - `src/game/systems/storyEngine.ts`: story event creation, inbox dedupe, low-priority grouping, phase stories, and milestone stories
 - `src/game/systems/relationships.ts`: Phase 6 player relationships, generated agents, team dynamics, trust/chemistry/media bands, and relationship notes
 - `src/game/systems/decisionEvents.ts`: Phase 6 decision-event generation, dedupe/caps, room filtering, resolution, expiry, and news follow-up
@@ -112,6 +127,10 @@ npm run build
 - `src/components/hud/OperationsMap.tsx`: facility map, room-directory fallback navigation, and Phase 7 room badges
 - `src/components/hud/ModalShell.tsx`: modal shell for facility room panels
 - `src/components/hud/HelpOverlay.tsx`: keyboard controls, room guide, phase guide, sim modes, front-office basics, and save/load help
+- `src/components/hud/GuideOverlay.tsx`: searchable Learn the Game guide/codex surface
+- `src/components/hud/TutorialOverlay.tsx`: dismissible guided tutorial progress card
+- `src/components/hud/ContextualHint.tsx`: room-aware tutorial hints
+- `src/components/hud/AudioController.tsx`: unlocks generated audio after user gesture and wires UI cue feedback
 - `src/components/hud/ErrorBoundary.tsx`: runtime fallback around lazy room and 3D surfaces
 - `src/components/hud/LoadingPanel.tsx`: Suspense fallback for lazy-loaded panels and facility
 - `src/components/hud/PlayerCard.tsx`: detailed player card
@@ -137,12 +156,12 @@ npm run build
 - `src/components/rooms/OwnerSuitePanel.tsx`: Phase 6 owner trust, goals, meetings, demand level, expectations, and response options
 - `src/components/rooms/AgentDeskPanel.tsx`: Phase 6 agent list, client pressure, active agent calls, and negotiation impact notes
 - `src/components/rooms/PlayerMeetingPanel.tsx`: Phase 6 players needing attention, team dynamics, player meetings, and team meetings
-- `src/components/rooms/SettingsPanel.tsx`: reduced motion/detail, broadcast speed, autosave, confirmation, difficulty/story display, Assistant GM, room badge, consequence preview, density, scale, sound placeholder, and guide reset settings
+- `src/components/rooms/SettingsPanel.tsx`: reduced motion/detail, reduce flashes, high contrast, larger text, keyboard hints, audio volumes, tutorial mode/reset, telemetry, autosave, confirmation, difficulty/story display, Assistant GM, room badges, consequence preview, density, scale, and guide reset settings
 - `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, narrative template, Assistant GM, action queue, cadence, and dry-run reporting tools
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
-- `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, consequences, and filtered event feed
-- `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary
-- `src/components/rooms/SaveLoadPanel.tsx`: autosave/manual slot UI
+- `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, broadcast beats, turning point, fan/media reaction, consequences, and filtered event feed
+- `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary, achievements, and franchise milestones
+- `src/components/rooms/SaveLoadPanel.tsx`: autosave/manual slot UI, save repair/export/import, diagnostic summary, and bug-report export
 - `src/components/branding/TeamCrest.tsx`: fictional generated SVG crests
 - `src/components/branding/JerseySwatch.tsx`: generated jersey concept cards
 - `src/components/branding/TeamBrandCard.tsx`: team-selection and brand display card
@@ -171,6 +190,7 @@ npm run build
 - `src/tests/phase5RosterEcosystem.test.ts`: Phase 5 coverage for roster statuses, cap treatment, roster moves, affiliates, AI repair, training camp, save migration, balance, and five-season dry runs
 - `src/tests/phase6LivingOps.test.ts`: Phase 6 coverage for relationships, agents, team dynamics, decision events, story arcs, press/owner/player/agent meetings, integrations, save migration, and five-season story stress
 - `src/tests/phase7GameFeel.test.ts`: Phase 7 coverage for difficulty/game modes, GM traits, narrative templates, cadence drift, Assistant GM, action queue, save migration, and five-season pressure/story playtests
+- `src/tests/phase8ReleaseCandidate.test.ts`: Phase 8 coverage for tutorial, guide, achievements, milestones, audio, broadcast, accessibility, telemetry, bug reports, fan/owner reporting, save roundtrip, invariants, and mini smoke playtest
 
 ## Styles
 
@@ -185,6 +205,7 @@ npm run build
 - `IMPLEMENTATION_LOG.md`: decisions, verification, and known limitations
 - `PROJECT_INDEX.md`: this navigation index
 - `PLAYTEST_REPORT.md`: deterministic Phase 4, Phase 5, Phase 6, and Phase 7 playtest and balance report summary
+- `RELEASE_NOTES.md`: Phase 8 release-candidate playtest notes, run instructions, known limitations, and safety/licensing notes
 
 ## Current Playable Flow
 
@@ -205,7 +226,9 @@ npm run build
 15. Review score, events, box score, three stars, injuries, coach notes, and generated press/player/owner/agent fallout.
 16. Check standings/news/player status/front-office changes.
 17. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp roster setup, and start the next season with AI roster repair.
-18. Validate, repair, export, import, save locally, and load later from the Save Desk.
+18. Track local achievements and franchise milestones in the GM Office and Trophy Hall.
+19. Export local diagnostics or a bug report from the Save Desk when playtesting.
+20. Validate, repair, export, import, save locally, and load later from the Save Desk.
 
 ## Useful Change Targets
 
@@ -215,6 +238,7 @@ npm run build
 - Add front-office behavior: start with a pure helper in `src/game/systems`, then wire it through `src/store/franchiseStore.ts` and room panels.
 - Add living-ops behavior: start with `relationships.ts`, `decisionEvents.ts`, or `storyArcs.ts`, preserve repeat-key dedupe/event caps, then expose the result through the appropriate room panel.
 - Add Phase 7 guidance/content behavior: start with `difficulty.ts`, `gmProfile.ts`, `livingOpsTuning.ts`, `assistantGm.ts`, `actionQueue.ts`, or `narrativeTemplateEngine.ts`, then expose it through GM Office, TopBar, Operations Map, Settings, Help, or Dev Tools.
+- Add Phase 8 onboarding/polish behavior: start with `tutorial.ts`, `guide.ts`, `achievements.ts`, `milestones.ts`, `broadcastStory.ts`, `accessibility.ts`, `localTelemetry.ts`, or `bugReport.ts`, then expose it through AppShell, Help, GM Office, Trophy Hall, Save Desk, Settings, or Game Result Center.
 - Add roster behavior: start with `src/game/systems/rosterRules.ts`, `src/game/systems/rosterManagement.ts`, and `src/game/systems/aiRosterManagement.ts`, then update `RosterOfficePanel.tsx` and affected transaction/signing flows.
 - Add dynasty-phase behavior: start in `src/game/systems/seasonLifecycle.ts`, keep the phase transition serializable, then expose a small store action and phase-aware GM Office control.
 - Add save metadata: update `src/game/systems/saves.ts` and `SaveLoadPanel.tsx`.
@@ -230,4 +254,5 @@ npm run build
 - Phase 5 includes a simplified roster ecosystem with active roster, scratches, affiliate roster, injured reserve, prospect pipeline, call-ups/send-downs, AI roster repair, training camp setup, and affiliate development.
 - Phase 6 includes fictional press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, media/fan/owner sentiment, story arcs, and decision events.
 - Phase 7 includes simplified difficulty/game-mode settings, GM profile/background traits, Assistant GM reports, narrative templates, event-cadence tuning, franchise setup options, and broader playtest tuning.
+- Phase 8 includes tutorial/onboarding, Learn the Game guide content, achievements/milestones, local/generated audio, accessibility improvements, local telemetry, bug-report export, release-candidate smoke tests, fan sentiment sampling, owner goal reporting, and presentation polish.
 - Waivers, buyouts, retained salary, contract clauses, arbitration, offer sheets, online play, backend/cloud saves, real branding, and playable on-ice hockey remain out of scope.

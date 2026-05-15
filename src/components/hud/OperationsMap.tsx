@@ -34,7 +34,7 @@ export function OperationsMap() {
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const setOpen = useUiStore((state) => state.setOperationsMapOpen);
   const franchise = useFranchiseStore((state) => state.franchise);
-  const roomBadgesEnabled = useSettingsStore((state) => state.settings.roomBadgesEnabled);
+  const roomBadgesEnabled = useSettingsStore((state) => state.settings.showRoomBadges);
   const badges = franchise && roomBadgesEnabled ? getRoomBadges(franchise) : undefined;
 
   if (!open) {

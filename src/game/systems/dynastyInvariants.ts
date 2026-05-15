@@ -85,6 +85,7 @@ export function validateDynastyInvariants(franchise: FranchiseState): DynastyInv
   validateStaff(franchise, errors, warnings);
   validateHistory(franchise, errors, warnings);
   validateLivingOps(franchise, teamIds, playerIds, errors, warnings);
+  validateReleaseCandidateState(franchise, teamIds, errors, warnings);
   validatePhase(franchise, errors, warnings);
   validateJsonSerializable(franchise, errors);
 
@@ -102,6 +103,24 @@ export function validateDynastyInvariants(franchise: FranchiseState): DynastyInv
       schemaVersion: franchise.schemaVersion
     }
   };
+}
+
+function validateReleaseCandidateState(franchise: FranchiseState, teamIds: Set<string>, errors: DynastyInvariantIssue[], warnings: DynastyInvariantIssue[]) {
+  if (!franchise.tutorialState) warnings.push(issue("phase8.tutorialMissing", "Tutorial state is missing.", "tutorialState"));
+  if (!Array.isArray(franchise.achievements)) warnings.push(issue("phase8.achievementsMissing", "Achievements are missing.", "achievements"));
+  if (!Array.isArray(franchise.milestones)) warnings.push(issue("phase8.milestonesMissing", "Franchise milestones are missing.", "milestones"));
+  if (!Array.isArray(franchise.localTelemetry)) warnings.push(issue("phase8.telemetryMissing", "Local telemetry is missing.", "localTelemetry"));
+  if ((franchise.localTelemetry ?? []).length > 150) warnings.push(issue("phase8.telemetryCap", "Local telemetry exceeds the release-candidate cap.", "localTelemetry"));
+
+  const achievementIds = new Set<string>();
+  (franchise.achievements ?? []).forEach((achievement, index) => {
+    if (achievementIds.has(achievement.id)) errors.push(issue("phase8.achievementDuplicate", `Duplicate achievement id ${achievement.id}.`, `achievements[${index}]`));
+    achievementIds.add(achievement.id);
+  });
+
+  (franchise.milestones ?? []).forEach((milestone, index) => {
+    if (!teamIds.has(milestone.teamId)) warnings.push(issue("phase8.milestoneTeam", `Milestone references missing team ${milestone.teamId}.`, `milestones[${index}]`));
+  });
 }
 
 export function getInvariantMessages(report: DynastyInvariantReport): string[] {

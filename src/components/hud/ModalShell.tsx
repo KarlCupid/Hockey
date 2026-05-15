@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 export function ModalShell({ title, subtitle, children, onClose }: { title: string; subtitle?: string; children: ReactNode; onClose: () => void }) {
   return (
     <div className="modal-backdrop">
-      <section className="ops-panel" role="dialog" aria-modal="true" aria-label={title}>
+      <section className="ops-panel" id="active-room-panel" role="dialog" aria-modal="true" aria-label={title}>
         <header className="ops-panel__header">
           <div>
             <h2>{title}</h2>

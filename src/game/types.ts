@@ -60,6 +60,154 @@ export type RoomId =
   | "settings"
   | "devTools";
 
+export interface TutorialStep {
+  id: string;
+  title: string;
+  body: string;
+  roomId?: RoomId;
+  targetAction?: string;
+  completed: boolean;
+  optional: boolean;
+  category:
+    | "movement"
+    | "gmOffice"
+    | "roster"
+    | "lineup"
+    | "simulation"
+    | "frontOffice"
+    | "dynasty"
+    | "livingOps"
+    | "saveLoad";
+}
+
+export interface TutorialState {
+  active: boolean;
+  mode: "firstFranchise" | "guided" | "off";
+  currentStepId?: string;
+  completedStepIds: string[];
+  dismissedStepIds: string[];
+  lastHintAt?: string;
+}
+
+export interface GuideTopic {
+  id: string;
+  title: string;
+  category:
+    | "basics"
+    | "rooms"
+    | "roster"
+    | "contracts"
+    | "trades"
+    | "scouting"
+    | "development"
+    | "seasonLifecycle"
+    | "livingOps"
+    | "settings";
+  summary: string;
+  body: string;
+  relatedRoomIds: RoomId[];
+  relatedActions: string[];
+}
+
+export interface Achievement {
+  id: string;
+  label: string;
+  description: string;
+  category:
+    | "team"
+    | "roster"
+    | "trade"
+    | "draft"
+    | "development"
+    | "playoffs"
+    | "dynasty"
+    | "livingOps"
+    | "management";
+  unlockedAt?: string;
+  progress: number;
+  target: number;
+  hidden?: boolean;
+  rewardText?: string;
+}
+
+export interface FranchiseMilestone {
+  id: string;
+  date: string;
+  seasonYear: number;
+  type:
+    | "firstWin"
+    | "firstTrade"
+    | "firstDraftPick"
+    | "firstPlayoffBerth"
+    | "championship"
+    | "prospectBreakout"
+    | "starReSigned"
+    | "rivalryWin"
+    | "ownerGoalMet"
+    | "majorStoryResolved"
+    | "seasonCompleted"
+    | "newSeasonStarted";
+  headline: string;
+  body: string;
+  teamId: string;
+  playerIds?: string[];
+  relatedEventId?: string;
+  importance: "minor" | "major" | "historic";
+}
+
+export interface AudioCue {
+  id: string;
+  type:
+    | "ui"
+    | "notification"
+    | "goal"
+    | "finalHorn"
+    | "trade"
+    | "draftPick"
+    | "achievement"
+    | "warning"
+    | "roomAmbience"
+    | "broadcast";
+  enabled: boolean;
+  volume: number;
+  reducedMotionSafe: boolean;
+}
+
+export interface LocalTelemetryEvent {
+  id: string;
+  timestamp: string;
+  type:
+    | "roomOpened"
+    | "gameSimulated"
+    | "phaseAdvanced"
+    | "saveLoaded"
+    | "saveRepaired"
+    | "tutorialStepCompleted"
+    | "achievementUnlocked"
+    | "errorBoundary"
+    | "decisionResolved"
+    | "rosterMove";
+  label: string;
+  details?: Record<string, string | number | boolean>;
+}
+
+export interface BugReport {
+  id: string;
+  createdAt: string;
+  appVersion: string;
+  schemaVersion: number;
+  currentPhase: SeasonPhase;
+  selectedTeamId: string;
+  lastRoom?: RoomId;
+  recentTelemetry: LocalTelemetryEvent[];
+  saveIntegritySummary: string;
+  invariantSummary: string;
+  consoleNotes?: string[];
+  userNote?: string;
+  includeFullSave?: boolean;
+  fullSaveJson?: string;
+}
+
 export type DecisionEventType =
   | "pressConference"
   | "ownerMeeting"
@@ -1244,6 +1392,21 @@ export interface OwnerState {
   seasonGoals: OwnerGoal[];
   messages: NewsItem[];
   lastEvaluationDate?: string;
+  goalOutcomeHistory?: OwnerGoalOutcome[];
+}
+
+export interface OwnerGoalOutcome {
+  id: string;
+  seasonYear: number;
+  date: string;
+  goalId: string;
+  type: OwnerGoal["type"];
+  label: string;
+  status: OwnerGoal["status"];
+  progress: number;
+  target: number;
+  importance: OwnerGoal["importance"];
+  category: "performance" | "development" | "cap" | "draft";
 }
 
 export interface SeasonHistory {
@@ -1365,6 +1528,10 @@ export interface FranchiseState {
   difficultyTuning: DifficultyTuning;
   assistantGmReports: AssistantGmReport[];
   narrativeTemplateVersion: number;
+  tutorialState: TutorialState;
+  achievements: Achievement[];
+  milestones: FranchiseMilestone[];
+  localTelemetry: LocalTelemetryEvent[];
   playoffState?: PlayoffState;
   offseasonState?: OffseasonState;
   freeAgencyState?: FreeAgentState;

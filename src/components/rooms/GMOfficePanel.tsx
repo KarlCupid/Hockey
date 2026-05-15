@@ -20,6 +20,9 @@ import { getTeamMeetingNeed } from "../../game/systems/playerMeetings";
 import { getMasterActionQueue, getUrgentActionCount } from "../../game/systems/actionQueue";
 import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
 import { getGmProfileSummary } from "../../game/systems/gmProfile";
+import { getAchievementSummary } from "../../game/systems/achievements";
+import { getRecentMilestones } from "../../game/systems/milestones";
+import { getCurrentTutorialStep, getTutorialSteps } from "../../game/systems/tutorial";
 import type { FranchiseState } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
@@ -75,6 +78,11 @@ export function GMOfficePanel() {
   const actionQueue = getMasterActionQueue(franchise);
   const urgentActionCount = getUrgentActionCount(franchise);
   const assistantReports = franchise.assistantGmReports.filter((report) => !report.dismissed).slice(0, 3);
+  const tutorialSteps = getTutorialSteps(franchise);
+  const tutorialCurrent = getCurrentTutorialStep(franchise);
+  const tutorialComplete = tutorialSteps.filter((step) => step.completed).length;
+  const achievementSummary = getAchievementSummary(franchise);
+  const recentMilestones = getRecentMilestones(franchise, 3);
   const confirmAndRun = (action: string, run: () => void) => {
     if (!confirmPhaseAdvances) {
       run();
@@ -134,6 +142,40 @@ export function GMOfficePanel() {
         </button>
       </section>
       <div className="room-grid room-grid--two">
+        <section className="panel-section">
+          <SectionHeader title="Guided Start" eyebrow="Tutorial" />
+          {tutorialCurrent ? (
+            <>
+              <div className="profile-card">
+                <strong>{tutorialCurrent.title}</strong>
+                <span>{tutorialCurrent.body}</span>
+                <small>{tutorialComplete}/{tutorialSteps.length} tutorial steps complete</small>
+              </div>
+              <ProgressBar value={tutorialComplete} max={tutorialSteps.length} label={`${tutorialComplete}/${tutorialSteps.length} steps`} />
+              <div className="button-row">
+                {tutorialCurrent.roomId && <button type="button" onClick={() => setActiveRoom(tutorialCurrent.roomId)}>Open target room</button>}
+              </div>
+            </>
+          ) : (
+            <p className="empty-state">Tutorial complete. Reset it from Settings any time.</p>
+          )}
+        </section>
+        <section className="panel-section">
+          <SectionHeader title="Franchise Moments" eyebrow="Release Candidate" />
+          <div className="season-pulse">
+            <span>Achievements <strong>{achievementSummary.unlocked}/{achievementSummary.total}</strong></span>
+            <span>Completion <strong>{achievementSummary.percent}%</strong></span>
+            <span>Milestones <strong>{franchise.milestones.length}</strong></span>
+          </div>
+          <div className="asset-list asset-list--compact">
+            {recentMilestones.length ? recentMilestones.map((milestone) => (
+              <article key={milestone.id}>
+                <strong>{milestone.headline}</strong>
+                <span>{milestone.date} | {milestone.body}</span>
+              </article>
+            )) : <p className="empty-state">Your first win, trade, draft pick, or season transition will appear here.</p>}
+          </div>
+        </section>
         <section className="panel-section">
           <SectionHeader title="Master Action Queue" eyebrow="Assistant GM" />
           <div className="asset-list asset-list--compact">

@@ -31,7 +31,7 @@ describe("Phase 3 season lifecycle and saves", () => {
 
     const restored = deserializeFranchise(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(6);
+    expect(restored.schemaVersion).toBe(7);
     expect(restored.seasonPhase).toBe("regularSeason");
     expect(restored.ownerState.seasonGoals).toHaveLength(3);
     expect(restored.staffState.teamStaff[restored.selectedTeamId].length).toBeGreaterThanOrEqual(7);
@@ -490,7 +490,7 @@ describe("Phase 3 staff, player lifecycle, owner, history, and serialization", (
     const franchise = createFranchise("harbor-city", "phase3-serialize");
     const restored = deserializeFranchise(serializeFranchise(franchise));
 
-    expect(restored.schemaVersion).toBe(6);
+    expect(restored.schemaVersion).toBe(7);
     expect(restored.seasonPhase).toBe("regularSeason");
     expect(restored.staffState.teamStaff[restored.selectedTeamId]).toHaveLength(7);
   });

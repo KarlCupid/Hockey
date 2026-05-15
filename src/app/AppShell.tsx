@@ -1,4 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
+import { getContrastClass, getUiScaleClass, shortcutRoomForKey } from "../game/systems/accessibility";
+import { AudioController } from "../components/hud/AudioController";
+import { ContextualHint } from "../components/hud/ContextualHint";
 import { ErrorBoundary } from "../components/hud/ErrorBoundary";
 import { HelpOverlay } from "../components/hud/HelpOverlay";
 import { LoadingPanel } from "../components/hud/LoadingPanel";
@@ -6,8 +9,10 @@ import { ModalShell } from "../components/hud/ModalShell";
 import { FirstDayChecklist } from "../components/hud/FirstDayChecklist";
 import { OperationsMap } from "../components/hud/OperationsMap";
 import { RoomPrompt, roomLabel } from "../components/hud/RoomPrompt";
+import { TutorialOverlay } from "../components/hud/TutorialOverlay";
 import { TopBar } from "../components/hud/TopBar";
 import type { RoomId } from "../game/types";
+import { useFranchiseStore } from "../store/franchiseStore";
 import { useSettingsStore } from "../store/settingsStore";
 import { useUiStore } from "../store/uiStore";
 
@@ -42,22 +47,37 @@ export function AppShell() {
   const helpOpen = useSettingsStore((state) => state.helpOpen);
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
   const toggleHelp = useSettingsStore((state) => state.toggleHelp);
+  const completeTutorialStep = useFranchiseStore((state) => state.completeTutorialStep);
+  const recordTelemetryEvent = useFranchiseStore((state) => state.recordTelemetryEvent);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (isTextInput(event.target)) return;
       if (event.key === "Escape") {
         if (helpOpen) setHelpOpen(false);
         else setActiveRoom(undefined);
       }
       if (event.key.toLowerCase() === "m") toggleOperationsMap();
       if (event.key.toLowerCase() === "h") toggleHelp();
+      const shortcutRoom = settings.keyboardHints ? shortcutRoomForKey(event.key) : undefined;
+      if (shortcutRoom) setActiveRoom(shortcutRoom);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [helpOpen, setActiveRoom, setHelpOpen, toggleHelp, toggleOperationsMap]);
+  }, [helpOpen, setActiveRoom, setHelpOpen, settings.keyboardHints, toggleHelp, toggleOperationsMap]);
+
+  useEffect(() => {
+    if (!activeRoom) return;
+    recordTelemetryEvent("roomOpened", `Opened ${activeRoom}`, { roomId: activeRoom });
+    completeTutorialStep(tutorialStepForRoom(activeRoom));
+  }, [activeRoom, completeTutorialStep, recordTelemetryEvent]);
 
   return (
-    <main className={`app-shell app-shell--scale-${settings.uiScale} app-shell--density-${settings.tableDensity}`}>
+    <main
+      className={`app-shell ${getUiScaleClass(settings)} ${getContrastClass(settings)} app-shell--density-${settings.tableDensity} ${settings.reduceFlashes ? "app-shell--reduce-flashes" : ""}`}
+    >
+      <a className="skip-link" href="#active-room-panel">Skip to active panel</a>
+      <AudioController />
       <ErrorBoundary fallback={<LoadingPanel label="3D facility recovered. Open a room from the map." />}>
         <Suspense fallback={<LoadingPanel label="Loading 3D operations hub..." />}>
           <FacilityScene />
@@ -66,9 +86,11 @@ export function AppShell() {
       <TopBar />
       <OperationsMap />
       <FirstDayChecklist />
+      <TutorialOverlay />
+      <ContextualHint roomId={activeRoom ?? nearbyRoom} />
       <HelpOverlay />
       <RoomPrompt room={nearbyRoom} />
-      <div className="control-hint">WASD move | mouse orbit | E enter | M map | H help | Esc close</div>
+      {settings.keyboardHints && <div className="control-hint">WASD move | mouse orbit | E enter | G GM | R roster | C coach | A arena | S saves | M map | H help | Esc close</div>}
       {activeRoom && (
         <ModalShell title={roomLabel(activeRoom)} subtitle={subtitleFor(activeRoom)} onClose={() => setActiveRoom(undefined)}>
           <ErrorBoundary>
@@ -78,6 +100,23 @@ export function AppShell() {
       )}
     </main>
   );
+}
+
+function tutorialStepForRoom(room: RoomId): string {
+  const map: Partial<Record<RoomId, string>> = {
+    gm: "open-gm-office",
+    roster: "open-roster-office",
+    coach: "open-coach-office",
+    arena: "open-arena",
+    saves: "open-save-desk",
+    standings: "open-standings"
+  };
+  return map[room] ?? "move-facility";
+}
+
+function isTextInput(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable;
 }
 
 function panelFor(room: RoomId) {

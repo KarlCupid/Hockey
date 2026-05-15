@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef } from "react";
 import { upcomingOpponent, recordLabel, selectedTeam } from "../../store/franchiseStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
@@ -9,6 +10,7 @@ import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficu
 import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
+import { useAudioStore } from "../../store/audioStore";
 
 export function TopBar() {
   const franchise = useFranchiseStore((state) => state.franchise);
@@ -17,6 +19,19 @@ export function TopBar() {
   const activeRoom = useUiStore((state) => state.activeRoom);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
+  const playCue = useAudioStore((state) => state.playCue);
+  const lastAchievementRef = useRef<string | undefined>(undefined);
+  const latestAchievement = useMemo(
+    () => [...(franchise?.achievements ?? [])].filter((achievement) => achievement.unlockedAt).sort((a, b) => (b.unlockedAt ?? "").localeCompare(a.unlockedAt ?? ""))[0],
+    [franchise?.achievements]
+  );
+
+  useEffect(() => {
+    if (!latestAchievement?.unlockedAt || latestAchievement.id === lastAchievementRef.current) return;
+    lastAchievementRef.current = latestAchievement.id;
+    playCue("achievement-unlock");
+  }, [latestAchievement, playCue]);
+
   if (!franchise) return null;
 
   const team = selectedTeam(franchise);
@@ -31,7 +46,6 @@ export function TopBar() {
   const assistantAlerts = franchise.assistantGmReports
     .filter((report) => !report.dismissed)
     .reduce((sum, report) => sum + report.recommendations.filter((recommendation) => recommendation.priority === "urgent" || recommendation.priority === "high").length, 0);
-
   return (
     <header className="top-bar">
       <TeamBadge team={team} compact />
@@ -46,6 +60,11 @@ export function TopBar() {
         <span>{getRecommendedNextAction(franchise)}</span>
       </div>
       <div className="top-bar__status">
+        {latestAchievement && (
+          <span className="achievement-toast" aria-live="polite">
+            Achievement: {latestAchievement.label}
+          </span>
+        )}
         <span>
           {franchise.saveStatus === "saved"
             ? "Autosaved"

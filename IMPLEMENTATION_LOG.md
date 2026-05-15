@@ -14,6 +14,7 @@
 - Phase 5 turns rosters into an organization-level ecosystem with active roster, scratches, affiliate, injured reserve, prospect pipeline, AI roster repair, training camp setup, and affiliate development while keeping waivers and other real-world CBA complexity out of scope.
 - Phase 6 adds a living hockey-operations layer through fictional meetings, relationships, media/fan/owner pressure, agent dynamics, story arcs, and decision events while avoiding another real-world CBA/rules layer.
 - Phase 7 improves game feel through difficulty/game modes, GM identity, narrative templates, Assistant GM guidance, action queues, room badges, setup presets, cadence tuning, and broader playtest reporting without adding real-world CBA complexity.
+- Phase 8 focuses on release-candidate usability, tutorialization, generated/local audio, achievements, accessibility, diagnostics, and QA rather than adding another hockey rules layer.
 
 ## Files Added
 
@@ -28,6 +29,8 @@
 - Phase 6 UI/tests: `src/components/rooms/PressRoomPanel.tsx`, `src/components/rooms/OwnerSuitePanel.tsx`, `src/components/rooms/AgentDeskPanel.tsx`, `src/components/rooms/PlayerMeetingPanel.tsx`, `src/components/hud/DecisionEventCard.tsx`, `src/components/hud/StoryArcCard.tsx`, `src/components/hud/RelationshipBadge.tsx`, `src/components/hud/TeamDynamicsPanel.tsx`, `src/tests/phase6LivingOps.test.ts`
 - Phase 7 systems/content: `src/game/systems/difficulty.ts`, `src/game/systems/gmProfile.ts`, `src/game/systems/livingOpsTuning.ts`, `src/game/systems/assistantGm.ts`, `src/game/systems/actionQueue.ts`, `src/game/systems/narrativeTemplateEngine.ts`, `src/game/content/narrativeTemplates.ts`
 - Phase 7 UI/tests: `src/components/hud/AssistantGmReportCard.tsx`, updated setup wizard/GM Office/TopBar/Operations Map/Settings/Help/Dev Tools/facility, and `src/tests/phase7GameFeel.test.ts`
+- Phase 8 systems/content/audio: `src/game/systems/tutorial.ts`, `src/game/content/guideTopics.ts`, `src/game/systems/guide.ts`, `src/game/systems/achievements.ts`, `src/game/systems/milestones.ts`, `src/game/audio/audioCues.ts`, `src/game/audio/audioEngine.ts`, `src/game/systems/broadcastStory.ts`, `src/game/systems/accessibility.ts`, `src/game/systems/localTelemetry.ts`, `src/game/systems/bugReport.ts`, `src/game/systems/fanSentimentBalance.ts`, `src/game/systems/ownerGoalReporting.ts`
+- Phase 8 UI/tests/docs: `src/store/audioStore.ts`, `src/components/hud/TutorialOverlay.tsx`, `src/components/hud/ContextualHint.tsx`, `src/components/hud/GuideOverlay.tsx`, `src/components/hud/AudioController.tsx`, updated AppShell/TopBar/Help/GM Office/Settings/Save Desk/Trophy Hall/Game Result Center/Arena Visualization, `src/tests/phase8ReleaseCandidate.test.ts`, and `RELEASE_NOTES.md`
 
 ## V1.1 Changes
 
@@ -130,6 +133,19 @@
 - Updated dynasty playtest reporting with Assistant GM recommendation counts, urgent actions, cap pressure trend, contract acceptance rate, owner goal completion rate, and difficulty/story setup options.
 - Added a subtle Assistant GM terminal and setup plaque to the 3D facility using primitive local geometry only.
 
+## Phase 8 Release Candidate UX, Tutorial, Audio, Achievements, QA, and Accessibility Changes
+
+- Added schema version 7 fields for tutorial state, achievements, franchise milestones, local telemetry, and owner goal outcome history, with save hydration/repair from older schemas.
+- Added a non-blocking guided tutorial with contextual hints, completion/dismiss/reset controls, GM Office progress, Settings reset, and room/action integration.
+- Added a searchable Learn the Game guide/codex with coverage for all major rooms and systems, exposed through Help.
+- Added local-only achievements, progress/unlock helpers, franchise milestones, GM Office summary cards, Trophy Hall presentation, and a TopBar achievement notification.
+- Added generated Web Audio cue registry/engine, audio store, AudioController, UI click/hover cues, achievement/final-horn/goal cues, and volume/accessibility settings. Audio safely no-ops when Web Audio is unavailable.
+- Improved broadcast and result presentation with broadcast intro, tale-of-the-tape rows, turning point, narrative beats, three-stars presentation, fan reaction, media prompt, and reduced-motion/reduced-flash support.
+- Added accessibility helpers for keyboard shortcuts, contrast/scale classes, reduced flash/motion checks, and settings summaries; AppShell now supports H/M/Esc plus optional G/R/C/A/S room shortcuts.
+- Added capped local-only telemetry, diagnostic summary generation, and bug-report JSON export in Save Desk with full save data excluded by default.
+- Added targeted fan sentiment scenario sampling and owner goal reporting that captures outcomes before seasonal refresh.
+- Added `npm run test:smoke` and `src/tests/phase8ReleaseCandidate.test.ts` covering tutorial, guide, achievements, milestones, audio, broadcast, accessibility, telemetry, diagnostics, fan/owner reporting, save roundtrip, invariants, and a two-season mini playtest.
+
 ## Verification
 
 - Passed: `npm install`
@@ -180,6 +196,9 @@
   - `hardcore / dramatic`: 56 events, 2 high-severity, 7/3 arcs, media trend 13/13/13/13/13, 25 Assistant GM recommendations, 0 fatal errors.
   - `rebuildChallenge / normal`: 36 events, 2 high-severity, 11/2 arcs, media trend 6/6/6/6/6, 33 Assistant GM recommendations, 0 fatal errors.
   - `pressureCooker / dramatic`: 63 events, 3 high-severity, 10/3 arcs, media trend 14/14/14/14/14, 31 Assistant GM recommendations, 0 fatal errors.
+- Passed: `cmd /c npm run test:smoke` with 1 file and 9 Phase 8 release-candidate tests.
+- Passed: `cmd /c npm test` with 11 test files and 155 tests after Phase 8 changes.
+- Passed: `cmd /c npm run build` after Phase 8 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
 
 ## Known Limitations
 
@@ -202,3 +221,7 @@
 - Phase 7 difficulty/game modes are simplified prototype tuning layers rather than exhaustive management simulations.
 - Phase 7 narrative templates are procedural fictional snippets, not hand-authored full dialogue trees.
 - The Assistant GM is advisory and does not auto-manage roster, line, trade, contract, or phase decisions.
+- Phase 8 tutorial/guide content is a prototype onboarding layer and should be expanded through real player feedback.
+- Phase 8 achievements are local-only and not platform achievements.
+- Phase 8 audio is generated/local placeholder sound design, not final professional audio.
+- Phase 8 telemetry and bug reports are local-only and never sent anywhere automatically.

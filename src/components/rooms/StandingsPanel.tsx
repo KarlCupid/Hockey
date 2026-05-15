@@ -1,6 +1,8 @@
 import { sortStandings } from "../../game/systems/standings";
 import { createSeasonCompleteSummary, createSeasonPulse } from "../../game/systems/seasonSummary";
 import { createFranchiseTimeline } from "../../game/systems/history";
+import { getAchievementSummary } from "../../game/systems/achievements";
+import { getRecentMilestones } from "../../game/systems/milestones";
 import { useFranchiseStore } from "../../store/franchiseStore";
 
 export function StandingsPanel() {
@@ -10,6 +12,8 @@ export function StandingsPanel() {
   const selectedTeam = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId)!;
   const pulse = createSeasonPulse(franchise.league, franchise.selectedTeamId);
   const timeline = createFranchiseTimeline(franchise);
+  const achievementSummary = getAchievementSummary(franchise);
+  const recentMilestones = getRecentMilestones(franchise, 8);
 
   return (
     <div className="room-grid room-grid--two">
@@ -129,6 +133,29 @@ export function StandingsPanel() {
             </article>
           ))}
           {!franchise.history.awards.length && <p className="empty-state">Award cards unlock when a season is archived.</p>}
+        </div>
+        <h3>Achievements</h3>
+        <div className="season-pulse">
+          <span>Unlocked <strong>{achievementSummary.unlocked}/{achievementSummary.total}</strong></span>
+          <span>Completion <strong>{achievementSummary.percent}%</strong></span>
+        </div>
+        <div className="asset-list asset-list--compact">
+          {franchise.achievements.map((achievement) => (
+            <article key={achievement.id} className={achievement.unlockedAt ? "achievement-card is-unlocked" : "achievement-card"}>
+              <strong>{achievement.unlockedAt ? achievement.label : achievement.hidden ? "Hidden achievement" : achievement.label}</strong>
+              <span>{achievement.unlockedAt ? `Unlocked ${achievement.unlockedAt}` : achievement.description}</span>
+              <small>{achievement.progress}/{achievement.target} | {achievement.category}</small>
+            </article>
+          ))}
+        </div>
+        <h3>Franchise Milestones</h3>
+        <div className="asset-list asset-list--compact">
+          {recentMilestones.length ? recentMilestones.map((milestone) => (
+            <article key={milestone.id} className={`milestone-card milestone-card--${milestone.importance}`}>
+              <strong>{milestone.date} | {milestone.headline}</strong>
+              <span>{milestone.body}</span>
+            </article>
+          )) : <p className="empty-state">Milestones unlock from wins, trades, draft picks, playoff moments, owner goals, and season transitions.</p>}
         </div>
         <h3>Franchise Timeline</h3>
         <div className="asset-list asset-list--compact">

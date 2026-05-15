@@ -155,7 +155,8 @@ export function updateOwnerGoalProgress(franchise: FranchiseState): OwnerState {
   });
   return {
     ...franchise.ownerState,
-    seasonGoals: goals
+    seasonGoals: goals,
+    goalOutcomeHistory: franchise.ownerState.goalOutcomeHistory ?? []
   };
 }
 
@@ -212,7 +213,8 @@ export function createDefaultOwnerState(franchise: FranchiseState, rng = new See
     jobSecurity: clamp(62 + Math.round((team.ownerPatience - 50) * 0.25), 35, 85),
     patience: team.ownerPatience,
     seasonGoals: [],
-    messages: []
+    messages: [],
+    goalOutcomeHistory: franchise.ownerState?.goalOutcomeHistory ?? []
   };
   const withOwner = { ...franchise, ownerState: base };
   const goals = generateOwnerGoals(withOwner, rng);
@@ -228,6 +230,7 @@ export function createDefaultOwnerState(franchise: FranchiseState, rng = new See
   return {
     ...base,
     seasonGoals: goals,
-    messages: [message]
+    messages: [message],
+    goalOutcomeHistory: base.goalOutcomeHistory ?? []
   };
 }

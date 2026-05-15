@@ -8,10 +8,26 @@ import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
 
 export function SaveLoadPanel() {
-  const { franchise, saves, refreshSaves, saveToSlot, loadFromSlot, deleteSlot, loadError, importFromJson, exportCurrentJson, repairCurrentSave } = useFranchiseStore();
+  const {
+    franchise,
+    saves,
+    refreshSaves,
+    saveToSlot,
+    loadFromSlot,
+    deleteSlot,
+    loadError,
+    importFromJson,
+    exportCurrentJson,
+    repairCurrentSave,
+    exportBugReport,
+    copyDiagnosticSummary
+  } = useFranchiseStore();
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
   const [importText, setImportText] = useState("");
   const [exportText, setExportText] = useState("");
+  const [bugReportText, setBugReportText] = useState("");
+  const [bugReportNote, setBugReportNote] = useState("");
+  const [includeFullSave, setIncludeFullSave] = useState(false);
   const integrity = useMemo(() => (franchise ? validateSaveIntegrity(franchise) : undefined), [franchise]);
 
   useEffect(() => {
@@ -126,6 +142,24 @@ export function SaveLoadPanel() {
           </Button>
           <Button onClick={() => setImportText("")}>Clear Import</Button>
         </div>
+        <h3>Diagnostics & Bug Report</h3>
+        <p className="muted">Creates a local JSON report for playtests. The full save is excluded unless you turn it on.</p>
+        <label className="checkbox-row settings-toggle">
+          <input type="checkbox" checked={includeFullSave} onChange={(event) => setIncludeFullSave(event.target.checked)} />
+          <span>Include full save JSON</span>
+        </label>
+        <label className="select-field">
+          <span>Playtester note</span>
+          <textarea value={bugReportNote} onChange={(event) => setBugReportNote(event.target.value)} placeholder="What happened before the issue?" />
+        </label>
+        <div className="button-row">
+          <Button onClick={() => setBugReportText(copyDiagnosticSummary() ?? "")}>Copy diagnostic summary</Button>
+          <Button onClick={() => setBugReportText(exportBugReport(bugReportNote, includeFullSave) ?? "")}>Export bug report JSON</Button>
+        </div>
+        <label className="select-field">
+          <span>Diagnostic output</span>
+          <textarea readOnly value={bugReportText} placeholder="Generate a diagnostic summary or bug report." />
+        </label>
       </section>
     </div>
   );

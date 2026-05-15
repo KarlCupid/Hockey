@@ -12,6 +12,7 @@ import { createFreeAgentMarket } from "./freeAgency";
 import { createAwards, createSeasonHistory as createHistorySeason } from "./history";
 import { autoFillBestLineup } from "./lineupValidation";
 import { createDefaultOwnerState, createOwnerEvaluationNews, evaluateJobSecurity, generateOwnerGoals, updateOwnerGoalProgress } from "./owner";
+import { captureOwnerGoalOutcomes } from "./ownerGoalReporting";
 import {
   agePlayers as agePlayersPure,
   applyOffseasonDevelopment,
@@ -56,7 +57,7 @@ export function advanceSeasonPhase(franchise: FranchiseState, rng = new SeededRn
     return { ...franchise, seasonPhase: "seasonReview", updatedAt: new Date().toISOString() };
   }
   if (phase === "seasonReview") {
-    const archived = archiveSeasonHistory(franchise);
+    const archived = captureOwnerGoalOutcomes(archiveSeasonHistory(franchise));
     const ownerState = evaluateJobSecurity(archived);
     const ownerNews = createOwnerEvaluationNews({ ...archived, ownerState });
     return {
@@ -220,7 +221,7 @@ export function archiveSeasonHistory(franchise: FranchiseState): FranchiseState 
 
 export function prepareNextSeason(franchise: FranchiseState, rng = new SeededRng(`${franchise.franchiseId}-next-season`)): FranchiseState {
   const nextYear = franchise.league.seasonYear + 1;
-  let next = runTrainingCampRosterSetup(franchise, rng);
+  let next = captureOwnerGoalOutcomes(runTrainingCampRosterSetup(franchise, rng));
   next = resetPlayerSeasonStats(next);
   next = recoverFatigueAndInjuries(next);
   next = tickStaffContracts(next);

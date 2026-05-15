@@ -2,6 +2,7 @@ import { useSettingsStore } from "../../store/settingsStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
 import { getDifficultyDescription, getDifficultyLabel, getGameModeLabel, getStoryFrequencyDescription } from "../../game/systems/difficulty";
+import { getAccessibilitySettingsSummary } from "../../game/systems/accessibility";
 import type { GameDifficulty, StoryFrequency } from "../../game/types";
 import { Button } from "../ui/Button";
 import { SectionHeader } from "../ui/SectionHeader";
@@ -15,6 +16,7 @@ export function SettingsPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const resetLivingOpsState = useFranchiseStore((state) => state.resetLivingOpsState);
   const updateDifficultySettings = useFranchiseStore((state) => state.updateDifficultySettings);
+  const resetTutorial = useFranchiseStore((state) => state.resetTutorial);
 
   const resetAllGuides = () => {
     resetGuides();
@@ -27,20 +29,37 @@ export function SettingsPanel() {
         <SectionHeader title="Settings" eyebrow="Presentation and accessibility" actions={<Button onClick={() => setHelpOpen(true)}>Open Help</Button>} />
         <div className="settings-grid">
           <Toggle label="Reduce motion" checked={settings.reduceMotion} onChange={(value) => updateSettings({ reduceMotion: value })} />
+          <Toggle label="Reduce flashes" checked={settings.reduceFlashes} onChange={(value) => updateSettings({ reduceFlashes: value })} />
           <Toggle label="Reduced 3D detail" checked={settings.reduced3DDetail} onChange={(value) => updateSettings({ reduced3DDetail: value })} />
-          <Toggle label="Disable broadcast flashes" checked={settings.reduceMotion} onChange={(value) => updateSettings({ reduceMotion: value })} />
+          <Toggle label="High contrast mode" checked={settings.highContrastMode} onChange={(value) => updateSettings({ highContrastMode: value })} />
+          <Toggle label="Larger text" checked={settings.largerText} onChange={(value) => updateSettings({ largerText: value })} />
+          <Toggle label="Show keyboard hints and room shortcuts" checked={settings.keyboardHints} onChange={(value) => updateSettings({ keyboardHints: value })} />
+          <Toggle label="Show tooltips" checked={settings.showTooltips} onChange={(value) => updateSettings({ showTooltips: value })} />
           <Toggle label="Auto-save after games" checked={settings.autoSave} onChange={(value) => updateSettings({ autoSave: value })} />
           <Toggle label="Auto-repair AI rosters during sim" checked={settings.autoRepairAiRosters} onChange={(value) => updateSettings({ autoRepairAiRosters: value })} />
           <Toggle label="Offer user roster auto-fix at season start" checked={settings.autoFixUserRosterOnSeasonStart} onChange={(value) => updateSettings({ autoFixUserRosterOnSeasonStart: value })} />
           <Toggle label="Enable story events" checked={settings.storyEventsEnabled} onChange={(value) => updateSettings({ storyEventsEnabled: value })} />
           <Toggle label="Enable Assistant GM reports" checked={settings.assistantGmReportsEnabled} onChange={(value) => updateSettings({ assistantGmReportsEnabled: value })} />
-          <Toggle label="Enable room badges" checked={settings.roomBadgesEnabled} onChange={(value) => updateSettings({ roomBadgesEnabled: value })} />
+          <Toggle label="Enable room badges" checked={settings.showRoomBadges} onChange={(value) => updateSettings({ showRoomBadges: value, roomBadgesEnabled: value })} />
+          <Toggle label="Local telemetry for diagnostics" checked={settings.telemetryEnabledLocalOnly} onChange={(value) => updateSettings({ telemetryEnabledLocalOnly: value })} />
           <Toggle label="Enable consequence previews" checked={settings.consequencePreviewsEnabled} onChange={(value) => updateSettings({ consequencePreviewsEnabled: value, hideConsequencePreviews: !value })} />
           <Toggle label="Event cadence debug display" checked={settings.eventCadenceDebugDisplay} onChange={(value) => updateSettings({ eventCadenceDebugDisplay: value })} />
           <Toggle label="Auto-resolve low severity events" checked={settings.autoResolveLowSeverityEvents} onChange={(value) => updateSettings({ autoResolveLowSeverityEvents: value })} />
           <Toggle label="Hide consequence previews" checked={settings.hideConsequencePreviews} onChange={(value) => updateSettings({ hideConsequencePreviews: value })} />
           <Toggle label="Confirm phase advances" checked={settings.confirmPhaseAdvances} onChange={(value) => updateSettings({ confirmPhaseAdvances: value })} />
-          <Toggle label="Sound placeholder" checked={settings.soundPlaceholder} onChange={(value) => updateSettings({ soundPlaceholder: value })} />
+          <Toggle label="Generated audio" checked={settings.audioEnabled} onChange={(value) => updateSettings({ audioEnabled: value })} />
+          <label className="select-field">
+            <span>Tutorial mode</span>
+            <select value={settings.tutorialMode} onChange={(event) => updateSettings({ tutorialMode: event.target.value as typeof settings.tutorialMode })}>
+              <option value="firstFranchise">First franchise</option>
+              <option value="guided">Guided</option>
+              <option value="off">Off</option>
+            </select>
+          </label>
+          <Range label="Master volume" value={settings.masterVolume} onChange={(value) => updateSettings({ masterVolume: value })} />
+          <Range label="UI volume" value={settings.uiVolume} onChange={(value) => updateSettings({ uiVolume: value })} />
+          <Range label="Ambience volume" value={settings.ambienceVolume} onChange={(value) => updateSettings({ ambienceVolume: value })} />
+          <Range label="Broadcast volume" value={settings.broadcastVolume} onChange={(value) => updateSettings({ broadcastVolume: value })} />
           <label className="select-field">
             <span>Broadcast speed default</span>
             <select value={settings.broadcastSpeedDefault} onChange={(event) => updateSettings({ broadcastSpeedDefault: event.target.value as typeof settings.broadcastSpeedDefault })}>
@@ -89,6 +108,14 @@ export function SettingsPanel() {
             </select>
           </label>
         </div>
+        <div className="settings-subpanel">
+          <h3>Accessibility Summary</h3>
+          <ul className="compact-list">
+            {getAccessibilitySettingsSummary(settings).map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </div>
         {franchise && (
           <section className="settings-subpanel">
             <h3>Franchise Difficulty</h3>
@@ -131,6 +158,7 @@ export function SettingsPanel() {
         )}
         <div className="button-row">
           <Button tone="primary" onClick={resetAllGuides}>Reset guides</Button>
+          <Button onClick={resetTutorial}>Reset tutorial</Button>
           <Button onClick={() => setHelpOpen(true)}>Controls and systems help</Button>
           <Button tone="danger" onClick={resetLivingOpsState}>Reset story and relationship state</Button>
         </div>
@@ -144,6 +172,15 @@ function Toggle({ label, checked, onChange }: { label: string; checked: boolean;
     <label className="checkbox-row settings-toggle">
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
       {label}
+    </label>
+  );
+}
+
+function Range({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+  return (
+    <label className="select-field">
+      <span>{label}: {Math.round(value * 100)}%</span>
+      <input type="range" min={0} max={1} step={0.05} value={value} onChange={(event) => onChange(Number(event.target.value))} />
     </label>
   );
 }

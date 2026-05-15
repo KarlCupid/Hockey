@@ -17,6 +17,7 @@ import { defaultMediaState } from "./fanMedia";
 import { createStoryArcDecisionEvent, updateStoryArcs } from "./storyArcs";
 import { generateAssistantGmReport } from "./assistantGm";
 import { getUrgentActionCount } from "./actionQueue";
+import { createOwnerGoalReport } from "./ownerGoalReporting";
 import {
   applyMediaPressureDrift,
   applyNaturalSentimentDecay,
@@ -223,8 +224,9 @@ export function runDynastyPlaytest(
     recordLivingOpsSnapshot(franchise, livingOps, seasonYear);
   }
 
+  const ownerGoalReport = createOwnerGoalReport(franchise);
   livingOps.contractAcceptanceRate = contractAttempts ? contractAccepted / contractAttempts : 0;
-  livingOps.ownerGoalCompletionRate = ownerGoalsTotal ? ownerGoalsMet / ownerGoalsTotal : 0;
+  livingOps.ownerGoalCompletionRate = ownerGoalReport.total ? ownerGoalReport.completionRate : ownerGoalsTotal ? ownerGoalsMet / ownerGoalsTotal : 0;
 
   return {
     seed,

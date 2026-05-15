@@ -32,6 +32,7 @@ import type {
 } from "../types";
 import { generateAffiliateForTeam } from "./affiliate";
 import { repairAllTeamRosters } from "./aiRosterManagement";
+import { normalizeAchievements } from "./achievements";
 import { contractSummary, createContractForPlayer } from "./contracts";
 import { validateDynastyInvariants } from "./dynastyInvariants";
 import { generateInitialDraftPicks } from "./draftPicks";
@@ -46,6 +47,9 @@ import { defaultMediaState } from "./fanMedia";
 import { generateAssistantGmReport } from "./assistantGm";
 import { createDifficultyTuning } from "./difficulty";
 import { createGmProfile } from "./gmProfile";
+import { capTelemetry } from "./localTelemetry";
+import { normalizeMilestones } from "./milestones";
+import { normalizeTutorialState } from "./tutorial";
 import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
 import {
   generateAgentsForPlayers,
@@ -157,6 +161,10 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     difficultyTuning,
     assistantGmReports: hydrateAssistantGmReports(input),
     narrativeTemplateVersion: input.narrativeTemplateVersion ?? NARRATIVE_TEMPLATE_VERSION,
+    tutorialState: normalizeTutorialState(input.tutorialState),
+    achievements: normalizeAchievements(input.achievements),
+    milestones: normalizeMilestones(input.milestones),
+    localTelemetry: capTelemetry(input.localTelemetry ?? []),
     staffState,
     history,
     ownerState: input.ownerState ?? emptyOwnerState(input),
@@ -207,7 +215,7 @@ export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityR
     .map((item) => item.message);
   return {
     schemaVersion: franchise.schemaVersion,
-    warnings: [...report.warnings.map((item) => item.message), ...duplicateWarnings, ...getPhase7IntegrityWarnings(franchise)],
+    warnings: [...report.warnings.map((item) => item.message), ...duplicateWarnings, ...getPhase7IntegrityWarnings(franchise), ...getPhase8IntegrityWarnings(franchise)],
     errors: report.errors.map((item) => item.message),
     repairedFields: collectMissingFieldRepairs(franchise),
     lastValidatedAt: new Date().toISOString()
@@ -579,7 +587,8 @@ function hydrateOwnerState(input: FranchiseState): OwnerState {
       ...input.ownerState,
       messages: input.ownerState.messages ?? [],
       jobSecurity: input.ownerState.jobSecurity ?? 65,
-      patience: input.ownerState.patience ?? input.league.teams.find((team) => team.id === input.selectedTeamId)?.ownerPatience ?? 60
+      patience: input.ownerState.patience ?? input.league.teams.find((team) => team.id === input.selectedTeamId)?.ownerPatience ?? 60,
+      goalOutcomeHistory: input.ownerState.goalOutcomeHistory ?? []
     };
   }
   return createDefaultOwnerState(input, new SeededRng(`${input.franchiseId}-owner-repair`));
@@ -590,7 +599,8 @@ function emptyOwnerState(input: FranchiseState): OwnerState {
     jobSecurity: 65,
     patience: input.league.teams.find((team) => team.id === input.selectedTeamId)?.ownerPatience ?? 60,
     seasonGoals: [],
-    messages: []
+    messages: [],
+    goalOutcomeHistory: []
   };
 }
 
@@ -607,6 +617,10 @@ function collectMissingFieldRepairs(input: FranchiseState): string[] {
   if (!(input as Partial<FranchiseState>).difficultyTuning) repaired.push("difficultyTuning");
   if (!(input as Partial<FranchiseState>).assistantGmReports) repaired.push("assistantGmReports");
   if (!(input as Partial<FranchiseState>).narrativeTemplateVersion) repaired.push("narrativeTemplateVersion");
+  if (!(input as Partial<FranchiseState>).tutorialState) repaired.push("tutorialState");
+  if (!(input as Partial<FranchiseState>).achievements) repaired.push("achievements");
+  if (!(input as Partial<FranchiseState>).milestones) repaired.push("milestones");
+  if (!(input as Partial<FranchiseState>).localTelemetry) repaired.push("localTelemetry");
   if (!input.seasonPhase) repaired.push("seasonPhase");
   if (!input.currentSeasonId) repaired.push("currentSeasonId");
   if (!input.staffState) repaired.push("staffState");
@@ -648,6 +662,16 @@ function getPhase7IntegrityWarnings(franchise: FranchiseState): string[] {
   if (!validStoryFrequency(franchise.gmProfile?.storyFrequency)) warnings.push("Story frequency is invalid and will repair to normal.");
   if (!franchise.difficultyTuning) warnings.push("Difficulty tuning is missing.");
   if (!Number.isFinite(franchise.narrativeTemplateVersion)) warnings.push("Narrative template version is missing.");
+  return warnings;
+}
+
+function getPhase8IntegrityWarnings(franchise: FranchiseState): string[] {
+  const warnings: string[] = [];
+  if (!franchise.tutorialState) warnings.push("Tutorial state is missing.");
+  if (!Array.isArray(franchise.achievements)) warnings.push("Achievements are missing.");
+  if (!Array.isArray(franchise.milestones)) warnings.push("Milestones are missing.");
+  if (!Array.isArray(franchise.localTelemetry)) warnings.push("Local telemetry buffer is missing.");
+  if ((franchise.localTelemetry ?? []).length > 150) warnings.push("Local telemetry buffer exceeds the Phase 8 cap.");
   return warnings;
 }
 

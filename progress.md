@@ -27,3 +27,14 @@ TODO/suggestions:
 - Consider code-splitting Three/R3F and heavy room panels later to reduce the production chunk warning.
 - Add a richer minor-league/prospect development layer before making prospect signing stricter.
 - Add more user-facing confirmations/modals for destructive offseason skips if Phase 4 deepens the calendar.
+
+## Phase 8 Release Candidate UX
+
+- New Phase 8 prompt requests tutorial/onboarding, guide/codex, achievements/milestones, generated Web Audio, broadcast polish, accessibility, local telemetry/bug reports, smoke QA, fan/owner reporting, and docs.
+- Read current docs, core types/stores, save hydration, Assistant GM/action queue, Phase 7 tuning, major HUD/room panels, arena visualization, styles, fan/owner systems, dynasty playtest, and Phase 4-7 tests.
+- Repo status was clean except for a user-level git ignore permission warning from `git status`; do not treat that warning as a repo change.
+- Added schema v7 domain types and save hydration for tutorial state, guide topics, achievements, milestones, local telemetry, bug reports, and owner goal outcome history.
+- Added Phase 8 pure systems for tutorial, Learn the Game guide, achievements, milestones, generated audio, broadcast story, accessibility, local telemetry, bug reports, fan sentiment scenarios, and owner goal reporting.
+- Wired Phase 8 UI through AppShell, Help, GM Office, Trophy Hall/Standings, Save Desk, Settings, TopBar, Game Result Center, and Arena Visualization.
+- Added `src/tests/phase8ReleaseCandidate.test.ts` and `npm run test:smoke`; final smoke and full test suites passed.
+- Updated README, PROJECT_INDEX, PLAN, AGENTS, IMPLEMENTATION_LOG, PLAYTEST_REPORT, and RELEASE_NOTES for Phase 8.

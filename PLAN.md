@@ -95,3 +95,16 @@
 - Improve GM Office, TopBar, Operations Map, Settings, Help, Dev Tools, and the facility with guidance, pressure readouts, reports, and quick navigation.
 - Add schema version 6 save hydration/repair and playtest/balance reporting for difficulty/story-frequency comparisons.
 - Keep Phase 7 client-only, fictional, advisory rather than autopilot-driven, and out of real-world CBA/rules complexity.
+
+## Milestone 14: Phase 8 Release Candidate UX, Tutorial, Audio/Atmosphere, Achievements, QA, and Accessibility
+
+- Add schema version 7 save hydration/repair for tutorial state, achievements, milestones, local telemetry, and owner goal outcome history.
+- Add guided tutorial, contextual hints, and a searchable Learn the Game guide/codex for rooms and major systems.
+- Add local-only achievements and franchise milestones, with GM Office and Trophy Hall presentation plus notification feedback.
+- Add generated/local Web Audio cues and ambience through browser-safe Web Audio APIs with no external asset downloads.
+- Improve broadcast/game-result presentation with intro, tale of the tape, turning point, narrative beats, three stars, fan reaction, media prompt, and reduced-motion/reduced-flash variants.
+- Add accessibility/keyboard helpers, high contrast, larger text, reduce flashes, keyboard hints, and better shortcut documentation.
+- Add capped local-only telemetry, diagnostic summaries, and bug-report export that excludes full save data by default.
+- Add targeted fan sentiment and owner goal reporting harnesses so release-candidate playtests capture specific balance signals.
+- Add Phase 8 smoke tests and `npm run test:smoke`, then keep full `npm test` and `npm run build` green.
+- Keep Phase 8 focused on release-candidate polish rather than waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online, real branding, or playable on-ice hockey.

@@ -15,6 +15,7 @@ npm run dev
 
 ```bash
 npm test
+npm run test:smoke
 npm run build
 ```
 
@@ -33,6 +34,7 @@ npm run build
 - Phase 5 roster ecosystem with active roster, scratches, affiliate roster, injured reserve, prospect pathways, AI roster repair, and training-camp setup
 - Phase 6 living hockey operations with press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, story arcs, media pressure, fan sentiment, and owner trust
 - Phase 7 game-feel layer with setup wizard, GM profile/background traits, difficulty, game modes, story frequency, narrative templates, Assistant GM reports, action queue, room badges, and broader playtest tuning
+- Phase 8 release-candidate UX with guided tutorial, Learn the Game guide, achievements, milestones, generated local audio, accessibility controls, local telemetry, bug-report export, broadcast polish, and smoke tests
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -133,9 +135,24 @@ Phase 7 tunes the existing deep dynasty game rather than adding another real-wor
 - Dev Tools now expose template validation, cadence/tuning inspection, Assistant GM previews, action queue inspection, sample narrative events, and difficulty playtest entry points.
 - Save migration now hydrates older saves to schema version 6 with GM profile, difficulty tuning, Assistant GM reports, and narrative template version.
 
+## Phase 8 Release Candidate UX, Tutorial, Audio, Achievements, QA, and Accessibility
+
+Phase 8 turns the deep prototype into a more approachable beta without adding another major hockey rule system:
+
+- A dismissible guided tutorial and contextual hints teach the first franchise loop from GM Office through roster, lines, tactics, arena simulation, Save Desk, and Trophy Hall.
+- A searchable Learn the Game guide/codex explains major rooms and systems in plain language from the Help overlay.
+- Local-only achievements and franchise milestones reward first wins, trades, draft picks, playoff moments, owner goals, development wins, and multi-season progress.
+- Generated Web Audio cues cover UI clicks, notifications, warnings, achievements, draft picks, trades, goal/final horn moments, broadcast whooshes, and low ambience. Audio starts only after user interaction and fetches no external assets.
+- Game Result Center and broadcast mode now add intro cards, tale-of-the-tape data, turning point, broadcast beats, three-stars presentation, fan reaction, and media prompts.
+- Accessibility settings add high contrast, larger text, reduce flashes, keyboard hints/shortcuts, local telemetry opt-in/out, and clearer Help shortcut documentation.
+- Save Desk can export a local diagnostic summary or bug report JSON. Full save data is excluded unless explicitly included.
+- New release-candidate smoke coverage exercises tutorial, guide, achievements, audio no-op behavior, accessibility helpers, fan sentiment scenarios, owner goal reporting, export/import, invariants, and a two-season mini playtest.
+
+Schema version 7 hydrates older saves with tutorial state, achievements, milestones, local telemetry, and owner goal outcome history.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, and narrative templates are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, and generated audio are simplified fictional prototype systems.
 
 ## Controls
 
@@ -144,8 +161,13 @@ This prototype intentionally avoids backend services, authentication, real hocke
 - `E`: open the highlighted room
 - `H`: open help
 - `M`: open the Operations Map
+- `G`: open GM Office when keyboard shortcuts are enabled
+- `R`: open Roster Office when keyboard shortcuts are enabled
+- `C`: open Coach's Office when keyboard shortcuts are enabled
+- `A`: open Arena Bowl when keyboard shortcuts are enabled
+- `S`: open Save Desk when keyboard shortcuts are enabled
 - `Escape`: close the active panel, help, or settings dialog
 
 ## Save Data
 
-Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls. Older saves hydrate to schema version 6 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, and narrative template version.
+Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, and local bug-report export. Older saves hydrate to schema version 7 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, and owner goal outcome history.

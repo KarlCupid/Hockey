@@ -1,10 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   createGameResultPresentation,
   filterPresentedEvents,
   type ResultEventFilter
 } from "../../game/systems/resultPresentation";
+import {
+  createBroadcastIntro,
+  createFanReactionFromResult,
+  createGameNarrativeBeats,
+  createMediaPromptFromResult,
+  createThreeStarsPresentation,
+  findTurningPoint
+} from "../../game/systems/broadcastStory";
 import type { GameResult, Team } from "../../game/types";
+import { useAudioStore } from "../../store/audioStore";
+import { useFranchiseStore } from "../../store/franchiseStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { BroadcastScorebug } from "../branding/BroadcastPackage";
 
 const FILTERS: Array<{ id: ResultEventFilter; label: string }> = [
@@ -18,13 +29,42 @@ const FILTERS: Array<{ id: ResultEventFilter; label: string }> = [
 
 export function GameResultCenter({ result, teams }: { result: GameResult; teams: Team[] }) {
   const [filter, setFilter] = useState<ResultEventFilter>("all");
+  const franchise = useFranchiseStore((state) => state.franchise);
+  const settings = useSettingsStore((state) => state.settings);
+  const playCue = useAudioStore((state) => state.playCue);
   const presentation = useMemo(() => createGameResultPresentation(result, teams), [result, teams]);
+  const narrativeBeats = useMemo(() => createGameNarrativeBeats(result, teams, settings.reduceMotion), [result, settings.reduceMotion, teams]);
+  const threeStarsPresentation = useMemo(() => createThreeStarsPresentation(result, teams), [result, teams]);
+  const turningPoint = useMemo(() => findTurningPoint(result), [result]);
   const events = filterPresentedEvents(presentation.eventFeed, filter);
   const homeTeam = teams.find((team) => team.id === result.homeTeamId);
   const awayTeam = teams.find((team) => team.id === result.awayTeamId);
+  const broadcastIntro = franchise ? createBroadcastIntro(franchise, result) : undefined;
+  const fanReaction = franchise ? createFanReactionFromResult(franchise, result) : undefined;
+  const mediaPrompt = franchise ? createMediaPromptFromResult(franchise, result) : undefined;
+
+  useEffect(() => {
+    playCue("final-horn");
+    if (result.goals.some((goal) => goal.teamId === franchise?.selectedTeamId)) playCue("goal-horn");
+  }, [franchise?.selectedTeamId, playCue, result.goals]);
 
   return (
     <div className="result-center">
+      {broadcastIntro && (
+        <section className="result-section broadcast-intro-card">
+          <small>Broadcast Intro</small>
+          <h4>{broadcastIntro.headline}</h4>
+          <div className="comparison-table">
+            {broadcastIntro.taleOfTape.map((row) => (
+              <div key={row.label}>
+                <strong>{row.away}</strong>
+                <span>{row.label}</span>
+                <strong>{row.home}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
       {homeTeam && awayTeam ? (
         <BroadcastScorebug
           awayTeam={awayTeam}
@@ -61,6 +101,19 @@ export function GameResultCenter({ result, teams }: { result: GameResult; teams:
       <section className="result-section">
         <h4>Game Story</h4>
         <p>{presentation.gameStory}</p>
+        {turningPoint && <p className="muted">Turning point: {turningPoint.description}</p>}
+      </section>
+
+      <section className="result-section">
+        <h4>Broadcast Beats</h4>
+        <div className="result-card-list">
+          {narrativeBeats.map((beat) => (
+            <article key={beat.id} className={beat.animation ? "broadcast-beat" : "broadcast-beat broadcast-beat--still"}>
+              <strong>{beat.label}</strong>
+              <span>{beat.body}</span>
+            </article>
+          ))}
+        </div>
       </section>
 
       <div className="result-grid">
@@ -145,12 +198,12 @@ export function GameResultCenter({ result, teams }: { result: GameResult; teams:
           </div>
         </section>
         <section className="result-section">
-          <h4>Three Stars</h4>
-          {presentation.threeStars.length ? (
+          <h4>{threeStarsPresentation.title}</h4>
+          {threeStarsPresentation.stars.length ? (
             <ol className="compact-list">
-              {presentation.threeStars.map((star, index) => (
-                <li key={`${star.team}-${star.player}-${index}`}>
-                  <strong>{star.player}</strong> <span>{star.team}</span>
+              {threeStarsPresentation.stars.map((star) => (
+                <li key={`${star.rank}-${star.teamName}-${star.playerName}`}>
+                  <strong>#{star.rank} {star.playerName}</strong> <span>{star.teamName}</span>
                   <p>{star.reason}</p>
                 </li>
               ))}
@@ -185,6 +238,8 @@ export function GameResultCenter({ result, teams }: { result: GameResult; teams:
         </section>
         <section className="result-section">
           <h4>Consequence Report</h4>
+          {fanReaction && <p>{fanReaction}</p>}
+          {mediaPrompt && <p className="media-prompt">{mediaPrompt}</p>}
           <ConsequenceList title="New injuries" items={presentation.consequenceReport.injuries} empty="No new injuries reported." />
           <ConsequenceList title="Morale risers" items={presentation.consequenceReport.moraleRisers} empty="No major morale spikes." />
           <ConsequenceList title="Morale fallers" items={presentation.consequenceReport.moraleFallers} empty="No major morale drops." />

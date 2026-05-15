@@ -6,9 +6,11 @@ export type BroadcastSpeedDefault = "slow" | "normal" | "fast";
 export type DecisionEventFrequency = "Low" | "Normal" | "High";
 export type PressConferenceFrequency = "Key games only" | "Normal" | "Frequent";
 export type AssistantGmHelpSetting = "Minimal" | "Normal" | "Detailed";
+export type TutorialModeSetting = "firstFranchise" | "guided" | "off";
 
 export interface AppSettings {
   reduceMotion: boolean;
+  reduceFlashes: boolean;
   reduced3DDetail: boolean;
   broadcastSpeedDefault: BroadcastSpeedDefault;
   autoSave: boolean;
@@ -16,6 +18,18 @@ export interface AppSettings {
   uiScale: UiScale;
   tableDensity: TableDensity;
   soundPlaceholder: boolean;
+  audioEnabled: boolean;
+  masterVolume: number;
+  uiVolume: number;
+  ambienceVolume: number;
+  broadcastVolume: number;
+  tutorialMode: TutorialModeSetting;
+  showTooltips: boolean;
+  highContrastMode: boolean;
+  largerText: boolean;
+  keyboardHints: boolean;
+  showRoomBadges: boolean;
+  telemetryEnabledLocalOnly: boolean;
   autoRepairAiRosters: boolean;
   autoFixUserRosterOnSeasonStart: boolean;
   storyEventsEnabled: boolean;
@@ -44,6 +58,7 @@ const STORAGE_KEY = "franchise-ice:settings:v1";
 
 export const DEFAULT_SETTINGS: AppSettings = {
   reduceMotion: false,
+  reduceFlashes: false,
   reduced3DDetail: false,
   broadcastSpeedDefault: "normal",
   autoSave: true,
@@ -51,6 +66,18 @@ export const DEFAULT_SETTINGS: AppSettings = {
   uiScale: "normal",
   tableDensity: "normal",
   soundPlaceholder: false,
+  audioEnabled: false,
+  masterVolume: 0.55,
+  uiVolume: 0.5,
+  ambienceVolume: 0.35,
+  broadcastVolume: 0.6,
+  tutorialMode: "firstFranchise",
+  showTooltips: true,
+  highContrastMode: false,
+  largerText: false,
+  keyboardHints: true,
+  showRoomBadges: true,
+  telemetryEnabledLocalOnly: true,
   autoRepairAiRosters: true,
   autoFixUserRosterOnSeasonStart: false,
   storyEventsEnabled: true,
@@ -81,6 +108,7 @@ export function parseSettings(raw: string | null | undefined): AppSettings {
 }
 
 export function normalizeSettings(input: Partial<AppSettings>): AppSettings {
+  const showRoomBadges = typeof input.showRoomBadges === "boolean" ? input.showRoomBadges : input.roomBadgesEnabled;
   return {
     ...DEFAULT_SETTINGS,
     ...input,
@@ -98,6 +126,15 @@ export function normalizeSettings(input: Partial<AppSettings>): AppSettings {
     assistantGmHelpLevel: ["Minimal", "Normal", "Detailed"].includes(input.assistantGmHelpLevel ?? "")
       ? (input.assistantGmHelpLevel as AssistantGmHelpSetting)
       : DEFAULT_SETTINGS.assistantGmHelpLevel,
+    tutorialMode: ["firstFranchise", "guided", "off"].includes(input.tutorialMode ?? "")
+      ? (input.tutorialMode as TutorialModeSetting)
+      : DEFAULT_SETTINGS.tutorialMode,
+    masterVolume: clampVolume(input.masterVolume, DEFAULT_SETTINGS.masterVolume),
+    uiVolume: clampVolume(input.uiVolume, DEFAULT_SETTINGS.uiVolume),
+    ambienceVolume: clampVolume(input.ambienceVolume, DEFAULT_SETTINGS.ambienceVolume),
+    broadcastVolume: clampVolume(input.broadcastVolume, DEFAULT_SETTINGS.broadcastVolume),
+    roomBadgesEnabled: typeof showRoomBadges === "boolean" ? showRoomBadges : DEFAULT_SETTINGS.roomBadgesEnabled,
+    showRoomBadges: typeof showRoomBadges === "boolean" ? showRoomBadges : DEFAULT_SETTINGS.showRoomBadges,
     consequencePreviewsEnabled:
       typeof input.consequencePreviewsEnabled === "boolean" ? input.consequencePreviewsEnabled : !Boolean(input.hideConsequencePreviews),
     hideConsequencePreviews:
@@ -108,6 +145,11 @@ export function normalizeSettings(input: Partial<AppSettings>): AppSettings {
           : DEFAULT_SETTINGS.hideConsequencePreviews,
     dynastyGuideResetToken: Number.isFinite(input.dynastyGuideResetToken) ? Number(input.dynastyGuideResetToken) : 0
   };
+}
+
+function clampVolume(value: number | undefined, fallback: number): number {
+  const raw = Number.isFinite(value) ? Number(value) : fallback;
+  return Math.max(0, Math.min(1, raw));
 }
 
 function readStoredSettings(): AppSettings {

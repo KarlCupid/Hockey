@@ -30,6 +30,7 @@ export function ArenaVisualization({
   const current = result.eventTimeline[Math.min(index, result.eventTimeline.length - 1)];
   const done = index >= result.eventTimeline.length;
   const live = getBroadcastLiveState(result, awayTeam, homeTeam, index);
+  const reducedBroadcastMotion = settings.reduceMotion || settings.reduceFlashes;
 
   useEffect(() => {
     if (done) return;
@@ -44,7 +45,7 @@ export function ArenaVisualization({
           <color attach="background" args={["#06101d"]} />
           <ambientLight intensity={0.6} />
           <pointLight position={[0, 6, 4]} intensity={1.5} color="#bfefff" />
-          <BroadcastRink event={current} homeTeam={homeTeam} awayTeam={awayTeam} tick={index} reducedMotion={settings.reduceMotion} />
+          <BroadcastRink event={current} homeTeam={homeTeam} awayTeam={awayTeam} tick={index} reducedMotion={reducedBroadcastMotion} />
         </Canvas>
       </div>
       <div className="broadcast-overlay">
@@ -54,8 +55,12 @@ export function ArenaVisualization({
           <strong>{homeTeam.abbreviation} {live.homeScore}</strong>
           <b>{live.chip}</b>
         </div>
-        <div className={`broadcast-banner broadcast-banner--${live.chip.toLowerCase()} ${settings.reduceMotion ? "broadcast-banner--reduced" : ""}`} style={{ "--event-accent": live.accentColor } as React.CSSProperties}>
+        <div className={`broadcast-banner broadcast-banner--${live.chip.toLowerCase()} ${reducedBroadcastMotion ? "broadcast-banner--reduced" : ""}`} style={{ "--event-accent": live.accentColor } as React.CSSProperties}>
           {live.banner}
+        </div>
+        <div className="broadcast-presentation-card">
+          <strong>{awayTeam.fullName} at {homeTeam.fullName}</strong>
+          <span>Broadcast mode uses generated presentation beats, not playable on-ice control.</span>
         </div>
         <div className="button-row broadcast-controls">
           <button type="button" className={speed === 900 ? "is-active" : ""} onClick={() => setSpeed(900)}>Normal</button>

@@ -1,4 +1,4 @@
-# Phase 4 Through Phase 7 Playtest Report
+# Phase 4 Through Phase 8 Playtest Report
 
 ## Scope
 
@@ -203,4 +203,49 @@
 - Narrative templates are short fictional procedural text snippets, not full dialogue trees.
 - Assistant GM reports are advisory and do not autopilot roster, contract, trade, lineup, or phase decisions.
 - Fan sentiment needs more targeted star-trade, playoff-miss, and success/failure sampling in future tuning.
-- Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, audio, and playable on-ice hockey remain out of scope.
+- Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, professional audio, and playable on-ice hockey remain out of scope.
+
+## Phase 8 Scope
+
+- Build: Phase 8 release-candidate UX, tutorial, Learn the Game guide, achievements/milestones, generated local audio, broadcast polish, accessibility, local telemetry, bug-report export, fan sentiment balance sampling, owner goal reporting, and smoke QA.
+- Harness: `src/tests/phase8ReleaseCandidate.test.ts` plus the existing full Vitest suite.
+- Primary target: make the deep prototype easier to learn, more satisfying to play, more stable to test, and safer to report bugs on without adding another major hockey rule system.
+
+## Phase 8 Verification
+
+- `cmd /c npm run test:smoke`: passed with 1 test file and 9 release-candidate smoke tests.
+- `cmd /c npm test`: passed with 11 test files and 155 tests.
+- `cmd /c npm run build`: passed. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Schema 6 and older saves hydrate to schema 7 with tutorial state, achievements, milestones, local telemetry, and owner goal outcome history.
+- New smoke flow creates a franchise with setup options, completes tutorial steps, generates an Assistant GM report, simulates until a first win, unlocks achievements, exports/imports a save, validates invariants, and runs a two-season mini playtest.
+
+## Phase 8 Tutorial, Guide, And UX Notes
+
+- Tutorial state is active by default for first franchises and can complete, dismiss, reset, and serialize.
+- Contextual hints appear for relevant rooms without blocking advanced players.
+- Help now includes a Learn the Game guide/codex with coverage for all major rooms, including Dev Tools.
+- GM Office shows tutorial progress and recent franchise moments.
+- Trophy Hall shows achievements and milestones alongside standings/history.
+
+## Phase 8 Achievement, Audio, Accessibility, And Diagnostics Notes
+
+- Local-only achievements cover first day, first win, lineup edit, first trade, draft pick, prospect signing, meetings, press, owner goals, playoffs, championship, dynasty seasons, cap pressure, development, rivalry, and roster repair.
+- Milestones create franchise timeline entries for wins, trades, draft picks, playoffs, championships, owner goals, story resolution, season completion, and new-season starts.
+- Generated Web Audio cues are registered for UI, notification, warning, achievement, draft, trade, goal, final horn, broadcast, and ambience use. The engine no-ops gracefully without Web Audio.
+- Accessibility helpers validate unique shortcuts, high contrast, larger text, reduce flashes, keyboard hints, and class generation.
+- Save Desk exports a local diagnostic summary or bug-report JSON. Full save JSON is excluded by default.
+- Local telemetry is capped and can be disabled.
+
+## Phase 8 Fan And Owner Reporting Notes
+
+- Targeted fan sentiment scenarios now sample star traded, fan favorite re-signed, big free agent signed, playoff miss, playoff berth, championship, rivalry win/loss, risky draft pick, losing streak, and prospect breakout.
+- Phase 8 focused tests verify star trades and playoff misses lower fan sentiment while championships and big signings raise it.
+- Owner goal outcomes are captured before seasonal refresh, split into performance/development/cap/draft categories, and reported from outcome history so the completion report is no longer zero solely because new goals were generated.
+
+## Phase 8 Known Limitations
+
+- Tutorial and guide content are prototype onboarding layers that need real-user playtest feedback.
+- Achievements are local-only and are not platform achievements.
+- Audio is generated/local placeholder sound design, not final professional audio.
+- Telemetry and bug reports remain local-only and are never sent to a backend.
+- Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, and playable on-ice hockey remain out of scope.

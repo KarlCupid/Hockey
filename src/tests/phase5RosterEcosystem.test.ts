@@ -33,7 +33,7 @@ describe("Phase 5 roster rules and cap treatment", () => {
   it("hydrates a new franchise with roster statuses and affiliates", () => {
     const franchise = createFranchise("harbor-city", "phase5-new");
 
-    expect(franchise.schemaVersion).toBe(6);
+    expect(franchise.schemaVersion).toBe(7);
     franchise.league.teams.forEach((team) => {
       expect(team.affiliate.fullName).toContain(team.city);
       expect(team.roster.every((player) => Boolean(player.rosterStatus))).toBe(true);
@@ -226,11 +226,11 @@ describe("Phase 5 migration, balance, and five-season stability", () => {
     };
     const restored = importSaveFromJson(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(6);
+    expect(restored.schemaVersion).toBe(7);
     expect(restored.league.teams[0].affiliate).toBeTruthy();
     expect(restored.league.teams[0].roster.every((player) => player.rosterStatus)).toBe(true);
     expect(getAssignedPlayerIds(restored.league.teams[0].lines)).not.toContain(assigned);
-    expect(importSaveFromJson(exportSaveToJson(restored)).schemaVersion).toBe(6);
+    expect(importSaveFromJson(exportSaveToJson(restored)).schemaVersion).toBe(7);
   });
 
   it("balances re-signing and owner goal outcomes in the intended direction", () => {

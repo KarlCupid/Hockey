@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { useFranchiseStore } from "../../store/franchiseStore";
 
 interface ErrorBoundaryState {
   error?: Error;
@@ -13,6 +14,9 @@ export class ErrorBoundary extends Component<{ children: ReactNode; fallback?: R
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("Franchise Ice panel error", error, info.componentStack);
+    useFranchiseStore.getState().recordTelemetryEvent("errorBoundary", error.message.slice(0, 120), {
+      stackLength: info.componentStack?.length ?? 0
+    });
   }
 
   render() {

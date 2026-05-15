@@ -18,7 +18,9 @@ import {
 import { capNewsItems, createPhaseTransitionNews } from "../game/systems/storyEngine";
 import { repairAllTeamRosters } from "../game/systems/aiRosterManagement";
 import { tickAffiliateDevelopment } from "../game/systems/affiliate";
+import { evaluateAchievements, type AchievementContext } from "../game/systems/achievements";
 import { dismissAssistantGmReport as dismissAssistantGmReportPure, generateAssistantGmReport } from "../game/systems/assistantGm";
+import { createBugReport, createDiagnosticSummary, serializeBugReport } from "../game/systems/bugReport";
 import { getCapWarnings } from "../game/systems/contracts";
 import { createDifficultyTuning } from "../game/systems/difficulty";
 import {
@@ -27,6 +29,8 @@ import {
   applyRelationshipDrift,
   applyTeamChemistryDrift
 } from "../game/systems/livingOpsTuning";
+import { recordLocalTelemetry } from "../game/systems/localTelemetry";
+import { evaluateMilestones, type MilestoneContext } from "../game/systems/milestones";
 import { assignDevelopmentPlan as assignDevelopmentPlanPure, removeDevelopmentPlan as removeDevelopmentPlanPure, tickDevelopment } from "../game/systems/development";
 import {
   applyAcceptedContractOffer,
@@ -80,8 +84,10 @@ import {
 import { tickScouting, toggleWatchlist, moveProspectOnBoard, updateScoutingAssignment } from "../game/systems/scouting";
 import { fireStaff as fireStaffPure, hireStaff as hireStaffPure, replaceStaff as replaceStaffPure } from "../game/systems/staff";
 import { applyTrade, evaluateTrade, generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../game/systems/trades";
+import { completeTutorialStep as completeTutorialStepPure, dismissTutorialStep as dismissTutorialStepPure, resetTutorial as resetTutorialPure } from "../game/systems/tutorial";
 import { assembleGameResult, nextGameForTeam, simulateGame } from "../game/simulation/simulateGame";
 import { useSettingsStore } from "./settingsStore";
+import { useUiStore } from "./uiStore";
 import type { TacticKey } from "../game/systems/tactics";
 import type {
   DevelopmentFocus,
@@ -119,6 +125,12 @@ interface FranchiseStore {
   startNewFranchise: (teamId: string, setupOptions?: FranchiseSetupOptions) => void;
   updateDifficultySettings: (patch: Partial<{ difficulty: GameDifficulty; storyFrequency: StoryFrequency }>) => void;
   dismissAssistantGmReport: (reportId: string) => void;
+  completeTutorialStep: (stepId: string) => void;
+  dismissTutorialStep: (stepId: string) => void;
+  resetTutorial: () => void;
+  recordTelemetryEvent: (type: FranchiseState["localTelemetry"][number]["type"], label: string, details?: FranchiseState["localTelemetry"][number]["details"]) => void;
+  exportBugReport: (userNote?: string, includeFullSave?: boolean) => string | undefined;
+  copyDiagnosticSummary: () => string | undefined;
   refreshSaves: () => Promise<void>;
   saveToSlot: (slotId: string) => Promise<void>;
   loadFromSlot: (slotId: string) => Promise<void>;
@@ -186,7 +198,11 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   activeTradeProposal: undefined,
   lastTradeEvaluation: undefined,
   startNewFranchise: (teamId, setupOptions) => {
-    set({ franchise: createFranchise(teamId, setupOptions ?? undefined), loadError: undefined });
+    const franchise = recordTelemetryIfEnabled(createFranchise(teamId, setupOptions ?? undefined), "phaseAdvanced", "New franchise created", {
+      teamId,
+      seasonYear: new Date().getFullYear()
+    });
+    set({ franchise, loadError: undefined });
   },
   updateDifficultySettings: (patch) => {
     const franchise = get().franchise;
@@ -210,6 +226,35 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     if (!franchise) return;
     set({ franchise: dismissAssistantGmReportPure(franchise, reportId) });
   },
+  completeTutorialStep: (stepId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: recordTelemetryIfEnabled(completeTutorialStepPure(franchise, stepId), "tutorialStepCompleted", stepId) });
+  },
+  dismissTutorialStep: (stepId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: dismissTutorialStepPure(franchise, stepId) });
+  },
+  resetTutorial: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: resetTutorialPure(franchise, useSettingsStore.getState().settings.tutorialMode) });
+  },
+  recordTelemetryEvent: (type, label, details) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: recordTelemetryIfEnabled(franchise, type, label, details) });
+  },
+  exportBugReport: (userNote, includeFullSave = false) => {
+    const franchise = get().franchise;
+    if (!franchise) return undefined;
+    return serializeBugReport(createBugReport(franchise, { userNote, includeFullSave, lastRoom: useUiActiveRoom() }));
+  },
+  copyDiagnosticSummary: () => {
+    const franchise = get().franchise;
+    return franchise ? createDiagnosticSummary(franchise, useUiActiveRoom()) : undefined;
+  },
   refreshSaves: async () => {
     const saves = await listSaveMetadata().catch(() => []);
     set({ saves });
@@ -219,9 +264,10 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     if (!franchise) return;
     set({ franchise: { ...franchise, saveStatus: "saving" } });
     try {
-      await writeSave(slotId, { ...franchise, updatedAt: new Date().toISOString() });
+      const readyToSave = completeTutorialStepPure(franchise, "save-franchise");
+      await writeSave(slotId, { ...readyToSave, updatedAt: new Date().toISOString() });
       const saves = await listSaveMetadata();
-      set({ franchise: { ...franchise, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves });
+      set({ franchise: { ...readyToSave, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves });
     } catch (error) {
       set({ franchise: { ...franchise, saveStatus: "error" }, loadError: error instanceof Error ? error.message : "Save failed" });
     }
@@ -233,7 +279,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         set({ loadError: "No save exists in that slot." });
         return;
       }
-      set({ franchise: save, loadError: undefined });
+      set({ franchise: recordTelemetryIfEnabled(save, "saveLoaded", `Loaded ${slotId}`, { slotId }), loadError: undefined });
     } catch (error) {
       set({ loadError: error instanceof Error ? error.message : "Save could not be loaded." });
     }
@@ -244,7 +290,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   },
   importFromJson: (raw) => {
     try {
-      const franchise = importSaveFromJson(raw);
+      const franchise = recordTelemetryIfEnabled(importSaveFromJson(raw), "saveLoaded", "Imported save JSON");
       const integrity = validateSaveIntegrity(franchise);
       set({
         franchise,
@@ -261,7 +307,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   repairCurrentSave: () => {
     const franchise = get().franchise;
     if (!franchise) return;
-    const repaired = repairFranchiseState(franchise);
+    const repaired = recordTelemetryIfEnabled(applyPhase8Progress(repairFranchiseState(franchise), { type: "rosterRepair" }), "saveRepaired", "Manual save repair");
     const integrity = validateSaveIntegrity(repaired);
     set({
       franchise: repaired,
@@ -271,7 +317,11 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   autoFillLineup: () => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: updateSelectedTeam(franchise, (team) => ({ ...team, lines: autoFillBestLineup(team).lineup })) });
+    set({
+      franchise: applyPhase8Progress(completeTutorialStepPure(updateSelectedTeam(franchise, (team) => ({ ...team, lines: autoFillBestLineup(team).lineup })), "review-lines"), {
+        type: "lineupEdited"
+      })
+    });
   },
   setLineupSlot: (path, playerId) => {
     const franchise = get().franchise;
@@ -305,31 +355,31 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       nextLineup.goalies = { ...nextLineup.goalies, [slot]: playerId };
     }
     set({
-      franchise: updateSelectedTeam(franchise, (candidate) => ({
+      franchise: applyPhase8Progress(completeTutorialStepPure(updateSelectedTeam(franchise, (candidate) => ({
         ...candidate,
         roster:
           getPlayerRosterStatus(player) === "scratched"
             ? candidate.roster.map((candidatePlayer) => (candidatePlayer.id === player.id ? { ...candidatePlayer, rosterStatus: "active" as const } : candidatePlayer))
             : candidate.roster,
         lines: nextLineup
-      }))
+      })), "review-lines"), { type: "lineupEdited" })
     });
   },
   setTactic: (key, value) => {
     const franchise = get().franchise;
     if (!franchise) return;
     set({
-      franchise: updateSelectedTeam(franchise, (team) => ({
+      franchise: completeTutorialStepPure(updateSelectedTeam(franchise, (team) => ({
         ...team,
         tactics: { ...team.tactics, [key]: clamp(value) }
-      }))
+      })), "adjust-tactic")
     });
   },
   setTactics: (tactics) => {
     const franchise = get().franchise;
     if (!franchise) return;
     set({
-      franchise: updateSelectedTeam(franchise, (team) => ({
+      franchise: completeTutorialStepPure(updateSelectedTeam(franchise, (team) => ({
         ...team,
         tactics: {
           forecheckIntensity: clamp(tactics.forecheckIntensity),
@@ -340,7 +390,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
           shotVolume: clamp(tactics.shotVolume),
           specialTeamsAggression: clamp(tactics.specialTeamsAggression)
         }
-      }))
+      })), "adjust-tactic")
     });
   },
   simulateInstantNextGame: async () => {
@@ -417,6 +467,14 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       next = tickFrontOfficeSystems(next);
     }
     next = tickLivingOpsAfterGame(next, result, Boolean(playoffGame));
+    const userHome = result.homeTeamId === franchise.selectedTeamId;
+    const won = userHome ? result.finalScore.home > result.finalScore.away : result.finalScore.away > result.finalScore.home;
+    next = recordTelemetryIfEnabled(
+      applyPhase8Progress(completeTutorialStepPure(next, "sim-first-game"), { type: "gameResult", result, won }, won ? { type: "firstWin", result } : undefined),
+      "gameSimulated",
+      `${result.awayTeamId} at ${result.homeTeamId}`,
+      { gameId: result.gameId, won }
+    );
     const autoSaveEnabled = useSettingsStore.getState().settings.autoSave;
     set({ franchise: { ...next, saveStatus: autosave && autoSaveEnabled ? "saving" : next.saveStatus } });
     if (autosave && autoSaveEnabled) {
@@ -431,7 +489,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   simToEndRegularSeason: () => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: completeRegularSeasonPure(franchise, new SeededRng(`${franchise.franchiseId}-sim-to-end`)) });
+    set({ franchise: recordTelemetryIfEnabled(applyPhase8Progress(completeRegularSeasonPure(franchise, new SeededRng(`${franchise.franchiseId}-sim-to-end`))), "phaseAdvanced", "Simmed to end of regular season") });
   },
   advanceSeasonPhase: () => {
     const franchise = get().franchise;
@@ -440,6 +498,16 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const news = next.seasonPhase !== franchise.seasonPhase ? createPhaseTransitionNews(next, franchise.seasonPhase, next.seasonPhase) : [];
     if (next.seasonPhase !== franchise.seasonPhase) {
       next = tickLivingOpsForPhase(next, franchise.seasonPhase, next.seasonPhase);
+      next = recordTelemetryIfEnabled(
+        applyPhase8Progress(
+          next,
+          { type: "seasonTransition" },
+          next.seasonPhase === "regularSeason" ? { type: "newSeasonStarted" } : franchise.seasonPhase === "seasonReview" ? { type: "seasonCompleted" } : undefined
+        ),
+        "phaseAdvanced",
+        `${franchise.seasonPhase} to ${next.seasonPhase}`,
+        { from: franchise.seasonPhase, to: next.seasonPhase }
+      );
     }
     set({ franchise: news.length ? { ...next, inbox: capNewsItems([...news, ...next.inbox]) } : next });
   },
@@ -506,6 +574,10 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         .flatMap((asset) => generateDecisionEvents(franchise, { kind: "tradeRumor", playerId: asset.assetId }, new SeededRng(`${franchise.franchiseId}-trade-submit-${asset.assetId}`)));
       next = mergeDecisionEvents(next, playerRumors);
     }
+    next = recordTelemetryIfEnabled(applyPhase8Progress(next, { type: "trade", accepted: evaluation.accepted }, evaluation.accepted ? { type: "firstTrade" } : undefined), "rosterMove", evaluation.accepted ? "Trade accepted" : "Trade rejected", {
+      accepted: evaluation.accepted,
+      tradeId: proposal.id
+    });
     set({
       franchise: { ...next, saveStatus: evaluation.accepted ? "saving" : next.saveStatus },
       activeTradeProposal: evaluation.accepted ? undefined : { ...proposal, status: "rejected" },
@@ -562,6 +634,8 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         updatedAt: new Date().toISOString()
       }
     });
+    const latest = get().franchise;
+    if (latest) set({ franchise: applyPhase8Progress(latest, { type: "prospectWatchlist" }) });
   },
   moveProspectOnDraftBoard: (prospectId, direction) => {
     const franchise = get().franchise;
@@ -578,7 +652,12 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const franchise = get().franchise;
     if (!franchise) return;
     const next = makeUserDraftSelectionPure(franchise, prospectId);
-    set({ franchise: shouldGenerateLivingOps() ? mergeDecisionEvents(next, generateDecisionEvents(next, { kind: "draftReaction", prospectId }, new SeededRng(`${next.franchiseId}-draft-reaction-${prospectId}`))) : next });
+    const withPhase8 = applyPhase8Progress(
+      shouldGenerateLivingOps() ? mergeDecisionEvents(next, generateDecisionEvents(next, { kind: "draftReaction", prospectId }, new SeededRng(`${next.franchiseId}-draft-reaction-${prospectId}`))) : next,
+      { type: "draftPick" },
+      { type: "firstDraftPick" }
+    );
+    set({ franchise: withPhase8 });
   },
   autoDraftUntilUserPick: () => {
     const franchise = get().franchise;
@@ -620,42 +699,42 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   signProspect: (prospectId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: signProspectPure(franchise, prospectId, "affiliate") });
+    set({ franchise: applyPhase8Progress(signProspectPure(franchise, prospectId, "affiliate"), { type: "prospectSigned" }) });
   },
   signProspectTo: (prospectId, destination) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: signProspectPure(franchise, prospectId, destination) });
+    set({ franchise: applyPhase8Progress(signProspectPure(franchise, prospectId, destination), { type: "prospectSigned" }) });
   },
   callUpPlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: tickLivingOpsForRosterMove(callUpPlayerPure(franchise, teamId, playerId)) });
+    set({ franchise: recordTelemetryIfEnabled(tickLivingOpsForRosterMove(callUpPlayerPure(franchise, teamId, playerId)), "rosterMove", "Player called up", { teamId, playerId }) });
   },
   sendDownPlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: tickLivingOpsForRosterMove(sendDownPlayerPure(franchise, teamId, playerId)) });
+    set({ franchise: recordTelemetryIfEnabled(tickLivingOpsForRosterMove(sendDownPlayerPure(franchise, teamId, playerId)), "rosterMove", "Player sent down", { teamId, playerId }) });
   },
   scratchPlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: tickLivingOpsForRosterMove(scratchPlayerPure(franchise, teamId, playerId)) });
+    set({ franchise: recordTelemetryIfEnabled(tickLivingOpsForRosterMove(scratchPlayerPure(franchise, teamId, playerId)), "rosterMove", "Player scratched", { teamId, playerId }) });
   },
   activatePlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: tickLivingOpsForRosterMove(activatePlayerPure(franchise, teamId, playerId)) });
+    set({ franchise: recordTelemetryIfEnabled(tickLivingOpsForRosterMove(activatePlayerPure(franchise, teamId, playerId)), "rosterMove", "Player activated", { teamId, playerId }) });
   },
   placePlayerOnIR: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: tickLivingOpsForRosterMove(placePlayerOnIRPure(franchise, teamId, playerId)) });
+    set({ franchise: recordTelemetryIfEnabled(tickLivingOpsForRosterMove(placePlayerOnIRPure(franchise, teamId, playerId)), "rosterMove", "Player placed on injured reserve", { teamId, playerId }) });
   },
   removePlayerFromIR: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: tickLivingOpsForRosterMove(removePlayerFromIRPure(franchise, teamId, playerId)) });
+    set({ franchise: recordTelemetryIfEnabled(tickLivingOpsForRosterMove(removePlayerFromIRPure(franchise, teamId, playerId)), "rosterMove", "Player removed from injured reserve", { teamId, playerId }) });
   },
   submitContractOffer: (playerId, salary, years, rolePromise) => {
     const franchise = get().franchise;
@@ -743,7 +822,20 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   resolveDecisionEvent: (eventId, optionId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: resolveDecisionEventPure(franchise, eventId, optionId, new SeededRng(`${franchise.franchiseId}-${eventId}-${optionId}`)) });
+    const event = franchise.decisionEvents.find((candidate) => candidate.id === eventId);
+    const resolved = resolveDecisionEventPure(franchise, eventId, optionId, new SeededRng(`${franchise.franchiseId}-${eventId}-${optionId}`));
+    set({
+      franchise: recordTelemetryIfEnabled(
+        applyPhase8Progress(
+          resolved,
+          { type: "decisionResolved", eventType: event?.type },
+          event && (event.severity === "high" || event.severity === "critical") ? { type: "majorStoryResolved", relatedEventId: event.id } : undefined
+        ),
+        "decisionResolved",
+        event?.type ?? "Decision resolved",
+        { eventId, optionId }
+      )
+    });
   },
   generateSampleDecisionEvent: (type = "press") => {
     const franchise = get().franchise;
@@ -804,6 +896,23 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     });
   }
 }));
+
+function applyPhase8Progress(franchise: FranchiseState, achievementContext?: AchievementContext, milestoneContext?: MilestoneContext): FranchiseState {
+  return evaluateMilestones(evaluateAchievements(franchise, achievementContext), milestoneContext);
+}
+
+function recordTelemetryIfEnabled(
+  franchise: FranchiseState,
+  type: FranchiseState["localTelemetry"][number]["type"],
+  label: string,
+  details?: FranchiseState["localTelemetry"][number]["details"]
+): FranchiseState {
+  return recordLocalTelemetry(franchise, type, label, details, useSettingsStore.getState().settings.telemetryEnabledLocalOnly);
+}
+
+function useUiActiveRoom() {
+  return useUiStore.getState().activeRoom;
+}
 
 export function selectedTeam(franchise: FranchiseState): Team {
   return findTeam(franchise.league, franchise.selectedTeamId);

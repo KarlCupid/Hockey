@@ -13,8 +13,11 @@ import { defaultMediaState } from "../systems/fanMedia";
 import { generateAgentsForPlayers, generateInitialPlayerRelationships, generateInitialTeamDynamics } from "../systems/relationships";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../systems/trades";
 import { generateAssistantGmReport } from "../systems/assistantGm";
+import { createDefaultAchievements, evaluateAchievements } from "../systems/achievements";
 import { createDifficultyTuning } from "../systems/difficulty";
 import { createGmProfile } from "../systems/gmProfile";
+import { evaluateMilestones } from "../systems/milestones";
+import { createDefaultTutorialState } from "../systems/tutorial";
 import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
 import { generateDraftClass } from "./generateDraftClass";
 import { generateRoster } from "./generatePlayers";
@@ -122,6 +125,10 @@ export function createFranchise(
     difficultyTuning,
     assistantGmReports: [],
     narrativeTemplateVersion: NARRATIVE_TEMPLATE_VERSION,
+    tutorialState: createDefaultTutorialState("firstFranchise"),
+    achievements: createDefaultAchievements(),
+    milestones: [],
+    localTelemetry: [],
     staffState,
     history: {
       seasons: [],
@@ -134,7 +141,8 @@ export function createFranchise(
       jobSecurity: 65,
       patience: selectedTeam.ownerPatience,
       seasonGoals: [],
-      messages: []
+      messages: [],
+      goalOutcomeHistory: []
     },
     prospectPools,
     decisionEvents: [],
@@ -237,10 +245,11 @@ export function createFranchise(
     transactionLog: repaired.transactionLog,
     inbox: [...ownerState.messages, ...repaired.inbox.filter((item) => !ownerState.messages.some((message) => message.id === item.id))].slice(0, 60)
   };
-  return {
+  const withAssistantReport = {
     ...finalState,
     assistantGmReports: [generateAssistantGmReport(finalState, { type: "daily", date: finalState.league.currentDate })]
   };
+  return evaluateMilestones(evaluateAchievements(withAssistantReport, { type: "newFranchise" }));
 }
 
 export function emptyRecord(): TeamRecord {

@@ -4,8 +4,11 @@ import { formatPickLabel } from "../../game/systems/draftPicks";
 import { defaultRosterStatusForIncomingPlayer } from "../../game/systems/rosterManagement";
 import { getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import { calculateTradePackageValue, evaluateTrade } from "../../game/systems/trades";
+import { getDecisionEventsForRoom } from "../../game/systems/decisionEvents";
+import { getPlayerRelationship } from "../../game/systems/relationships";
 import type { Team, TradeAsset } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
+import { DecisionEventCard } from "../hud/DecisionEventCard";
 
 export function TradeWarRoomPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
@@ -16,6 +19,7 @@ export function TradeWarRoomPanel() {
   const clearTradeProposal = useFranchiseStore((state) => state.clearTradeProposal);
   const addPlayerToTradeBlock = useFranchiseStore((state) => state.addPlayerToTradeBlock);
   const removePlayerFromTradeBlock = useFranchiseStore((state) => state.removePlayerFromTradeBlock);
+  const resolveDecisionEvent = useFranchiseStore((state) => state.resolveDecisionEvent);
   const [opponentId, setOpponentId] = useState<string | undefined>();
 
   if (!franchise) return null;
@@ -26,6 +30,7 @@ export function TradeWarRoomPanel() {
   const evaluation = activeProposal ? evaluateTrade(activeProposal, franchise.league) : undefined;
   const userValue = activeProposal ? calculateTradePackageValue(activeProposal.assetsFrom, userTeam, franchise.league) : 0;
   const otherValue = activeProposal ? calculateTradePackageValue(activeProposal.assetsTo, selectedOpponent, franchise.league) : 0;
+  const tradeEvents = getDecisionEventsForRoom(franchise, "trades");
 
   const chooseOpponent = (teamId: string) => {
     setOpponentId(teamId);
@@ -104,6 +109,13 @@ export function TradeWarRoomPanel() {
           </div>
 
           <h3>Trade Block</h3>
+          {tradeEvents.length > 0 && (
+            <div className="news-list">
+              {tradeEvents.map((event) => (
+                <DecisionEventCard key={event.id} event={event} onResolve={resolveDecisionEvent} />
+              ))}
+            </div>
+          )}
           <div className="asset-list">
             {selectedOpponent.tradeBlock.map((playerId) => {
               const player = selectedOpponent.roster.find((candidate) => candidate.id === playerId);
@@ -123,12 +135,14 @@ export function TradeWarRoomPanel() {
           <div className="asset-list">
             {[...userTeam.roster].sort((a, b) => a.displayName.localeCompare(b.displayName)).slice(0, 10).map((player) => {
               const listed = userTeam.tradeBlock.includes(player.id);
+              const relationship = getPlayerRelationship(franchise, player.id);
               return (
                 <article key={player.id}>
                   <strong>{player.displayName}</strong>
                   <span>
-                    {player.position} | {player.overall} OVR
+                    {player.position} | {player.overall} OVR | trust {relationship.trust}/100
                   </span>
+                  <small>{listed ? "A listed player can attract rumors and agent calls." : "Adding a player may create media noise if the fit is sensitive."}</small>
                   <button type="button" onClick={() => (listed ? removePlayerFromTradeBlock(player.id) : addPlayerToTradeBlock(player.id))}>
                     {listed ? "Remove from block" : "Add to block"}
                   </button>

@@ -12,6 +12,7 @@
 - Phase 3 keeps the V1.1/Phase 2 architecture intact and adds the year-to-year dynasty lifecycle as typed client-only state.
 - Phase 4 hardens the existing client-only dynasty loop through invariants, dry-run playtests, balance reporting, save repair, fictional identity, settings/help, lazy loading, and targeted visual polish instead of adding another large rule-system layer.
 - Phase 5 turns rosters into an organization-level ecosystem with active roster, scratches, affiliate, injured reserve, prospect pipeline, AI roster repair, training camp setup, and affiliate development while keeping waivers and other real-world CBA complexity out of scope.
+- Phase 6 adds a living hockey-operations layer through fictional meetings, relationships, media/fan/owner pressure, agent dynamics, story arcs, and decision events while avoiding another real-world CBA/rules layer.
 
 ## Files Added
 
@@ -22,6 +23,8 @@
 - Tests: `src/tests`
 - Phase 5 roster systems: `src/game/systems/rosterRules.ts`, `src/game/systems/rosterManagement.ts`, `src/game/systems/affiliate.ts`, `src/game/systems/aiRosterManagement.ts`, `src/game/systems/trainingCamp.ts`, `src/game/systems/reSigningBalance.ts`, `src/game/systems/ownerBalance.ts`
 - Phase 5 UI/tests: `src/components/rooms/RosterOfficePanel.tsx`, `src/tests/phase5RosterEcosystem.test.ts`
+- Phase 6 living-ops systems: `src/game/systems/relationships.ts`, `src/game/systems/decisionEvents.ts`, `src/game/systems/storyArcs.ts`, `src/game/systems/pressConferences.ts`, `src/game/systems/ownerMeetings.ts`, `src/game/systems/playerMeetings.ts`, `src/game/systems/agentInteractions.ts`, `src/game/systems/fanMedia.ts`
+- Phase 6 UI/tests: `src/components/rooms/PressRoomPanel.tsx`, `src/components/rooms/OwnerSuitePanel.tsx`, `src/components/rooms/AgentDeskPanel.tsx`, `src/components/rooms/PlayerMeetingPanel.tsx`, `src/components/hud/DecisionEventCard.tsx`, `src/components/hud/StoryArcCard.tsx`, `src/components/hud/RelationshipBadge.tsx`, `src/components/hud/TeamDynamicsPanel.tsx`, `src/tests/phase6LivingOps.test.ts`
 
 ## V1.1 Changes
 
@@ -94,6 +97,22 @@
 - Added the Roster Office room, facility/map routing, roster health in the GM Office and TopBar, and roster-aware integrations across Coach Office, Locker Room, Contract/Cap, Free Agency, Trade, Scouting, Development, Settings, and Dev Tools.
 - Updated dynasty invariants and playtests for five-season roster stress, duplicate ID protection, affiliate/IR lineup exclusion, prospect-rights consistency, emergency replacement tracking, owner security trend, and re-signing acceptance reporting.
 
+## Phase 6 Living Hockey Operations, Relationships, Media, and Decision Events Changes
+
+- Added schema version 5 living-ops state: decision events, story arcs, player relationships, fictional agent profiles, team dynamics, and media state.
+- Added deterministic relationship and agent generation, team dynamics defaults, trust/role-satisfaction notes, relationship bands, and clamped 0-100 updates.
+- Added decision-event generation for post-game pressure, phase transitions, roster moves, contract rejection, playoff moments, draft reactions, free-agency misses, trade rumors, and story-arc follow-ups.
+- Added event dedupe, active-event caps, high-severity caps, expiry, room filtering, option previews, bounded consequences, and decision-generated news.
+- Added story arcs for goalie controversy, star role demand, rookie breakout, trade rumor, contract standoff, rebuild tension, playoff pressure, rivalry escalation, owner pressure, locker-room split, prospect promotion, and free-agency pursuit.
+- Added pure systems for press conferences, owner meetings, player meetings, team meetings, agent calls, fan sentiment, media narratives, and columnist headlines.
+- Integrated agent relationship/personality plus player trust/role satisfaction into simplified contract demand and acceptance.
+- Integrated living-ops hooks into post-game application, phase changes, roster moves, trade-block activity, contract offer rejection, draft selection, and failed free-agent offers.
+- Added Press Room, Owner Suite, Agent Desk, and Player Meeting Room panels with 3D facility props, room prompts, Operations Map routing, and lazy AppShell routing.
+- Expanded GM Office into a living organization dashboard with urgent decisions, active storylines, team dynamics, media/fan pulse, owner trust, agent pressure, and recommended meetings.
+- Expanded Locker Room, PlayerCard, Contract/Cap, Trade War Room, Roster Office, Settings, Help, and Dev Tools with relationship, agent, story, decision, and sentiment surfaces.
+- Updated save hydration/repair so schema 4 and older saves receive living-ops defaults, invalid decision/story references are removed, and relationship/dynamic values are clamped.
+- Updated dynasty invariants and the dry-run playtest harness with living-ops checks, deterministic auto-resolution, event/story counts, owner trust, chemistry, media, fan, and player-trust trends.
+
 ## Verification
 
 - Passed: `npm install`
@@ -131,6 +150,10 @@
 - Passed: `npm run build` after Phase 5 changes. Rollup now emits a separate `three-r3f` chunk for Three/R3F/Drei; Vite still warns because that dependency group is about 997 kB minified.
 - Ran deterministic five-season roster stress coverage through `src/tests/phase5RosterEcosystem.test.ts` with seed `phase5-five-season`; the run completed with zero fatal roster invariant errors and preserved draft-pick ownership consistency.
 - Passed in-app browser smoke for Phase 5 at `http://127.0.0.1:5173/`: new Harbor City franchise rendered the facility, Operations Map included Roster Office, Roster Office opened, roster health/depth/cap sections rendered, a scratch action updated the roster move log, and console warning/error capture was clean.
+- Passed: `cmd /c npx tsc --noEmit` after Phase 6 living-ops changes.
+- Passed: `cmd /c npm test` with 9 test files and 120 tests after Phase 6 living-ops changes.
+- Passed: `cmd /c npm run build` after Phase 6 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Ran deterministic five-season story stress with seed `phase6-five-season`: 0 fatal invariant errors, 6 decision events generated, 2 high-severity events, 6 story arcs started, 2 story arcs resolved, 0 active events left after dry-run auto-resolution, and 5 final story arcs within the cap.
 
 ## Known Limitations
 
@@ -147,4 +170,6 @@
 - The production bundle is large because Three.js, React Three Fiber, and Drei ship in the first vertical-slice chunk; code splitting is a Phase 2 optimization.
 - Phase 5 adds a Rollup manual chunk for Three/R3F/Drei, but the 3D dependency group remains the largest production chunk.
 - Re-signing and owner goals are improved with focused harnesses, but they remain simplified management-game approximations.
+- Phase 6 conversations, relationships, agent behavior, media pressure, fan sentiment, and story arcs are fictional text-choice management approximations, not full dialogue simulation.
+- Decision-event generation is intentionally capped and conservative, so not every roster or league change creates a meeting.
 - Browser screenshot capture can time out on the current WebGL scene in the Codex in-app Browser; DOM and console smoke checks still passed.

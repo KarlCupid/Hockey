@@ -103,3 +103,46 @@
 - Owner-goal sampling now verifies successful seasons improve job security, rebuilding clubs receive at least one development/draft/cap style goal, and contenders receive at least one performance goal.
 - Affiliate development uses age, potential, morale, goalie-project pacing, and Development Coach modifiers to create reports and promotion candidates without adding playable minor-league games.
 - Cap treatment remains intentionally simplified: active, scratched, and IR players count against active cap; affiliate players are cap-exempt; retained salary and real-world CBA rules remain out of scope.
+
+## Phase 6 Scope
+
+- Build: Phase 6 living hockey operations, relationships, media, owner pressure, fictional agents, story arcs, and decision events.
+- Harness: `runDynastyPlaytest("phase6-five-season", 5, "harbor-city")`.
+- Tests: `src/tests/phase6LivingOps.test.ts`.
+- Primary target: make the dynasty feel alive through bounded, serializable story and meeting systems without adding waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, real branding, or playable on-ice hockey.
+
+## Phase 6 Results
+
+- Five-season stress seed covered in tests: `phase6-five-season`.
+- Fatal living-ops invariant errors: 0.
+- Decision events generated: 6.
+- High-severity events generated: 2.
+- Story arcs started: 6.
+- Story arcs resolved: 2.
+- Contract pressure events: 0.
+- Trade rumor events: 2.
+- Playoff pressure events: 2.
+- Active decision events at end of dry run: 0.
+- Final story arcs retained: 5, within the cap.
+- Duplicate active repeat-key events: none reported by invariants.
+- Relationship/team dynamics values remained bounded from 0 to 100.
+
+## Phase 6 Sentiment Trends
+
+- Owner trust: 100, 100, 100, 100, 100 across 2026-2030 in the sample run.
+- Team chemistry: 100, 100, 100, 100, 100 across 2026-2030 in the sample run.
+- Media pressure: 0, 0, 0, 0, 0 across 2026-2030 in the sample run after deterministic transparent/balanced auto-resolution.
+- Fan sentiment: 77, 78, 79, 80, 81 across 2026-2030.
+- Player trust lows/highs:
+  - 2026: 58.84 / 75.24.
+  - 2027: 58.28 / 86.
+  - 2028: 58.84 / 95.
+  - 2029: 58.84 / 100.
+  - 2030: 59.12 / 100.
+
+## Phase 6 Notes
+
+- The story stress run auto-resolves decisions with deterministic balanced/transparent options, so the sample trends represent low-chaos GM behavior rather than maximum-drama play.
+- Events are intentionally conservative: the system favors deduped, room-specific, high-signal decisions over daily noise.
+- Warnings still appear in broad multi-season reports because the harness records nonfatal roster/economy balance pressure; no fatal Phase 6 invariant errors were reported.
+- Press, owner, agent, player, and team conversations are fictional text-choice systems with bounded consequences, not full dialogue simulation.

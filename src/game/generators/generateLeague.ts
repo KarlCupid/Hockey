@@ -9,6 +9,8 @@ import { generateInitialDraftPicks } from "../systems/draftPicks";
 import { generateScoutingAssignments, rankDraftBoard } from "../systems/scouting";
 import { generateStaffForLeague } from "../systems/staff";
 import { createDefaultOwnerState } from "../systems/owner";
+import { defaultMediaState } from "../systems/fanMedia";
+import { generateAgentsForPlayers, generateInitialPlayerRelationships, generateInitialTeamDynamics } from "../systems/relationships";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../systems/trades";
 import { generateDraftClass } from "./generateDraftClass";
 import { generateRoster } from "./generatePlayers";
@@ -111,6 +113,17 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
       messages: []
     },
     prospectPools,
+    decisionEvents: [],
+    storyArcs: [],
+    playerRelationships: {},
+    agents: [],
+    teamDynamics: {},
+    mediaState: {
+      pressure: 45,
+      narrative: "quiet",
+      recentQuestions: [],
+      columnistTone: "neutral"
+    },
     inbox: [
       {
         id: `welcome-${selectedTeam.id}`,
@@ -159,17 +172,34 @@ export function createFranchise(selectedTeamId: string, seed = `${selectedTeamId
     updatedAt: now
   };
   const ownerState = createDefaultOwnerState(base, new SeededRng(`${seed}-owner`));
-  const repaired = repairAllTeamRosters({
-    ...base,
-    ownerState,
+  const withOwner = { ...base, ownerState };
+  const agents = generateAgentsForPlayers(withOwner, new SeededRng(`${seed}-agents`));
+  const withAgents = { ...withOwner, agents };
+  const playerRelationships = generateInitialPlayerRelationships(withAgents);
+  const withRelationships = { ...withAgents, playerRelationships };
+  const teamDynamics = generateInitialTeamDynamics(withRelationships);
+  const mediaState = defaultMediaState(withRelationships);
+  const initial = {
+    ...withRelationships,
+    teamDynamics,
+    mediaState,
     inbox: [...ownerState.messages, ...base.inbox]
+  };
+  const repaired = repairAllTeamRosters({
+    ...initial,
+    inbox: initial.inbox
   }, "newFranchise");
   return {
-    ...repaired,
     ...base,
     ownerState,
     league: repaired.league,
     prospectPools: repaired.prospectPools,
+    decisionEvents: initial.decisionEvents,
+    storyArcs: initial.storyArcs,
+    playerRelationships,
+    agents,
+    teamDynamics,
+    mediaState,
     rosterMoveHistory: repaired.rosterMoveHistory,
     transactionLog: repaired.transactionLog,
     inbox: [...ownerState.messages, ...repaired.inbox.filter((item) => !ownerState.messages.some((message) => message.id === item.id))].slice(0, 60)

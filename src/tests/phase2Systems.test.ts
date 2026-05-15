@@ -219,7 +219,7 @@ describe("Phase 2 development and saves", () => {
     });
 
     const restored = deserializeFranchise(JSON.stringify(legacy));
-    expect(restored.schemaVersion).toBe(4);
+    expect(restored.schemaVersion).toBe(5);
     expect(restored.scouting.draftClass).toHaveLength(72);
     expect(restored.league.teams[0].draftPicks).toHaveLength(8);
     expect(restored.league.teams[0].roster[0].contract.capHit).toBeGreaterThan(0);

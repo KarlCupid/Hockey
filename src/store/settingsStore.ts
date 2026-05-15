@@ -3,6 +3,8 @@ import { create } from "zustand";
 export type UiScale = "compact" | "normal" | "spacious";
 export type TableDensity = "compact" | "normal";
 export type BroadcastSpeedDefault = "slow" | "normal" | "fast";
+export type DecisionEventFrequency = "Low" | "Normal" | "High";
+export type PressConferenceFrequency = "Key games only" | "Normal" | "Frequent";
 
 export interface AppSettings {
   reduceMotion: boolean;
@@ -15,6 +17,11 @@ export interface AppSettings {
   soundPlaceholder: boolean;
   autoRepairAiRosters: boolean;
   autoFixUserRosterOnSeasonStart: boolean;
+  storyEventsEnabled: boolean;
+  decisionEventFrequency: DecisionEventFrequency;
+  autoResolveLowSeverityEvents: boolean;
+  pressConferenceFrequency: PressConferenceFrequency;
+  hideConsequencePreviews: boolean;
   dynastyGuideResetToken: number;
 }
 
@@ -40,6 +47,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundPlaceholder: false,
   autoRepairAiRosters: true,
   autoFixUserRosterOnSeasonStart: false,
+  storyEventsEnabled: true,
+  decisionEventFrequency: "Normal",
+  autoResolveLowSeverityEvents: false,
+  pressConferenceFrequency: "Normal",
+  hideConsequencePreviews: false,
   dynastyGuideResetToken: 0
 };
 
@@ -66,6 +78,12 @@ export function normalizeSettings(input: Partial<AppSettings>): AppSettings {
       : DEFAULT_SETTINGS.broadcastSpeedDefault,
     uiScale: ["compact", "normal", "spacious"].includes(input.uiScale ?? "") ? (input.uiScale as UiScale) : DEFAULT_SETTINGS.uiScale,
     tableDensity: ["compact", "normal"].includes(input.tableDensity ?? "") ? (input.tableDensity as TableDensity) : DEFAULT_SETTINGS.tableDensity,
+    decisionEventFrequency: ["Low", "Normal", "High"].includes(input.decisionEventFrequency ?? "")
+      ? (input.decisionEventFrequency as DecisionEventFrequency)
+      : DEFAULT_SETTINGS.decisionEventFrequency,
+    pressConferenceFrequency: ["Key games only", "Normal", "Frequent"].includes(input.pressConferenceFrequency ?? "")
+      ? (input.pressConferenceFrequency as PressConferenceFrequency)
+      : DEFAULT_SETTINGS.pressConferenceFrequency,
     dynastyGuideResetToken: Number.isFinite(input.dynastyGuideResetToken) ? Number(input.dynastyGuideResetToken) : 0
   };
 }

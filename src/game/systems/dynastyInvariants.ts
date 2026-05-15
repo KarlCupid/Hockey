@@ -84,6 +84,7 @@ export function validateDynastyInvariants(franchise: FranchiseState): DynastyInv
   validateFreeAgency(franchise, playerIds, errors);
   validateStaff(franchise, errors, warnings);
   validateHistory(franchise, errors, warnings);
+  validateLivingOps(franchise, teamIds, playerIds, errors, warnings);
   validatePhase(franchise, errors, warnings);
   validateJsonSerializable(franchise, errors);
 
@@ -300,6 +301,94 @@ function validateHistory(franchise: FranchiseState, errors: DynastyInvariantIssu
   if (franchise.inbox.length > TUNING.dynasty.inboxLimit) {
     warnings.push(issue("inbox.length", `Inbox has ${franchise.inbox.length} items; UI cap target is ${TUNING.dynasty.inboxLimit}.`, "inbox"));
   }
+}
+
+function validateLivingOps(franchise: FranchiseState, teamIds: Set<string>, playerIds: Set<string>, errors: DynastyInvariantIssue[], warnings: DynastyInvariantIssue[]) {
+  const staffIds = new Set(Object.values(franchise.staffState?.teamStaff ?? {}).flatMap((staff) => staff.map((member) => member.id)));
+  const prospectIds = new Set([
+    ...(franchise.scouting?.draftClass ?? []).map((prospect) => prospect.id),
+    ...Object.values(franchise.prospectPools ?? {}).flatMap((pool) => pool.map((rights) => rights.prospectId))
+  ]);
+  const activeEvents = (franchise.decisionEvents ?? []).filter((event) => event.status === "active");
+  if (activeEvents.length > 8) errors.push(issue("living.decisionCap", `Active decision events exceed cap: ${activeEvents.length}.`, "decisionEvents"));
+  const highActive = activeEvents.filter((event) => event.severity === "high" || event.severity === "critical");
+  if (highActive.length > 3) errors.push(issue("living.highDecisionCap", `High-severity active events exceed cap: ${highActive.length}.`, "decisionEvents"));
+  const repeatKeys = new Set<string>();
+  activeEvents.forEach((event, index) => {
+    const path = `decisionEvents[${index}]`;
+    if (!teamIds.has(event.teamId)) errors.push(issue("living.decisionTeam", `${event.headline} references missing team ${event.teamId}.`, path));
+    (event.playerIds ?? []).forEach((playerId) => {
+      if (!playerIds.has(playerId)) errors.push(issue("living.decisionPlayer", `${event.headline} references missing player ${playerId}.`, path));
+    });
+    (event.staffIds ?? []).forEach((staffId) => {
+      if (!staffIds.has(staffId)) errors.push(issue("living.decisionStaff", `${event.headline} references missing staff ${staffId}.`, path));
+    });
+    (event.prospectIds ?? []).forEach((prospectId) => {
+      if (!prospectIds.has(prospectId)) errors.push(issue("living.decisionProspect", `${event.headline} references missing prospect ${prospectId}.`, path));
+    });
+    if (event.repeatKey) {
+      if (repeatKeys.has(event.repeatKey)) errors.push(issue("living.duplicateRepeatKey", `Duplicate active decision repeatKey ${event.repeatKey}.`, path));
+      repeatKeys.add(event.repeatKey);
+    }
+  });
+  (franchise.decisionEvents ?? []).forEach((event, index) => {
+    if (event.status !== "active" && (event.severity === "high" || event.severity === "critical") && !event.selectedOptionId && event.status !== "expired") {
+      warnings.push(issue("living.resolvedUrgent", `${event.headline} is no longer active but still lacks resolution context.`, `decisionEvents[${index}]`));
+    }
+  });
+
+  if ((franchise.storyArcs ?? []).length > 24) errors.push(issue("living.storyCap", `Story arcs exceed cap: ${franchise.storyArcs.length}.`, "storyArcs"));
+  (franchise.storyArcs ?? []).forEach((arc, index) => {
+    const path = `storyArcs[${index}]`;
+    if (!teamIds.has(arc.teamId)) errors.push(issue("living.storyTeam", `${arc.headline} references missing team ${arc.teamId}.`, path));
+    arc.playerIds.forEach((playerId) => {
+      if (!playerIds.has(playerId)) errors.push(issue("living.storyPlayer", `${arc.headline} references missing player ${playerId}.`, path));
+    });
+    (arc.staffIds ?? []).forEach((staffId) => {
+      if (!staffIds.has(staffId)) errors.push(issue("living.storyStaff", `${arc.headline} references missing staff ${staffId}.`, path));
+    });
+    if (!within100(arc.intensity) || !within100(arc.progress)) errors.push(issue("living.storyBounds", `${arc.headline} has out-of-bounds intensity/progress.`, path));
+  });
+
+  (franchise.agents ?? []).forEach((agent, index) => {
+    if (!within100(agent.relationship) || !within100(agent.publicPressure)) errors.push(issue("living.agentBounds", `${agent.displayName} has out-of-bounds agent values.`, `agents[${index}]`));
+    agent.clientPlayerIds.forEach((playerId) => {
+      if (!playerIds.has(playerId)) errors.push(issue("living.agentClient", `${agent.displayName} references missing client ${playerId}.`, `agents[${index}]`));
+    });
+  });
+
+  playerIds.forEach((playerId) => {
+    const relationship = franchise.playerRelationships?.[playerId];
+    if (!relationship) {
+      errors.push(issue("living.missingRelationship", `Active player ${playerId} is missing relationship state.`, "playerRelationships"));
+      return;
+    }
+    if (!within100(relationship.trust) || !within100(relationship.roleSatisfaction) || !within100(relationship.communication) || !within100(relationship.pressureTolerance)) {
+      errors.push(issue("living.relationshipBounds", `Relationship values for ${playerId} are outside 0-100.`, `playerRelationships.${playerId}`));
+    }
+  });
+
+  teamIds.forEach((teamId) => {
+    const dynamics = franchise.teamDynamics?.[teamId];
+    if (!dynamics) {
+      errors.push(issue("living.missingTeamDynamics", `Team ${teamId} is missing dynamics state.`, "teamDynamics"));
+      return;
+    }
+    (["chemistry", "leadership", "accountability", "mediaPressure", "fanSentiment", "ownerTrust"] as const).forEach((key) => {
+      if (!within100(dynamics[key])) errors.push(issue("living.dynamicsBounds", `${teamId} ${key} is outside 0-100.`, `teamDynamics.${teamId}.${key}`));
+    });
+    Object.values(dynamics.rivalryHeatByTeamId ?? {}).forEach((value) => {
+      if (!within100(value)) errors.push(issue("living.rivalryBounds", `${teamId} has rivalry heat outside 0-100.`, `teamDynamics.${teamId}.rivalryHeatByTeamId`));
+    });
+  });
+
+  if (franchise.mediaState && !within100(franchise.mediaState.pressure)) {
+    errors.push(issue("living.mediaBounds", "Media pressure is outside 0-100.", "mediaState.pressure"));
+  }
+}
+
+function within100(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 100;
 }
 
 function validatePhase(franchise: FranchiseState, errors: DynastyInvariantIssue[], warnings: DynastyInvariantIssue[]) {

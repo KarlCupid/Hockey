@@ -13,6 +13,10 @@ import {
   getRecommendedNextAction
 } from "../../game/systems/phaseGuidance";
 import { validateRosterForGame } from "../../game/systems/rosterRules";
+import { getActiveDecisionEvents } from "../../game/systems/decisionEvents";
+import { createFanPulse, createMediaNarrative } from "../../game/systems/fanMedia";
+import { getAgentPressureLevel } from "../../game/systems/agentInteractions";
+import { getTeamMeetingNeed } from "../../game/systems/playerMeetings";
 import type { FranchiseState } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
@@ -20,6 +24,9 @@ import { TeamCrest } from "../branding/TeamCrest";
 import { ProgressBar } from "../ui/ProgressBar";
 import { SectionHeader } from "../ui/SectionHeader";
 import { WarningCallout } from "../ui/WarningCallout";
+import { DecisionEventCard } from "../hud/DecisionEventCard";
+import { StoryArcCard } from "../hud/StoryArcCard";
+import { TeamDynamicsPanel } from "../hud/TeamDynamicsPanel";
 import { SaveLoadPanel } from "./SaveLoadPanel";
 
 export function GMOfficePanel() {
@@ -34,6 +41,7 @@ export function GMOfficePanel() {
   const autoCompleteDraft = useFranchiseStore((state) => state.autoCompleteDraft);
   const advanceFreeAgencyDay = useFranchiseStore((state) => state.advanceFreeAgencyDay);
   const completeFreeAgency = useFranchiseStore((state) => state.completeFreeAgency);
+  const resolveDecisionEvent = useFranchiseStore((state) => state.resolveDecisionEvent);
   const confirmPhaseAdvances = useSettingsStore((state) => state.settings.confirmPhaseAdvances);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
@@ -54,6 +62,11 @@ export function GMOfficePanel() {
   const completedChecklist = checklist.filter((item) => item.complete).length;
   const dangerWarnings = getDangerWarnings(franchise);
   const rosterReport = validateRosterForGame(team);
+  const activeDecisions = getActiveDecisionEvents(franchise);
+  const urgentDecisions = activeDecisions.filter((event) => event.severity === "high" || event.severity === "critical");
+  const currentStorylines = franchise.storyArcs.filter((arc) => arc.status === "active").slice(0, 4);
+  const topAgentPressure = [...franchise.agents].sort((a, b) => b.publicPressure - a.publicPressure)[0];
+  const recommendedMeeting = getTeamMeetingNeed(franchise) ?? activeDecisions.find((event) => event.locationRoom === "playerMeetings")?.headline ?? "No urgent meeting recommended.";
   const confirmAndRun = (action: string, run: () => void) => {
     if (!confirmPhaseAdvances) {
       run();
@@ -83,6 +96,10 @@ export function GMOfficePanel() {
           <strong>{recordLabel(team)}</strong>
         </div>
         <div>
+          <small>Active Decisions</small>
+          <strong>{activeDecisions.length}</strong>
+        </div>
+        <div>
           <small>Owner Mood</small>
           <strong>{mood}</strong>
         </div>
@@ -104,6 +121,43 @@ export function GMOfficePanel() {
           {playoffGame ? "Instant Sim Playoff Game" : "Instant Sim Next Game"}
         </button>
       </section>
+      {(activeDecisions.length > 0 || currentStorylines.length > 0) && (
+        <div className="room-grid room-grid--two">
+          <section className="panel-section">
+            <SectionHeader title="Living Organization Dashboard" eyebrow="Phase 6" />
+            {urgentDecisions.length > 0 && (
+              <WarningCallout title="Urgent Issues" tone={urgentDecisions.some((event) => event.severity === "critical") ? "danger" : "warning"}>
+                {urgentDecisions.slice(0, 3).map((event) => (
+                  <p key={event.id}>{event.headline}</p>
+                ))}
+              </WarningCallout>
+            )}
+            <div className="news-list">
+              {activeDecisions.slice(0, 4).map((event) => (
+                <DecisionEventCard key={event.id} event={event} onGoTo={setActiveRoom} onResolve={resolveDecisionEvent} compact={event.severity === "low"} />
+              ))}
+            </div>
+          </section>
+          <section className="panel-section">
+            <h3>Current Storylines</h3>
+            <div className="asset-list">
+              {currentStorylines.length ? currentStorylines.map((arc) => <StoryArcCard key={arc.id} arc={arc} />) : <p className="empty-state">No active story arcs yet.</p>}
+            </div>
+            <h4>Media / Fan / Agent Pulse</h4>
+            <p className="muted">{createMediaNarrative(franchise)}</p>
+            <p className="muted">{createFanPulse(franchise)}</p>
+            <p className="muted">Agent pressure: {topAgentPressure ? `${topAgentPressure.displayName} is ${getAgentPressureLevel(topAgentPressure)}.` : "No agents loaded."}</p>
+            <p className="muted">Recommended meeting: {recommendedMeeting}</p>
+            <div className="button-row">
+              <button type="button" onClick={() => setActiveRoom("press")}>Press Room</button>
+              <button type="button" onClick={() => setActiveRoom("ownerSuite")}>Owner Suite</button>
+              <button type="button" onClick={() => setActiveRoom("agents")}>Agent Desk</button>
+              <button type="button" onClick={() => setActiveRoom("playerMeetings")}>Player Meetings</button>
+            </div>
+          </section>
+        </div>
+      )}
+      <TeamDynamicsPanel franchise={franchise} />
       <section className="panel-section">
         <SectionHeader title="Calendar Command Center" eyebrow={phaseLabel} />
         <div className="season-pulse">

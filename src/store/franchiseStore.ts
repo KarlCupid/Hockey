@@ -26,6 +26,22 @@ import {
   evaluateContractOffer
 } from "../game/systems/contractNegotiation";
 import {
+  generateContractDecisionEvents,
+  generateDecisionEvents,
+  generatePhaseDecisionEvents,
+  generatePostGameDecisionEvents,
+  generateRosterDecisionEvents,
+  mergeDecisionEvents,
+  resolveDecisionEvent as resolveDecisionEventPure
+} from "../game/systems/decisionEvents";
+import { updateFanSentiment, updateMediaState } from "../game/systems/fanMedia";
+import { generateInitialPlayerRelationships, generateAgentsForPlayers, generateInitialTeamDynamics } from "../game/systems/relationships";
+import { createTeamMeeting, createPlayerMeeting } from "../game/systems/playerMeetings";
+import { createOwnerMeeting } from "../game/systems/ownerMeetings";
+import { createAgentCall, getAgentForPlayer } from "../game/systems/agentInteractions";
+import { createPressConference } from "../game/systems/pressConferences";
+import { createStoryArcDecisionEvent, updateStoryArcs } from "../game/systems/storyArcs";
+import {
   advanceFreeAgencyDay as advanceFreeAgencyDayPure,
   applyFreeAgentSigning,
   completeFreeAgency as completeFreeAgencyPure,
@@ -73,6 +89,7 @@ import type {
   RoleExpectation,
   SaveSlotMetadata,
   ScoutingAssignment,
+  SeasonPhase,
   StaffRole,
   Tactics,
   Team,
@@ -141,6 +158,12 @@ interface FranchiseStore {
   fireStaff: (staffId: string) => void;
   replaceStaff: (outgoingStaffId: string, incomingStaffId: string) => void;
   tickFrontOfficeSystemsAfterGame: () => void;
+  resolveDecisionEvent: (eventId: string, optionId: string) => void;
+  generateSampleDecisionEvent: (type?: "press" | "owner" | "agent" | "player" | "team") => void;
+  autoResolveActiveDecisionEvents: () => void;
+  schedulePlayerMeeting: (playerId: string) => void;
+  scheduleTeamMeeting: () => void;
+  resetLivingOpsState: () => void;
 }
 
 export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
@@ -300,7 +323,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         awayTeam,
         seed: `${franchise.franchiseId}-${playoffGame.id}-${franchise.playoffState?.currentRound ?? 1}`
       });
-      const next = applyPlayoffGameResult(franchise, playoffGame, result);
+      const next = tickLivingOpsAfterGame(applyPlayoffGameResult(franchise, playoffGame, result), result, true);
       const autoSave = useSettingsStore.getState().settings.autoSave;
       set({ franchise: { ...next, saveStatus: autoSave ? "saving" : next.saveStatus } });
       const saved = autoSave
@@ -358,6 +381,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       next = simulateRemainingDay(next, result.gameId);
       next = tickFrontOfficeSystems(next);
     }
+    next = tickLivingOpsAfterGame(next, result, Boolean(playoffGame));
     const autoSaveEnabled = useSettingsStore.getState().settings.autoSave;
     set({ franchise: { ...next, saveStatus: autosave && autoSaveEnabled ? "saving" : next.saveStatus } });
     if (autosave && autoSaveEnabled) {
@@ -377,8 +401,11 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   advanceSeasonPhase: () => {
     const franchise = get().franchise;
     if (!franchise) return;
-    const next = advanceSeasonPhasePure(franchise, new SeededRng(`${franchise.franchiseId}-advance-${franchise.seasonPhase}`));
+    let next = advanceSeasonPhasePure(franchise, new SeededRng(`${franchise.franchiseId}-advance-${franchise.seasonPhase}`));
     const news = next.seasonPhase !== franchise.seasonPhase ? createPhaseTransitionNews(next, franchise.seasonPhase, next.seasonPhase) : [];
+    if (next.seasonPhase !== franchise.seasonPhase) {
+      next = tickLivingOpsForPhase(next, franchise.seasonPhase, next.seasonPhase);
+    }
     set({ franchise: news.length ? { ...next, inbox: capNewsItems([...news, ...next.inbox]) } : next });
   },
   simulateNextPlayoffDay: () => {
@@ -437,7 +464,13 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const proposal = get().activeTradeProposal;
     if (!franchise || !proposal) return undefined;
     const evaluation = evaluateTrade(proposal, franchise.league);
-    const next = applyTrade({ ...proposal, status: evaluation.accepted ? "accepted" : "rejected" }, franchise);
+    let next = applyTrade({ ...proposal, status: evaluation.accepted ? "accepted" : "rejected" }, franchise);
+    if (!evaluation.accepted && shouldGenerateLivingOps()) {
+      const playerRumors = proposal.assetsFrom
+        .filter((asset) => asset.type === "player")
+        .flatMap((asset) => generateDecisionEvents(franchise, { kind: "tradeRumor", playerId: asset.assetId }, new SeededRng(`${franchise.franchiseId}-trade-submit-${asset.assetId}`)));
+      next = mergeDecisionEvents(next, playerRumors);
+    }
     set({
       franchise: { ...next, saveStatus: evaluation.accepted ? "saving" : next.saveStatus },
       activeTradeProposal: evaluation.accepted ? undefined : { ...proposal, status: "rejected" },
@@ -457,12 +490,11 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   addPlayerToTradeBlock: (playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({
-      franchise: updateSelectedTeam(franchise, (team) => ({
+    const next = updateSelectedTeam(franchise, (team) => ({
         ...team,
         tradeBlock: team.tradeBlock.includes(playerId) ? team.tradeBlock : [...team.tradeBlock, playerId].slice(-8)
-      }))
-    });
+      }));
+    set({ franchise: shouldGenerateLivingOps() ? mergeDecisionEvents(next, generateDecisionEvents(next, { kind: "tradeRumor", playerId }, new SeededRng(`${next.franchiseId}-trade-rumor-${playerId}`))) : next });
   },
   removePlayerFromTradeBlock: (playerId) => {
     const franchise = get().franchise;
@@ -510,7 +542,8 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   makeDraftSelection: (prospectId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: makeUserDraftSelectionPure(franchise, prospectId) });
+    const next = makeUserDraftSelectionPure(franchise, prospectId);
+    set({ franchise: shouldGenerateLivingOps() ? mergeDecisionEvents(next, generateDecisionEvents(next, { kind: "draftReaction", prospectId }, new SeededRng(`${next.franchiseId}-draft-reaction-${prospectId}`))) : next });
   },
   autoDraftUntilUserPick: () => {
     const franchise = get().franchise;
@@ -562,32 +595,32 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   callUpPlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: callUpPlayerPure(franchise, teamId, playerId) });
+    set({ franchise: tickLivingOpsForRosterMove(callUpPlayerPure(franchise, teamId, playerId)) });
   },
   sendDownPlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: sendDownPlayerPure(franchise, teamId, playerId) });
+    set({ franchise: tickLivingOpsForRosterMove(sendDownPlayerPure(franchise, teamId, playerId)) });
   },
   scratchPlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: scratchPlayerPure(franchise, teamId, playerId) });
+    set({ franchise: tickLivingOpsForRosterMove(scratchPlayerPure(franchise, teamId, playerId)) });
   },
   activatePlayer: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: activatePlayerPure(franchise, teamId, playerId) });
+    set({ franchise: tickLivingOpsForRosterMove(activatePlayerPure(franchise, teamId, playerId)) });
   },
   placePlayerOnIR: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: placePlayerOnIRPure(franchise, teamId, playerId) });
+    set({ franchise: tickLivingOpsForRosterMove(placePlayerOnIRPure(franchise, teamId, playerId)) });
   },
   removePlayerFromIR: (teamId, playerId) => {
     const franchise = get().franchise;
     if (!franchise) return;
-    set({ franchise: removePlayerFromIRPure(franchise, teamId, playerId) });
+    set({ franchise: tickLivingOpsForRosterMove(removePlayerFromIRPure(franchise, teamId, playerId)) });
   },
   submitContractOffer: (playerId, salary, years, rolePromise) => {
     const franchise = get().franchise;
@@ -611,12 +644,13 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       set({ franchise: applyAcceptedContractOffer(franchise, { ...offer, status: "accepted", evaluation }) });
       return;
     }
+    const withNews = {
+      ...franchise,
+      inbox: [...createContractNegotiationNews(player, { ...offer, status: "rejected", evaluation }, evaluation, franchise.league.currentDate, team.id), ...franchise.inbox].slice(0, 60),
+      updatedAt: new Date().toISOString()
+    };
     set({
-      franchise: {
-        ...franchise,
-        inbox: [...createContractNegotiationNews(player, { ...offer, status: "rejected", evaluation }, evaluation, franchise.league.currentDate, team.id), ...franchise.inbox].slice(0, 60),
-        updatedAt: new Date().toISOString()
-      }
+      franchise: shouldGenerateLivingOps() ? mergeDecisionEvents(withNews, generateContractDecisionEvents(withNews, player, new SeededRng(`${withNews.franchiseId}-contract-${player.id}`))) : withNews
     });
   },
   submitFreeAgentOffer: (freeAgentId, salary, years, rolePromise) => {
@@ -636,7 +670,10 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       offerType: "freeAgent",
       status: "draft"
     };
-    set({ franchise: applyFreeAgentSigning({ ...franchise, freeAgencyState: state }, freeAgentId, offer) });
+    const next = applyFreeAgentSigning({ ...franchise, freeAgencyState: state }, freeAgentId, offer);
+    const signed = next.freeAgencyState?.userSignings.includes(freeAgentId);
+    const generated = signed ? [] : generateDecisionEvents(next, { kind: "freeAgencyMiss", playerId: freeAgentId }, new SeededRng(`${next.franchiseId}-fa-miss-${freeAgentId}`));
+    set({ franchise: shouldGenerateLivingOps() ? mergeDecisionEvents(next, generated) : next });
   },
   advanceFreeAgencyDay: () => {
     const franchise = get().franchise;
@@ -667,6 +704,69 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const franchise = get().franchise;
     if (!franchise) return;
     set({ franchise: tickFrontOfficeSystems(franchise) });
+  },
+  resolveDecisionEvent: (eventId, optionId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: resolveDecisionEventPure(franchise, eventId, optionId, new SeededRng(`${franchise.franchiseId}-${eventId}-${optionId}`)) });
+  },
+  generateSampleDecisionEvent: (type = "press") => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const team = selectedTeam(franchise);
+    const player = [...team.roster].sort((a, b) => b.overall - a.overall)[0];
+    const agent = player ? getAgentForPlayer(franchise, player.id) : undefined;
+    const event =
+      type === "owner"
+        ? createOwnerMeeting(franchise, { topic: "Sample owner pressure meeting" })
+        : type === "agent" && player && agent
+          ? createAgentCall(franchise, agent.id, player.id, { topic: "Sample agent pressure call." })
+          : type === "player" && player
+            ? createPlayerMeeting(franchise, player.id, { reason: "Sample player relationship meeting." })
+            : type === "team"
+              ? createTeamMeeting(franchise, { reason: "Sample team meeting." })
+              : createPressConference(franchise, { topic: "Sample media availability" });
+    set({ franchise: mergeDecisionEvents(franchise, [event]) });
+  },
+  autoResolveActiveDecisionEvents: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    const next = franchise.decisionEvents
+      .filter((event) => event.status === "active")
+      .reduce((state, event) => resolveDecisionEventPure(state, event.id, preferredOptionId(event), new SeededRng(`${state.franchiseId}-auto-${event.id}`)), franchise);
+    set({ franchise: next });
+  },
+  schedulePlayerMeeting: (playerId) => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: mergeDecisionEvents(franchise, [createPlayerMeeting(franchise, playerId)]) });
+  },
+  scheduleTeamMeeting: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: mergeDecisionEvents(franchise, [createTeamMeeting(franchise)]) });
+  },
+  resetLivingOpsState: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    if (typeof window !== "undefined" && !window.confirm("Reset all story, relationship, agent, media, and decision state?")) return;
+    const agents = generateAgentsForPlayers(franchise, new SeededRng(`${franchise.franchiseId}-reset-agents`));
+    const withAgents = { ...franchise, agents, decisionEvents: [], storyArcs: [] };
+    const playerRelationships = generateInitialPlayerRelationships(withAgents);
+    const withRelationships = { ...withAgents, playerRelationships };
+    set({
+      franchise: {
+        ...withRelationships,
+        teamDynamics: generateInitialTeamDynamics(withRelationships),
+        mediaState: {
+          pressure: 45,
+          narrative: "quiet",
+          recentQuestions: [],
+          columnistTone: "neutral"
+        },
+        updatedAt: new Date().toISOString()
+      }
+    });
   }
 }));
 
@@ -836,6 +936,66 @@ function tickFrontOfficeSystems(franchise: FranchiseState): FranchiseState {
   };
 }
 
+function tickLivingOpsAfterGame(franchise: FranchiseState, result: GameResult, playoffGame: boolean): FranchiseState {
+  if (!shouldGenerateLivingOps()) return franchise;
+  const team = selectedTeam(franchise);
+  const userHome = result.homeTeamId === team.id;
+  const won = userHome ? result.finalScore.home > result.finalScore.away : result.finalScore.away > result.finalScore.home;
+  const uglyLoss = !won && Math.abs(result.finalScore.home - result.finalScore.away) >= 3;
+  let next = updateFanSentiment(franchise, { win: won });
+  next = updateMediaState(next, { win: won, uglyLoss });
+  const events = [
+    ...generatePostGameDecisionEvents(next, result, new SeededRng(`${next.franchiseId}-${result.id}-living`)),
+    ...(playoffGame ? generateDecisionEvents(next, { kind: "playoff" }, new SeededRng(`${next.franchiseId}-${result.id}-playoff-living`)) : [])
+  ];
+  next = mergeDecisionEvents(next, filterEventsBySettings(events));
+  next = updateStoryArcs(next, new SeededRng(`${next.franchiseId}-${result.id}-story`));
+  next = mergeDecisionEvents(next, filterEventsBySettings(next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc) ?? [])));
+  return autoResolveLowSeverityIfNeeded(next);
+}
+
+function tickLivingOpsForPhase(franchise: FranchiseState, previousPhase: SeasonPhase, nextPhase: SeasonPhase): FranchiseState {
+  if (!shouldGenerateLivingOps()) return franchise;
+  let next = mergeDecisionEvents(
+    franchise,
+    filterEventsBySettings(generatePhaseDecisionEvents(franchise, previousPhase, nextPhase, new SeededRng(`${franchise.franchiseId}-${previousPhase}-${nextPhase}-living`)))
+  );
+  next = updateStoryArcs(next, new SeededRng(`${next.franchiseId}-${nextPhase}-story`));
+  return autoResolveLowSeverityIfNeeded(mergeDecisionEvents(next, filterEventsBySettings(next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc) ?? []))));
+}
+
+function tickLivingOpsForRosterMove(franchise: FranchiseState): FranchiseState {
+  if (!shouldGenerateLivingOps()) return franchise;
+  const move = franchise.rosterMoveHistory[0];
+  if (!move) return franchise;
+  const events = generateRosterDecisionEvents(franchise, move, new SeededRng(`${franchise.franchiseId}-${move.id}-living`));
+  return autoResolveLowSeverityIfNeeded(mergeDecisionEvents(franchise, filterEventsBySettings(events)));
+}
+
+function shouldGenerateLivingOps(): boolean {
+  return useSettingsStore.getState().settings.storyEventsEnabled;
+}
+
+function filterEventsBySettings<T extends { severity: string; type?: string }>(events: T[]): T[] {
+  const settings = useSettingsStore.getState().settings;
+  const frequency = settings.decisionEventFrequency;
+  const pressFrequency = settings.pressConferenceFrequency;
+  return events.filter((event, index) => {
+    if (frequency === "High") return true;
+    if (frequency === "Low" && event.severity === "low") return false;
+    if (pressFrequency === "Key games only" && event.type === "pressConference" && event.severity === "low") return false;
+    if (pressFrequency === "Frequent" && event.type === "pressConference") return true;
+    return frequency === "Normal" ? index < 4 || event.severity === "high" || event.severity === "critical" : true;
+  });
+}
+
+function autoResolveLowSeverityIfNeeded(franchise: FranchiseState): FranchiseState {
+  if (!useSettingsStore.getState().settings.autoResolveLowSeverityEvents) return franchise;
+  return franchise.decisionEvents
+    .filter((event) => event.status === "active" && event.severity === "low")
+    .reduce((state, event) => resolveDecisionEventPure(state, event.id, preferredOptionId(event), new SeededRng(`${state.franchiseId}-auto-low-${event.id}`)), franchise);
+}
+
 function refreshFrontOfficeTeam(team: Team): Team {
   const untouchables = generateUntouchables(team);
   const generatedBlock = generateTradeBlock({ ...team, untouchables });
@@ -955,4 +1115,8 @@ function wonTeam(teamId: string, result: GameResult): boolean {
 
 export function recordLabel(team: Team): string {
   return `${recordString(team)} (${team.record.points} pts)`;
+}
+
+function preferredOptionId(event: { options: Array<{ id: string; tone: string }> }): string {
+  return event.options.find((option) => option.tone === "transparent")?.id ?? event.options.find((option) => option.tone === "supportive")?.id ?? event.options[0]?.id ?? "";
 }

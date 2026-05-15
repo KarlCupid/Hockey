@@ -77,3 +77,12 @@
 - Add AI roster repair and training-camp setup so multi-season saves can recover active depth, goalie shortages, surplus rosters, and invalid lineups without waivers or real-world CBA systems.
 - Add Phase 5 save migration to schema version 4 with safe roster-status, affiliate, roster-log, and player-pathway defaults.
 - Add Roster Office UI, operations-map/facility routing, room integrations, Dev Tools stress reports, five-season dry-run reporting, and focused Vitest coverage.
+
+## Milestone 12: Phase 6 Living Hockey Operations, Relationships, Media, and Decision Events
+
+- Add typed, serializable living-ops state for decision events, story arcs, player relationships, agent profiles, team dynamics, and media narrative.
+- Build pure systems for press conferences, owner meetings, agent calls, player and team meetings, fan/media sentiment, story-arc detection, and bounded decision resolution.
+- Integrate simplified consequences into post-game, roster, trade, contract, draft, free-agency, playoff, and phase-transition flows without adding waivers, clauses, retained salary, arbitration, or other CBA complexity.
+- Add Press Room, Owner Suite, Agent Desk, and Player Meeting Room panels plus GM Office, Locker Room, Contract, Trade, Roster, Settings, Help, and Dev Tools living-ops surfaces.
+- Add schema version 5 save hydration/repair for older saves, decision/story invariant checks, and a five-season story stress harness.
+- Keep all interactions fictional, client-only, deterministic where tested, and grounded in a serious hockey-operations tone.

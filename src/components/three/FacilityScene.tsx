@@ -11,12 +11,16 @@ import { ThirdPersonController } from "./ThirdPersonController";
 
 const ZONES: RoomZoneConfig[] = [
   { id: "gm", label: "GM OFFICE", position: [-6.8, 0, -5.2], color: "#6ecbff" },
+  { id: "ownerSuite", label: "OWNER SUITE", position: [-9.6, 0, -7.2], color: "#f5c65b" },
+  { id: "press", label: "PRESS ROOM", position: [-2.0, 0, -7.2], color: "#d7e8ff" },
   { id: "roster", label: "ROSTER OFFICE", position: [-9.1, 0, -3.4], color: "#76e3a5" },
   { id: "contracts", label: "CAP OFFICE", position: [-3.8, 0, -5.2], color: "#f5c65b" },
   { id: "freeAgency", label: "FREE AGENCY", position: [-7.4, 0, -1.4], color: "#d7e8ff" },
   { id: "coach", label: "COACH OFFICE", position: [0, 0, -6.5], color: "#8ee7d1" },
   { id: "trades", label: "TRADE WAR ROOM", position: [3.8, 0, -5.2], color: "#ff9f6e" },
   { id: "staff", label: "STAFF OFFICE", position: [7.4, 0, -1.4], color: "#76e3a5" },
+  { id: "playerMeetings", label: "PLAYER MEETINGS", position: [9.4, 0, -7.2], color: "#8ee7d1" },
+  { id: "agents", label: "AGENT DESK", position: [-2.1, 0, -3.0], color: "#b58cff" },
   { id: "locker", label: "LOCKER ROOM", position: [6.8, 0, -5.2], color: "#c8e9ff" },
   { id: "medical", label: "MEDICAL", position: [-7.2, 0, 4.2], color: "#ff7e8a" },
   { id: "development", label: "DEVELOPMENT", position: [-4.2, 0, 4.1], color: "#76e3a5" },
@@ -87,14 +91,18 @@ function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: s
       </mesh>
       <TeamBrandingWall teamId={selectedTeamId} />
       <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
+      <OwnerSuiteProps />
+      <PressRoomProps />
       <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
       <RosterOfficeProps />
       <ContractOfficeProps />
+      <AgentDeskProps />
       <FreeAgencyProps />
       <Desk position={[0, 0, -7.6]} color="#183b3e" />
       <CoachBoard />
       <TradeRoomProps />
       <StaffProps />
+      <PlayerMeetingProps />
       <Lockers />
       <MedicalTable />
       <DevelopmentProps />
@@ -126,6 +134,74 @@ function RosterOfficeProps() {
         <boxGeometry args={[0.16, 0.5, 0.08]} />
         <meshStandardMaterial color="#d7e8ff" emissive="#76e3a5" emissiveIntensity={0.2} />
       </mesh>
+    </group>
+  );
+}
+
+function OwnerSuiteProps() {
+  return (
+    <group position={[-9.55, 0, -8.35]}>
+      <Desk position={[0, 0, 0]} color="#3d3417" />
+      <mesh position={[1.2, 1.12, -0.1]}>
+        <boxGeometry args={[1.55, 1.0, 0.08]} />
+        <meshStandardMaterial color="#f7e6a6" emissive="#f5c65b" emissiveIntensity={0.16} />
+      </mesh>
+      {[-0.45, 0, 0.45].map((x, index) => (
+        <mesh key={x} position={[1.2 + x, 1.12, 0]}>
+          <boxGeometry args={[0.18, 0.68 - index * 0.12, 0.04]} />
+          <meshStandardMaterial color={index === 0 ? "#ff7e8a" : "#61c9ff"} />
+        </mesh>
+      ))}
+      <mesh position={[-0.72, 0.95, 0.38]}>
+        <sphereGeometry args={[0.18, 20, 20]} />
+        <meshStandardMaterial color="#f5c65b" metalness={0.45} roughness={0.3} />
+      </mesh>
+    </group>
+  );
+}
+
+function PressRoomProps() {
+  return (
+    <group position={[-2.0, 0, -8.25]}>
+      <mesh position={[0, 0.55, 0]}>
+        <boxGeometry args={[1.35, 1.1, 0.72]} />
+        <meshStandardMaterial color="#253158" />
+      </mesh>
+      <mesh position={[0, 1.2, -0.38]}>
+        <boxGeometry args={[2.3, 1.25, 0.08]} />
+        <meshStandardMaterial color="#d7e8ff" emissive="#61c9ff" emissiveIntensity={0.14} />
+      </mesh>
+      {[-0.35, 0, 0.35].map((x) => (
+        <mesh key={x} position={[x, 1.22, 0.4]} rotation={[0.35, 0, 0]}>
+          <cylinderGeometry args={[0.035, 0.035, 0.46, 10]} />
+          <meshStandardMaterial color="#111827" />
+        </mesh>
+      ))}
+      {[-1.05, 1.05].map((x) => (
+        <pointLight key={x} position={[x, 1.8, 0.7]} intensity={0.45} color="#ffffff" />
+      ))}
+    </group>
+  );
+}
+
+function AgentDeskProps() {
+  return (
+    <group position={[-2.1, 0, -4.15]}>
+      <Desk position={[0, 0, 0]} color="#2b2140" />
+      <mesh position={[1.15, 1.08, -0.08]}>
+        <boxGeometry args={[1.35, 0.95, 0.08]} />
+        <meshStandardMaterial color="#e7d7ff" emissive="#b58cff" emissiveIntensity={0.14} />
+      </mesh>
+      <mesh position={[-0.62, 0.92, 0.32]} rotation={[0, 0, -0.25]}>
+        <torusGeometry args={[0.18, 0.045, 10, 18]} />
+        <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
+      </mesh>
+      {[-0.32, 0, 0.32].map((x) => (
+        <mesh key={x} position={[1.15 + x, 1.1, 0]}>
+          <boxGeometry args={[0.2, 0.5, 0.04]} />
+          <meshStandardMaterial color="#b58cff" />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -288,6 +364,36 @@ function StaffProps() {
       <mesh position={[0.55, 0.42, 0.55]}>
         <cylinderGeometry args={[0.42, 0.42, 0.08, 24]} />
         <meshStandardMaterial color="#304d46" />
+      </mesh>
+    </group>
+  );
+}
+
+function PlayerMeetingProps() {
+  return (
+    <group position={[9.35, 0, -8.25]}>
+      <mesh position={[0, 0.42, 0]}>
+        <boxGeometry args={[1.75, 0.18, 1.05]} />
+        <meshStandardMaterial color="#183b3e" />
+      </mesh>
+      {[
+        [-0.65, 0, 0.62],
+        [0.65, 0, 0.62],
+        [-0.65, 0, -0.62],
+        [0.65, 0, -0.62]
+      ].map(([x, y, z]) => (
+        <mesh key={`${x}-${z}`} position={[x, 0.36, z]}>
+          <cylinderGeometry args={[0.18, 0.18, 0.18, 16]} />
+          <meshStandardMaterial color="#244f54" />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.22, -0.62]}>
+        <boxGeometry args={[1.8, 1.0, 0.08]} />
+        <meshStandardMaterial color="#eefcff" emissive="#8ee7d1" emissiveIntensity={0.12} />
+      </mesh>
+      <mesh position={[0, 1.24, -0.55]}>
+        <circleGeometry args={[0.28, 24]} />
+        <meshStandardMaterial color="#8ee7d1" emissive="#8ee7d1" emissiveIntensity={0.18} />
       </mesh>
     </group>
   );

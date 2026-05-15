@@ -24,6 +24,10 @@ export type AcquiredVia = "generated" | "draft" | "trade" | "freeAgency" | "pros
 export type CareerStage = "prospect" | "rookie" | "prime" | "veteran" | "decline";
 export type RoomId =
   | "gm"
+  | "press"
+  | "ownerSuite"
+  | "agents"
+  | "playerMeetings"
   | "roster"
   | "coach"
   | "locker"
@@ -40,6 +44,164 @@ export type RoomId =
   | "draft"
   | "settings"
   | "devTools";
+
+export type DecisionEventType =
+  | "pressConference"
+  | "ownerMeeting"
+  | "playerMeeting"
+  | "agentCall"
+  | "teamMeeting"
+  | "mediaQuestion"
+  | "lockerRoomIssue"
+  | "tradeRumor"
+  | "contractStandoff"
+  | "rivalryHeat"
+  | "playoffPressure"
+  | "draftReaction"
+  | "freeAgencyRumor"
+  | "prospectBuzz"
+  | "injuryConcern"
+  | "goalieControversy"
+  | "fanBacklash"
+  | "staffConcern";
+
+export type DecisionEventStatus = "active" | "resolved" | "expired";
+export type DecisionEventSeverity = "low" | "medium" | "high" | "critical";
+
+export type DecisionOptionTone = "supportive" | "firm" | "transparent" | "deflect" | "aggressive" | "patient" | "risky" | "conservative";
+
+export interface DecisionRequirement {
+  type: "minOwnerTrust" | "minPlayerTrust" | "capSpace" | "phase" | "playerOnRoster" | "teamRecord";
+  targetId?: string;
+  value?: number;
+}
+
+export interface DecisionOption {
+  id: string;
+  label: string;
+  tone: DecisionOptionTone;
+  description: string;
+  preview: string;
+  hiddenRisk?: string;
+  requirements?: DecisionRequirement[];
+}
+
+export interface DecisionOutcome {
+  summary: string;
+  moraleDeltaByPlayerId?: Record<string, number>;
+  formDeltaByPlayerId?: Record<string, number>;
+  fatigueDeltaByPlayerId?: Record<string, number>;
+  roleSatisfactionDeltaByPlayerId?: Record<string, number>;
+  chemistryDelta?: number;
+  fanSentimentDelta?: number;
+  ownerTrustDelta?: number;
+  mediaPressureDelta?: number;
+  agentRelationshipDeltaByAgentId?: Record<string, number>;
+  contractInterestDeltaByPlayerId?: Record<string, number>;
+  freeAgencyInterestDeltaByPlayerId?: Record<string, number>;
+  tradeNoiseDeltaByPlayerId?: Record<string, number>;
+  staffTrustDeltaByStaffId?: Record<string, number>;
+  followUpEventIds?: string[];
+  newsItems?: NewsItem[];
+}
+
+export interface DecisionEvent {
+  id: string;
+  type: DecisionEventType;
+  status: DecisionEventStatus;
+  severity: DecisionEventSeverity;
+  createdDate: string;
+  expiresDate?: string;
+  phase?: SeasonPhase;
+  teamId: string;
+  playerIds?: string[];
+  staffIds?: string[];
+  prospectIds?: string[];
+  relatedGameId?: string;
+  relatedStoryArcId?: string;
+  headline: string;
+  body: string;
+  sourceLabel: string;
+  locationRoom?: RoomId;
+  options: DecisionOption[];
+  selectedOptionId?: string;
+  outcome?: DecisionOutcome;
+  tags: string[];
+  repeatKey?: string;
+}
+
+export type StoryArcType =
+  | "goalieControversy"
+  | "starRoleDemand"
+  | "rookieBreakout"
+  | "tradeRumor"
+  | "contractStandoff"
+  | "rebuildTension"
+  | "playoffPressure"
+  | "rivalryEscalation"
+  | "ownerPressure"
+  | "lockerRoomSplit"
+  | "prospectPromotion"
+  | "freeAgencyPursuit";
+
+export interface StoryArc {
+  id: string;
+  type: StoryArcType;
+  status: "active" | "resolved" | "failed" | "cooldown";
+  teamId: string;
+  playerIds: string[];
+  staffIds?: string[];
+  startedDate: string;
+  lastUpdatedDate: string;
+  intensity: number;
+  progress: number;
+  headline: string;
+  summary: string;
+  recentEventIds: string[];
+  resolution?: string;
+  tags: string[];
+}
+
+export interface PlayerRelationship {
+  playerId: string;
+  trust: number;
+  roleSatisfaction: number;
+  communication: number;
+  pressureTolerance: number;
+  agentId?: string;
+  lastMeetingDate?: string;
+  notes: string[];
+}
+
+export interface AgentProfile {
+  id: string;
+  displayName: string;
+  personality: "Collaborative" | "Hardball" | "Public Pressure" | "Loyalty First" | "Money First" | "Role First" | "Low Drama";
+  clientPlayerIds: string[];
+  relationship: number;
+  publicPressure: number;
+  negotiationStyle: string;
+  notes: string[];
+}
+
+export interface TeamDynamics {
+  chemistry: number;
+  leadership: number;
+  accountability: number;
+  roomMood: "tense" | "fragile" | "steady" | "confident" | "surging";
+  mediaPressure: number;
+  fanSentiment: number;
+  ownerTrust: number;
+  rivalryHeatByTeamId: Record<string, number>;
+  unresolvedIssues: string[];
+}
+
+export interface MediaState {
+  pressure: number;
+  narrative: "quiet" | "optimistic" | "skeptical" | "hotSeat" | "playoffBuzz" | "rebuildDebate";
+  recentQuestions: string[];
+  columnistTone: "friendly" | "neutral" | "critical" | "provocative";
+}
 
 export type PlayerArchetype =
   | "Sniper"
@@ -1028,6 +1190,12 @@ export interface FranchiseState {
   history: LeagueHistory;
   ownerState: OwnerState;
   prospectPools: Record<string, ProspectRights[]>;
+  decisionEvents: DecisionEvent[];
+  storyArcs: StoryArc[];
+  playerRelationships: Record<string, PlayerRelationship>;
+  agents: AgentProfile[];
+  teamDynamics: Record<string, TeamDynamics>;
+  mediaState: MediaState;
   inbox: NewsItem[];
   scouting: ScoutingState;
   development: DevelopmentState;

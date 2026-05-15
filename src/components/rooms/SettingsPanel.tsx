@@ -1,4 +1,5 @@
 import { useSettingsStore } from "../../store/settingsStore";
+import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
 import { Button } from "../ui/Button";
 import { SectionHeader } from "../ui/SectionHeader";
@@ -9,6 +10,7 @@ export function SettingsPanel() {
   const resetGuides = useSettingsStore((state) => state.resetGuides);
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
   const resetChecklist = useUiStore((state) => state.resetChecklist);
+  const resetLivingOpsState = useFranchiseStore((state) => state.resetLivingOpsState);
 
   const resetAllGuides = () => {
     resetGuides();
@@ -26,6 +28,9 @@ export function SettingsPanel() {
           <Toggle label="Auto-save after games" checked={settings.autoSave} onChange={(value) => updateSettings({ autoSave: value })} />
           <Toggle label="Auto-repair AI rosters during sim" checked={settings.autoRepairAiRosters} onChange={(value) => updateSettings({ autoRepairAiRosters: value })} />
           <Toggle label="Offer user roster auto-fix at season start" checked={settings.autoFixUserRosterOnSeasonStart} onChange={(value) => updateSettings({ autoFixUserRosterOnSeasonStart: value })} />
+          <Toggle label="Enable story events" checked={settings.storyEventsEnabled} onChange={(value) => updateSettings({ storyEventsEnabled: value })} />
+          <Toggle label="Auto-resolve low severity events" checked={settings.autoResolveLowSeverityEvents} onChange={(value) => updateSettings({ autoResolveLowSeverityEvents: value })} />
+          <Toggle label="Hide consequence previews" checked={settings.hideConsequencePreviews} onChange={(value) => updateSettings({ hideConsequencePreviews: value })} />
           <Toggle label="Confirm phase advances" checked={settings.confirmPhaseAdvances} onChange={(value) => updateSettings({ confirmPhaseAdvances: value })} />
           <Toggle label="Sound placeholder" checked={settings.soundPlaceholder} onChange={(value) => updateSettings({ soundPlaceholder: value })} />
           <label className="select-field">
@@ -34,6 +39,22 @@ export function SettingsPanel() {
               <option value="slow">Slow</option>
               <option value="normal">Normal</option>
               <option value="fast">Fast</option>
+            </select>
+          </label>
+          <label className="select-field">
+            <span>Decision event frequency</span>
+            <select value={settings.decisionEventFrequency} onChange={(event) => updateSettings({ decisionEventFrequency: event.target.value as typeof settings.decisionEventFrequency })}>
+              <option value="Low">Low</option>
+              <option value="Normal">Normal</option>
+              <option value="High">High</option>
+            </select>
+          </label>
+          <label className="select-field">
+            <span>Press conference frequency</span>
+            <select value={settings.pressConferenceFrequency} onChange={(event) => updateSettings({ pressConferenceFrequency: event.target.value as typeof settings.pressConferenceFrequency })}>
+              <option value="Key games only">Key games only</option>
+              <option value="Normal">Normal</option>
+              <option value="Frequent">Frequent</option>
             </select>
           </label>
           <label className="select-field">
@@ -55,6 +76,7 @@ export function SettingsPanel() {
         <div className="button-row">
           <Button tone="primary" onClick={resetAllGuides}>Reset guides</Button>
           <Button onClick={() => setHelpOpen(true)}>Controls and systems help</Button>
+          <Button tone="danger" onClick={resetLivingOpsState}>Reset story and relationship state</Button>
         </div>
       </section>
     </div>

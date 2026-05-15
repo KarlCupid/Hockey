@@ -19,7 +19,10 @@ export const TUNING = {
     requiredTeams: 12,
     playtestSeasons: 5,
     inboxLimit: 60,
-    groupedLowPriorityLimit: 5
+    groupedLowPriorityLimit: 5,
+    activeDecisionEventCap: 8,
+    highSeverityDecisionEventCap: 3,
+    storyArcCap: 24
   },
   draft: {
     prospectsPerClass: 72,

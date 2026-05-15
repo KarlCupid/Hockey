@@ -2,6 +2,10 @@ import type { RoomId } from "../../game/types";
 
 const ROOM_LABELS: Record<RoomId, string> = {
   gm: "GM Office",
+  press: "Press Room",
+  ownerSuite: "Owner Suite",
+  agents: "Agent Desk",
+  playerMeetings: "Player Meeting Room",
   roster: "Roster Office",
   coach: "Coach's Office",
   locker: "Locker Room",

@@ -11,6 +11,10 @@ import { signProspect } from "./prospects";
 import { advanceSeasonPhase, completeRegularSeason } from "./seasonLifecycle";
 import { simulatePlayoffsUntil } from "./playoffs";
 import { validateDynastyInvariants, type DynastyInvariantReport } from "./dynastyInvariants";
+import { generatePhaseDecisionEvents, generatePlayoffDecisionEvents, mergeDecisionEvents, resolveDecisionEvent } from "./decisionEvents";
+import { generateAgentsForPlayers, generateInitialPlayerRelationships, generateInitialTeamDynamics, getTeamDynamics } from "./relationships";
+import { defaultMediaState } from "./fanMedia";
+import { createStoryArcDecisionEvent, updateStoryArcs } from "./storyArcs";
 import type { ContractOffer, FranchiseState } from "../types";
 
 export interface PlaytestReport {
@@ -30,6 +34,20 @@ export interface PlaytestReport {
   prospectSignings: Array<{ seasonYear: number; count: number }>;
   invalidGameRosters: Array<{ seasonYear: number; teams: number }>;
   capOverTeams: Array<{ seasonYear: number; teams: number }>;
+  livingOps: {
+    eventsGenerated: number;
+    highSeverityEvents: number;
+    storyArcsStarted: number;
+    storyArcsResolved: number;
+    ownerTrustTrend: Array<{ seasonYear: number; value: number }>;
+    teamChemistryTrend: Array<{ seasonYear: number; value: number }>;
+    mediaPressureTrend: Array<{ seasonYear: number; value: number }>;
+    fanSentimentTrend: Array<{ seasonYear: number; value: number }>;
+    playerTrustRange: Array<{ seasonYear: number; low: number; high: number }>;
+    contractPressureEvents: number;
+    tradeRumorEvents: number;
+    playoffPressureEvents: number;
+  };
   invariantReports: DynastyInvariantReport[];
   finalFranchise: FranchiseState;
 }
@@ -51,8 +69,23 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
   const prospectSignings: PlaytestReport["prospectSignings"] = [];
   const invalidGameRosters: PlaytestReport["invalidGameRosters"] = [];
   const capOverTeams: PlaytestReport["capOverTeams"] = [];
+  const livingOps: PlaytestReport["livingOps"] = {
+    eventsGenerated: 0,
+    highSeverityEvents: 0,
+    storyArcsStarted: 0,
+    storyArcsResolved: 0,
+    ownerTrustTrend: [],
+    teamChemistryTrend: [],
+    mediaPressureTrend: [],
+    fanSentimentTrend: [],
+    playerTrustRange: [],
+    contractPressureEvents: 0,
+    tradeRumorEvents: 0,
+    playoffPressureEvents: 0
+  };
 
   const check = (label: string) => {
+    franchise = refreshLivingOpsForPlaytest(franchise, `${seed}-${label}`);
     const report = validateDynastyInvariants(franchise);
     invariantReports.push(report);
     warnings.push(...report.warnings.map((item) => `${label}: ${item.message}`));
@@ -65,6 +98,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     const seasonYear = franchise.league.seasonYear;
     franchise = repairAllTeamRosters(franchise, "preGame");
     franchise = completeRegularSeason(franchise, new SeededRng(`${seed}-regular-${season}`));
+    franchise = tickStoryPlaytest(franchise, livingOps, `${seed}-regular-story-${season}`);
     check(`${seasonYear} regular season`);
     const selectedAfterRegularSeason = franchise.league.teams.find((team) => team.id === franchise.selectedTeamId);
     const selectedRecord = selectedAfterRegularSeason
@@ -72,23 +106,34 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
       : `${seasonYear}: unavailable`;
 
     franchise = simulatePlayoffsUntil(franchise, "champion", `${seed}-playoffs-${season}`);
+    franchise = mergeDecisionEvents(franchise, generatePlayoffDecisionEvents(franchise, new SeededRng(`${seed}-playoff-pressure-${season}`)));
+    franchise = tickStoryPlaytest(franchise, livingOps, `${seed}-playoff-story-${season}`);
     check(`${seasonYear} playoffs`);
 
+    const previousReviewPhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-review-${season}`));
+    franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousReviewPhase, franchise.seasonPhase, `${seed}-review-story-${season}`);
     check(`${seasonYear} season review`);
 
+    const previousRetirePhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-retirements-${season}`));
+    franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousRetirePhase, franchise.seasonPhase, `${seed}-retire-story-${season}`);
     check(`${seasonYear} retirements`);
 
+    const previousLotteryPhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-lottery-${season}`));
+    franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousLotteryPhase, franchise.seasonPhase, `${seed}-lottery-story-${season}`);
     check(`${seasonYear} draft lottery`);
 
     franchise = autoCompleteDraft(franchise, new SeededRng(`${seed}-draft-${season}`));
+    franchise = tickStoryPlaytest(franchise, livingOps, `${seed}-draft-story-${season}`);
     check(`${seasonYear} draft`);
 
     franchise = maybeSignProspect(franchise);
     franchise = maybeReSignPlayer(franchise, rng);
+    const previousReSignPhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-resigning-${season}`));
+    franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousReSignPhase, franchise.seasonPhase, `${seed}-resign-story-${season}`);
     check(`${seasonYear} re-signing`);
 
     franchise = maybeSignFreeAgent(franchise);
@@ -96,6 +141,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
       franchise = advanceFreeAgencyDay(franchise, new SeededRng(`${seed}-fa-${season}-${franchise.freeAgencyState.currentDay}`));
     }
     franchise = repairAllTeamRosters(franchise, "postFreeAgency");
+    franchise = tickStoryPlaytest(franchise, livingOps, `${seed}-fa-story-${season}`);
     check(`${seasonYear} free agency`);
     const freeAgencySnapshot = {
       seasonYear,
@@ -105,14 +151,19 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     };
 
     franchise = maybeHireStaff(franchise);
+    const previousStaffPhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-staff-${season}`));
+    franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousStaffPhase, franchise.seasonPhase, `${seed}-staff-story-${season}`);
     check(`${seasonYear} staff hiring`);
     const staffReport = invariantReports[invariantReports.length - 1];
     const capSnapshot = summarizeCap(franchise, seasonYear);
     const rosterSnapshot = summarizeRosters(franchise, seasonYear, staffReport);
 
+    const previousCampPhase = franchise.seasonPhase;
     franchise = advanceSeasonPhase(franchise, new SeededRng(`${seed}-camp-${season}`));
+    franchise = tickPhaseStoryPlaytest(franchise, livingOps, previousCampPhase, franchise.seasonPhase, `${seed}-camp-story-${season}`);
     franchise = repairAllTeamRosters(franchise, "newSeason");
+    franchise = tickStoryPlaytest(franchise, livingOps, `${seed}-new-season-story-${season}`);
     check(`${seasonYear} training camp`);
 
     selectedTeamRecords.push(selectedRecord);
@@ -132,6 +183,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     prospectSignings.push({ seasonYear, count: franchise.rosterMoveHistory.filter((move) => move.type === "signProspect" || move.reason.includes("prospect")).length });
     invalidGameRosters.push({ seasonYear, teams: franchise.league.teams.filter((team) => validateRosterForGame(team).errors.length > 0).length });
     capOverTeams.push({ seasonYear, teams: franchise.league.teams.filter((team) => calculateCapSpace(team) < 0).length });
+    recordLivingOpsSnapshot(franchise, livingOps, seasonYear);
   }
 
   return {
@@ -151,6 +203,7 @@ export function runDynastyPlaytest(seed = "phase4-playtest", seasons = 3, select
     prospectSignings,
     invalidGameRosters,
     capOverTeams,
+    livingOps,
     invariantReports,
     finalFranchise: franchise
   };
@@ -208,6 +261,84 @@ function maybeSignFreeAgent(franchise: FranchiseState): FranchiseState {
 function maybeHireStaff(franchise: FranchiseState): FranchiseState {
   const candidate = franchise.staffState.staffMarket[0];
   return candidate ? hireStaff(franchise, candidate.id, candidate.role) : franchise;
+}
+
+function tickPhaseStoryPlaytest(
+  franchise: FranchiseState,
+  livingOps: PlaytestReport["livingOps"],
+  previousPhase: FranchiseState["seasonPhase"],
+  nextPhase: FranchiseState["seasonPhase"],
+  seed: string
+): FranchiseState {
+  let next = mergeDecisionEvents(franchise, generatePhaseDecisionEvents(franchise, previousPhase, nextPhase, new SeededRng(seed)));
+  return tickStoryPlaytest(next, livingOps, `${seed}-arcs`);
+}
+
+function tickStoryPlaytest(franchise: FranchiseState, livingOps: PlaytestReport["livingOps"], seed: string): FranchiseState {
+  const beforeEventIds = new Set(franchise.decisionEvents.map((event) => event.id));
+  const beforeArcIds = new Set(franchise.storyArcs.map((arc) => arc.id));
+  let next = updateStoryArcs(franchise, new SeededRng(seed));
+  const storyEvents = next.storyArcs.flatMap((arc) => createStoryArcDecisionEvent(next, arc, new SeededRng(`${seed}-${arc.id}`)) ?? []);
+  next = mergeDecisionEvents(next, storyEvents);
+  const active = next.decisionEvents.filter((event) => event.status === "active");
+  next = active.reduce((state, event) => resolveDecisionEvent(state, event.id, preferredPlaytestOption(event), new SeededRng(`${seed}-resolve-${event.id}`)), next);
+  const newEvents = next.decisionEvents.filter((event) => !beforeEventIds.has(event.id));
+  livingOps.eventsGenerated += newEvents.length;
+  livingOps.highSeverityEvents += newEvents.filter((event) => event.severity === "high" || event.severity === "critical").length;
+  livingOps.contractPressureEvents += newEvents.filter((event) => event.type === "contractStandoff" || event.type === "agentCall").length;
+  livingOps.tradeRumorEvents += newEvents.filter((event) => event.type === "tradeRumor").length;
+  livingOps.playoffPressureEvents += newEvents.filter((event) => event.type === "playoffPressure").length;
+  livingOps.storyArcsStarted += next.storyArcs.filter((arc) => !beforeArcIds.has(arc.id)).length;
+  livingOps.storyArcsResolved = next.storyArcs.filter((arc) => arc.status === "resolved" || arc.status === "cooldown").length;
+  return next;
+}
+
+function preferredPlaytestOption(event: { options: Array<{ id: string; tone: string }> }): string {
+  return event.options.find((option) => option.tone === "transparent")?.id ?? event.options.find((option) => option.tone === "supportive")?.id ?? event.options[0]?.id ?? "";
+}
+
+function recordLivingOpsSnapshot(franchise: FranchiseState, livingOps: PlaytestReport["livingOps"], seasonYear: number) {
+  const dynamics = getTeamDynamics(franchise, franchise.selectedTeamId);
+  const trustValues = Object.values(franchise.playerRelationships).map((relationship) => relationship.trust);
+  livingOps.ownerTrustTrend.push({ seasonYear, value: dynamics.ownerTrust });
+  livingOps.teamChemistryTrend.push({ seasonYear, value: dynamics.chemistry });
+  livingOps.mediaPressureTrend.push({ seasonYear, value: franchise.mediaState.pressure });
+  livingOps.fanSentimentTrend.push({ seasonYear, value: dynamics.fanSentiment });
+  livingOps.playerTrustRange.push({
+    seasonYear,
+    low: trustValues.length ? Math.min(...trustValues) : 0,
+    high: trustValues.length ? Math.max(...trustValues) : 0
+  });
+}
+
+function refreshLivingOpsForPlaytest(franchise: FranchiseState, seed: string): FranchiseState {
+  const playerIds = new Set(franchise.league.teams.flatMap((team) => team.roster.map((player) => player.id)));
+  const agents = generateAgentsForPlayers(franchise, new SeededRng(`${seed}-agents`));
+  const withAgents = { ...franchise, agents };
+  const generatedRelationships = generateInitialPlayerRelationships(withAgents);
+  const playerRelationships = Object.fromEntries(
+    Array.from(playerIds).map((playerId) => [
+      playerId,
+      {
+        ...(generatedRelationships[playerId] ?? { playerId, trust: 55, roleSatisfaction: 55, communication: 55, pressureTolerance: 55, notes: [] }),
+        ...(franchise.playerRelationships[playerId] ?? {}),
+        playerId,
+        agentId: agents.find((agent) => agent.clientPlayerIds.includes(playerId))?.id
+      }
+    ])
+  ) as FranchiseState["playerRelationships"];
+  const withRelationships = { ...withAgents, playerRelationships };
+  const generatedDynamics = generateInitialTeamDynamics(withRelationships);
+  const teamDynamics = Object.fromEntries(
+    franchise.league.teams.map((team) => [team.id, { ...generatedDynamics[team.id], ...(franchise.teamDynamics[team.id] ?? {}) }])
+  ) as FranchiseState["teamDynamics"];
+  return {
+    ...withRelationships,
+    teamDynamics,
+    mediaState: franchise.mediaState ?? defaultMediaState(withRelationships),
+    decisionEvents: franchise.decisionEvents.filter((event) => (event.playerIds ?? []).every((playerId) => playerIds.has(playerId))),
+    storyArcs: franchise.storyArcs.filter((arc) => arc.playerIds.every((playerId) => playerIds.has(playerId)))
+  };
 }
 
 function summarizeCap(franchise: FranchiseState, seasonYear: number) {

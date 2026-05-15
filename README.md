@@ -31,7 +31,8 @@ npm run build
 - Phase 3 dynasty lifecycle with playoffs, champion history, draft execution, prospect pools, re-signing, free agency, staff hiring, owner goals, retirements, aging, and new-season generation
 - Phase 4 beta hardening with dynasty invariant checks, deterministic multi-season playtests, balance reporting, save integrity repair, settings/help, fictional branding, and panel-level code splitting
 - Phase 5 roster ecosystem with active roster, scratches, affiliate roster, injured reserve, prospect pathways, AI roster repair, and training-camp setup
-- GM Office, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
+- Phase 6 living hockey operations with press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, story arcs, media pressure, fan sentiment, and owner trust
+- GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
 - Deterministic pure TypeScript game simulation
@@ -101,9 +102,24 @@ Phase 5 fixes the biggest remaining multi-season roster weakness by giving every
 - Cap treatment is simplified: active, scratched, and IR players count against active cap; affiliate players are active-cap exempt; prospect rights and retired players do not count.
 - Re-signing and owner-goal balance were tuned so fair offers perform better than weak offers and owner goals better match rebuilding or contending contexts.
 
+## Phase 6 Living Hockey Operations, Relationships, Media, and Decision Events
+
+Phase 6 makes the client-only dynasty feel more like a living hockey organization without adding another CBA/rules-complexity layer:
+
+- Press Room: answer fictional media questions after key games, rumors, playoff pressure, and public story beats.
+- Owner Suite: handle owner meetings, demand levels, goal pressure, job-security trust, and phase-specific expectations.
+- Agent Desk: track fictional agent personalities, client lists, public pressure, relationship scores, and simplified negotiation impact.
+- Player Meeting Room: talk to players, hold team meetings, respond to role frustration, losing streaks, training-camp tension, and locker-room issues.
+- GM Office living dashboard: active decisions, urgent issues, current storylines, team dynamics, media/fan pulse, owner trust, agent pressure, and recommended meetings.
+- Player relationships now track trust, role satisfaction, communication, pressure tolerance, agent, meeting notes, and active story context.
+- Team dynamics now track chemistry, leadership, accountability, room mood, media pressure, fan sentiment, owner trust, rivalry heat, and unresolved issues.
+- Dynamic story arcs include goalie controversies, star role demands, rookie breakouts, trade rumors, contract standoffs, rebuild tension, playoff pressure, rivalry heat, owner impatience, locker-room splits, prospect promotion buzz, and free-agency pursuits.
+- Decision options show tone and consequence previews, then apply bounded effects to morale, form, fatigue, trust, role satisfaction, chemistry, fan sentiment, owner trust, media pressure, agent relationship, contract/free-agent interest, trade noise, staff trust, and news follow-ups.
+- Save migration now hydrates older saves to schema version 5 with generated relationships, agents, team dynamics, media state, decision-event state, and story-arc state.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, and cap treatment are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, and story events are simplified fictional prototype systems.
 
 ## Controls
 
@@ -116,4 +132,4 @@ This prototype intentionally avoids backend services, authentication, real hocke
 
 ## Save Data
 
-Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls. Older saves hydrate to schema version 4 with roster statuses, affiliates, roster logs, and player pathway defaults.
+Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, and JSON export/import controls. Older saves hydrate to schema version 5 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, and story arcs.

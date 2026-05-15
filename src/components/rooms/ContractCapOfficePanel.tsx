@@ -12,10 +12,13 @@ import {
   getExpiringContracts
 } from "../../game/systems/contracts";
 import { createContractDemand, getPendingExpiringPlayers } from "../../game/systems/contractNegotiation";
+import { getAgentForPlayer, getAgentPressureLevel } from "../../game/systems/agentInteractions";
+import { getPlayerRelationship } from "../../game/systems/relationships";
 import { formatPickLabel, getTeamPicks } from "../../game/systems/draftPicks";
 import { activeRosterCount, getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
 import type { RoleExpectation } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
+import { RelationshipBadge } from "../hud/RelationshipBadge";
 
 const ROLES: RoleExpectation[] = [
   "Franchise Driver",
@@ -86,12 +89,15 @@ export function ContractCapOfficePanel() {
               {pending.length ? (
                 pending.map((player) => {
                   const playerDemand = createContractDemand(player, team, franchise);
+                  const agent = getAgentForPlayer(franchise, player.id);
+                  const relationship = getPlayerRelationship(franchise, player.id);
                   return (
                     <article key={player.id} className={selected?.id === player.id ? "is-selected" : ""}>
                       <strong>{player.displayName}</strong>
                       <span>
                         {player.position} | {player.overall} OVR | {player.contract.expiryStatus} | demand {formatMoney(playerDemand.demandSalary)} / {playerDemand.demandYears} yr
                       </span>
+                      <small>{agent ? `${agent.displayName} (${agent.personality}, ${getAgentPressureLevel(agent)})` : "No agent assigned"} | trust {relationship.trust}/100 | role satisfaction {relationship.roleSatisfaction}/100</small>
                       <button
                         type="button"
                         onClick={() => {
@@ -163,26 +169,34 @@ export function ContractCapOfficePanel() {
                   <th>Salary</th>
                   <th>Years</th>
                   <th>Expiry</th>
+                  <th>Agent</th>
+                  <th>Trust / Role</th>
                   <th>Risk</th>
                 </tr>
               </thead>
               <tbody>
-                {[...team.roster].sort((a, b) => b.contract.capHit - a.contract.capHit).map((player) => (
-                  <tr key={player.id}>
-                    <td>{player.displayName}</td>
-                    <td>{player.position}</td>
-                    <td>{player.age}</td>
-                    <td>{player.overall}</td>
-                    <td>{player.potential}</td>
-                    <td>{player.roleExpectation}</td>
-                    <td>{getRosterStatusLabel(getPlayerRosterStatus(player))}</td>
-                    <td>{formatMoney(player.contract.capHit)}</td>
-                    <td>{formatMoney(player.contract.salary)}</td>
-                    <td>{player.contract.yearsRemaining}</td>
-                    <td>{player.contract.expiryStatus}</td>
-                    <td>{contractValueRisk(player)}</td>
-                  </tr>
-                ))}
+                {[...team.roster].sort((a, b) => b.contract.capHit - a.contract.capHit).map((player) => {
+                  const agent = getAgentForPlayer(franchise, player.id);
+                  const relationship = getPlayerRelationship(franchise, player.id);
+                  return (
+                    <tr key={player.id}>
+                      <td>{player.displayName}</td>
+                      <td>{player.position}</td>
+                      <td>{player.age}</td>
+                      <td>{player.overall}</td>
+                      <td>{player.potential}</td>
+                      <td>{player.roleExpectation}</td>
+                      <td>{getRosterStatusLabel(getPlayerRosterStatus(player))}</td>
+                      <td>{formatMoney(player.contract.capHit)}</td>
+                      <td>{formatMoney(player.contract.salary)}</td>
+                      <td>{player.contract.yearsRemaining}</td>
+                      <td>{player.contract.expiryStatus}</td>
+                      <td>{agent?.displayName ?? "-"}</td>
+                      <td><RelationshipBadge relationship={relationship} agent={agent} /></td>
+                      <td>{contractValueRisk(player)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

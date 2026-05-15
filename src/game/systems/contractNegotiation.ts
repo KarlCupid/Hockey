@@ -1,6 +1,8 @@
 import { calculateCapSpace, contractSummary, estimateMarketSalary, formatMoney } from "./contracts";
 import { autoFillBestLineup } from "./lineupValidation";
 import { calculateTeamStaffModifiers } from "./staff";
+import { getAgentForPlayer, modifyContractDemandFromAgent } from "./agentInteractions";
+import { getPlayerRelationship } from "./relationships";
 import type { ContractDemand, ContractOffer, ContractOfferEvaluation, FranchiseState, NewsItem, Player, Team } from "../types";
 
 export function getPendingExpiringPlayers(franchise: FranchiseState, teamId: string): Player[] {
@@ -15,7 +17,10 @@ export function createContractDemand(player: Player, team: Team, franchise: Fran
   const successFactor = team.record.points >= franchise.league.currentDayIndex ? 0.97 : 1.04;
   const expiryFactor = player.contract.expiryStatus === "UFA" ? 1.06 : player.contract.expiryStatus === "RFA" ? 0.94 : 0.78;
   const assistantGm = calculateTeamStaffModifiers(franchise.staffState, team.id).negotiation;
-  const demandSalary = roundMoney(Math.max(775_000, (market + production) * moraleFactor * successFactor * expiryFactor * (1 - assistantGm * 0.012)));
+  const agent = getAgentForPlayer(franchise, player.id);
+  const relationship = getPlayerRelationship(franchise, player.id);
+  const relationshipFactor = modifyContractDemandFromAgent(player, agent, relationship);
+  const demandSalary = roundMoney(Math.max(775_000, (market + production) * moraleFactor * successFactor * expiryFactor * relationshipFactor * (1 - assistantGm * 0.012)));
   const demandYears = player.age >= 34 ? 1 : player.overall >= 84 && player.age <= 29 ? 5 : player.age <= 24 ? 3 : player.overall >= 76 ? 3 : 2;
   return {
     playerId: player.id,
@@ -27,7 +32,9 @@ export function createContractDemand(player: Player, team: Team, franchise: Fran
     reasons: [
       `${player.overall} overall and ${player.potential} potential set the baseline.`,
       player.contract.expiryStatus === "UFA" ? "Open-market leverage pushes the ask upward." : "Team control keeps the ask more manageable.",
-      assistantGm > 0 ? "Assistant GM staff gives a small negotiation edge." : "No major negotiation staff edge is in play."
+      assistantGm > 0 ? "Assistant GM staff gives a small negotiation edge." : "No major negotiation staff edge is in play.",
+      agent ? `${agent.displayName}'s ${agent.personality.toLowerCase()} style is part of the ask.` : "No agent pressure is attached yet.",
+      relationship.roleSatisfaction < 45 ? "Role frustration is pushing the camp to protect the player." : "Relationship state is not inflating the ask."
     ]
   };
 }
@@ -42,9 +49,15 @@ export function evaluateContractOffer(player: Player, offer: ContractOffer, team
   const termScore = offer.years / Math.max(1, demand.demandYears);
   const roleScore = offer.rolePromise === player.roleExpectation || !offer.rolePromise ? 1 : 0.94;
   const moraleScore = player.morale >= 65 ? 1.04 : player.morale <= 40 ? 0.94 : 1;
-  const interest = Math.round(Math.min(100, 45 + salaryScore * 38 + Math.min(termScore, 1.25) * 10 + (moraleScore - 1) * 100 + (roleScore - 1) * 100));
+  const relationship = getPlayerRelationship(franchise, player.id);
+  const agent = getAgentForPlayer(franchise, player.id);
+  const trustScore = (relationship.trust - 55) * 0.11 + (relationship.roleSatisfaction - 55) * 0.08;
+  const agentScore = agent ? (agent.relationship - 55) * 0.07 - Math.max(0, agent.publicPressure - 60) * 0.04 : 0;
+  const interest = Math.round(Math.min(100, 45 + salaryScore * 38 + Math.min(termScore, 1.25) * 10 + (moraleScore - 1) * 100 + (roleScore - 1) * 100 + trustScore + agentScore));
   if (salaryScore < 0.92) reasons.push("Salary is below the player's camp number.");
   if (offer.years < demand.demandYears - 1 && player.age < 32) reasons.push("Term is lighter than expected.");
+  if (relationship.trust <= 40) reasons.push("Player trust is low enough that the camp needs a cleaner relationship signal.");
+  if (agent && agent.relationship <= 36) reasons.push(`${agent.displayName}'s relationship with the club is strained.`);
   if (warnings.length) reasons.push("The cap preview is not workable.");
   const accepted = warnings.length === 0 && interest >= 82 && offer.capHit >= demand.demandSalary * 0.94;
   if (accepted) reasons.push("The offer meets the money, term, and role shape the player wanted.");

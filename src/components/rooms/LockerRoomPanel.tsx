@@ -3,11 +3,29 @@ import { PlayerCard } from "../hud/PlayerCard";
 import { StatBadge } from "../hud/StatBadge";
 import { fatigueBand, formBand, moraleBand } from "../../game/systems/morale";
 import { getPlayerRosterStatus, getRosterStatusLabel } from "../../game/systems/rosterRules";
+import { getPlayerRelationship } from "../../game/systems/relationships";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
-import type { Player } from "../../game/types";
+import type { FranchiseState, Player } from "../../game/types";
 import { useUiStore } from "../../store/uiStore";
 
-type RosterFilter = "all" | "active" | "scratched" | "affiliate" | "injuredReserve" | "forwards" | "defense" | "goalies" | "injured" | "tired" | "unhappy" | "hot";
+type RosterFilter =
+  | "all"
+  | "active"
+  | "scratched"
+  | "affiliate"
+  | "injuredReserve"
+  | "forwards"
+  | "defense"
+  | "goalies"
+  | "injured"
+  | "tired"
+  | "unhappy"
+  | "hot"
+  | "needsMeeting"
+  | "lowTrust"
+  | "roleFrustration"
+  | "storyArc"
+  | "agentPressure";
 type RosterSort = "overall" | "name" | "points" | "fatigue";
 
 const FILTERS: Array<{ id: RosterFilter; label: string }> = [
@@ -22,7 +40,12 @@ const FILTERS: Array<{ id: RosterFilter; label: string }> = [
   { id: "injured", label: "Injured" },
   { id: "tired", label: "Tired" },
   { id: "unhappy", label: "Unhappy" },
-  { id: "hot", label: "Hot form" }
+  { id: "hot", label: "Hot form" },
+  { id: "needsMeeting", label: "Needs meeting" },
+  { id: "lowTrust", label: "Low trust" },
+  { id: "roleFrustration", label: "Role frustration" },
+  { id: "storyArc", label: "In story arc" },
+  { id: "agentPressure", label: "Agent pressure" }
 ];
 
 export function LockerRoomPanel() {
@@ -31,10 +54,12 @@ export function LockerRoomPanel() {
   const [filter, setFilter] = useState<RosterFilter>("all");
   const [sort, setSort] = useState<RosterSort>("overall");
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
+  const schedulePlayerMeeting = useFranchiseStore((state) => state.schedulePlayerMeeting);
+  const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   if (!franchise) return null;
   const team = selectedTeam(franchise);
   const selected = team.roster.find((player) => player.id === selectedId) ?? team.roster[0];
-  const filtered = filterRoster(team.roster, filter).sort((a, b) => sortRoster(a, b, sort));
+  const filtered = filterRoster(team.roster, filter, franchise).sort((a, b) => sortRoster(a, b, sort));
   const average = (selector: (player: Player) => number) => Math.round(team.roster.reduce((sum, player) => sum + selector(player), 0) / team.roster.length);
   const selectPlayer = (playerId: string) => {
     setSelectedId(playerId);
@@ -49,6 +74,10 @@ export function LockerRoomPanel() {
           <StatBadge label="Morale" value={moraleBand(average((player) => player.morale))} />
           <StatBadge label="Form" value={formBand(average((player) => player.form))} />
           <StatBadge label="Fatigue" value={fatigueBand(average((player) => player.fatigue))} />
+        </div>
+        <div className="button-row">
+          <button type="button" onClick={() => selected && schedulePlayerMeeting(selected.id)}>Schedule Meeting</button>
+          <button type="button" onClick={() => setActiveRoom("playerMeetings")}>Open Player Meeting Room</button>
         </div>
         <div className="toolbar-row">
           <div className="segmented-control" aria-label="Roster filters">
@@ -120,7 +149,7 @@ export function LockerRoomPanel() {
   );
 }
 
-function filterRoster(players: Player[], filter: RosterFilter): Player[] {
+function filterRoster(players: Player[], filter: RosterFilter, franchise: FranchiseState): Player[] {
   switch (filter) {
     case "forwards":
       return players.filter((player) => ["LW", "C", "RW"].includes(player.position));
@@ -144,6 +173,22 @@ function filterRoster(players: Player[], filter: RosterFilter): Player[] {
       return players.filter((player) => player.morale <= 45);
     case "hot":
       return players.filter((player) => player.form >= 72);
+    case "needsMeeting":
+      return players.filter((player) => {
+        const relationship = getPlayerRelationship(franchise, player.id);
+        return relationship.trust <= 52 || relationship.roleSatisfaction <= 52 || player.morale <= 45;
+      });
+    case "lowTrust":
+      return players.filter((player) => getPlayerRelationship(franchise, player.id).trust <= 45);
+    case "roleFrustration":
+      return players.filter((player) => getPlayerRelationship(franchise, player.id).roleSatisfaction <= 45);
+    case "storyArc":
+      return players.filter((player) => franchise.storyArcs.some((arc) => arc.status === "active" && arc.playerIds.includes(player.id)));
+    case "agentPressure":
+      return players.filter((player) => {
+        const agent = franchise.agents.find((candidate) => candidate.clientPlayerIds.includes(player.id));
+        return Boolean(agent && (agent.publicPressure >= 62 || agent.relationship <= 40));
+      });
     case "all":
     default:
       return [...players];

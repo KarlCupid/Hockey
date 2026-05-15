@@ -33,7 +33,7 @@ describe("Phase 5 roster rules and cap treatment", () => {
   it("hydrates a new franchise with roster statuses and affiliates", () => {
     const franchise = createFranchise("harbor-city", "phase5-new");
 
-    expect(franchise.schemaVersion).toBe(4);
+    expect(franchise.schemaVersion).toBe(5);
     franchise.league.teams.forEach((team) => {
       expect(team.affiliate.fullName).toContain(team.city);
       expect(team.roster.every((player) => Boolean(player.rosterStatus))).toBe(true);
@@ -209,7 +209,7 @@ describe("Phase 5 affiliate and AI repair", () => {
 });
 
 describe("Phase 5 migration, balance, and five-season stability", () => {
-  it("hydrates schema 3 saves to schema 4 and repairs missing affiliates, statuses, and old lineups", () => {
+  it("hydrates schema 3 saves to schema 5 and repairs missing affiliates, statuses, and old lineups", () => {
     const legacy = JSON.parse(serializeFranchise(createFranchise("harbor-city", "phase5-migration"))) as FranchiseState;
     legacy.schemaVersion = 3;
     delete (legacy as Partial<FranchiseState>).rosterMoveHistory;
@@ -226,11 +226,11 @@ describe("Phase 5 migration, balance, and five-season stability", () => {
     };
     const restored = importSaveFromJson(JSON.stringify(legacy));
 
-    expect(restored.schemaVersion).toBe(4);
+    expect(restored.schemaVersion).toBe(5);
     expect(restored.league.teams[0].affiliate).toBeTruthy();
     expect(restored.league.teams[0].roster.every((player) => player.rosterStatus)).toBe(true);
     expect(getAssignedPlayerIds(restored.league.teams[0].lines)).not.toContain(assigned);
-    expect(importSaveFromJson(exportSaveToJson(restored)).schemaVersion).toBe(4);
+    expect(importSaveFromJson(exportSaveToJson(restored)).schemaVersion).toBe(5);
   });
 
   it("balances re-signing and owner goal outcomes in the intended direction", () => {

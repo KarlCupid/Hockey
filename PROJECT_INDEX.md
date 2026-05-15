@@ -28,7 +28,7 @@ npm run build
 - `src/app/AppShell.tsx`: main facility shell, room modal routing, global controls
 - `src/store/franchiseStore.ts`: franchise state, save/load, lineup/tactics mutations, simulation application
 - `src/store/uiStore.ts`: active room and nearby room UI state
-- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, and guide reset token
+- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, guide reset token, and Phase 6 story-event preferences
 
 ## Core Game Systems
 
@@ -64,6 +64,14 @@ npm run build
 - `src/game/systems/ownerBalance.ts`: owner-goal balance sampling for successful, rebuilding, and contending team contexts
 - `src/game/systems/phaseGuidance.ts`: labels, descriptions, checklists, recommendations, advance previews, and danger warnings for every season phase
 - `src/game/systems/storyEngine.ts`: story event creation, inbox dedupe, low-priority grouping, phase stories, and milestone stories
+- `src/game/systems/relationships.ts`: Phase 6 player relationships, generated agents, team dynamics, trust/chemistry/media bands, and relationship notes
+- `src/game/systems/decisionEvents.ts`: Phase 6 decision-event generation, dedupe/caps, room filtering, resolution, expiry, and news follow-up
+- `src/game/systems/storyArcs.ts`: Phase 6 story-arc trigger detection, update/cooldown/resolution, news, and decision hooks
+- `src/game/systems/pressConferences.ts`: fictional press conference events, response previews, and media/fan outcomes
+- `src/game/systems/ownerMeetings.ts`: owner meeting events, demand-level summaries, and owner-trust outcomes
+- `src/game/systems/playerMeetings.ts`: player and team meeting events, meeting reasons, chemistry, trust, and role-satisfaction outcomes
+- `src/game/systems/agentInteractions.ts`: fictional agent calls, agent pressure, negotiation modifiers, and relationship outcomes
+- `src/game/systems/fanMedia.ts`: media narrative, fan pulse, columnist headline, and sentiment updates
 - `src/game/systems/contracts.ts`: structured contracts, cap calculations, expiry/risk helpers
 - `src/game/systems/draftPicks.ts`: initial pick generation, labels, values, and transfer helpers
 - `src/game/systems/trades.ts`: team needs, trade block logic, package valuation, cap validation, AI evaluation, and trade application
@@ -100,9 +108,13 @@ npm run build
 - `src/components/hud/ErrorBoundary.tsx`: runtime fallback around lazy room and 3D surfaces
 - `src/components/hud/LoadingPanel.tsx`: Suspense fallback for lazy-loaded panels and facility
 - `src/components/hud/PlayerCard.tsx`: detailed player card
+- `src/components/hud/DecisionEventCard.tsx`: reusable Phase 6 decision card with room navigation and option resolution
+- `src/components/hud/StoryArcCard.tsx`: reusable Phase 6 storyline card
+- `src/components/hud/RelationshipBadge.tsx`: trust/agent/role mini badge
+- `src/components/hud/TeamDynamicsPanel.tsx`: chemistry, room mood, media, fan, and owner pulse panel
 - `src/components/hud/StatBadge.tsx`: compact stat display
 - `src/components/hud/TeamBadge.tsx`: team identity mark
-- `src/components/rooms/GMOfficePanel.tsx`: inbox, schedule, recent results, owner/fan pressure, save access
+- `src/components/rooms/GMOfficePanel.tsx`: inbox, schedule, recent results, owner/fan pressure, living-ops dashboard, save access
 - `src/components/rooms/RosterOfficePanel.tsx`: Phase 5 roster health, depth chart, active/scratch/affiliate/IR management, and roster move log
 - `src/components/rooms/CoachOfficePanel.tsx`: lineup editor, auto-fill, validation, tactic sliders
 - `src/components/rooms/LockerRoomPanel.tsx`: roster table, player cards, morale/form/fatigue/status
@@ -113,6 +125,10 @@ npm run build
 - `src/components/rooms/DevelopmentOfficePanel.tsx`: development plans, candidate ranking, selected-player notes, and recent updates
 - `src/components/rooms/FreeAgencyOfficePanel.tsx`: Phase 3 free-agent market, filters, offer builder, AI signings, and advance controls
 - `src/components/rooms/StaffOfficePanel.tsx`: current staff, staff market, role filters, staff modifiers, and staff moves
+- `src/components/rooms/PressRoomPanel.tsx`: Phase 6 press conferences, media pressure, narratives, response options, and fan/media reaction
+- `src/components/rooms/OwnerSuitePanel.tsx`: Phase 6 owner trust, goals, meetings, demand level, expectations, and response options
+- `src/components/rooms/AgentDeskPanel.tsx`: Phase 6 agent list, client pressure, active agent calls, and negotiation impact notes
+- `src/components/rooms/PlayerMeetingPanel.tsx`: Phase 6 players needing attention, team dynamics, player meetings, and team meetings
 - `src/components/rooms/SettingsPanel.tsx`: reduced motion/detail, broadcast speed, autosave, confirmation, density, scale, sound placeholder, and guide reset settings
 - `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, and dry-run reporting tools
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
@@ -145,6 +161,7 @@ npm run build
 - `src/tests/phase3Dynasty.test.ts`: Phase 3 coverage for lifecycle, playoffs, draft, prospects, contracts, free agency, staff, owner goals, history, player lifecycle, and save migration
 - `src/tests/phase4Playtest.test.ts`: Phase 4 coverage for invariants, three-season playtests, save integrity, phase guidance, balance reports, branding registries, settings, and story dedupe
 - `src/tests/phase5RosterEcosystem.test.ts`: Phase 5 coverage for roster statuses, cap treatment, roster moves, affiliates, AI repair, training camp, save migration, balance, and five-season dry runs
+- `src/tests/phase6LivingOps.test.ts`: Phase 6 coverage for relationships, agents, team dynamics, decision events, story arcs, press/owner/player/agent meetings, integrations, save migration, and five-season story stress
 
 ## Styles
 
@@ -158,7 +175,7 @@ npm run build
 - `PLAN.md`: implementation milestones
 - `IMPLEMENTATION_LOG.md`: decisions, verification, and known limitations
 - `PROJECT_INDEX.md`: this navigation index
-- `PLAYTEST_REPORT.md`: deterministic Phase 4 and Phase 5 playtest and balance report summary
+- `PLAYTEST_REPORT.md`: deterministic Phase 4, Phase 5, and Phase 6 playtest and balance report summary
 
 ## Current Playable Flow
 
@@ -168,16 +185,17 @@ npm run build
 4. Walk with `WASD`, approach room markers, and press `E`.
 5. Read GM Office inbox/schedule.
 6. Use GM Office phase guidance and the Dynasty Guide to understand the current phase, recommended next step, checklist, and advance warnings.
-7. Review roster health, call-ups/send-downs, scratches, affiliate depth, cap/contracts, draft picks, trade options, scouting assignments, development plans, staff, and free agency in the front-office rooms.
-8. Review Locker Room roster status filters and player cards.
-9. Auto-fill or edit lines in Coach's Office.
-10. Adjust tactics.
-11. Enter Arena Bowl.
-12. Simulate the next game instantly, period-by-period, or through broadcast mode.
-13. Review score, events, box score, three stars, injuries, and coach notes.
-14. Check standings/news/player status/front-office changes.
-15. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp roster setup, and start the next season with AI roster repair.
-16. Validate, repair, export, import, save locally, and load later from the Save Desk.
+7. Review roster health, call-ups/send-downs, scratches, affiliate depth, cap/contracts, draft picks, trade options, scouting assignments, development plans, staff, free agency, and living-ops pressure in the front-office rooms.
+8. Use the Press Room, Owner Suite, Agent Desk, and Player Meeting Room to resolve fictional decision events with bounded consequences.
+9. Review Locker Room relationship filters, player cards, active story arcs, and meeting needs.
+10. Auto-fill or edit lines in Coach's Office.
+11. Adjust tactics.
+12. Enter Arena Bowl.
+13. Simulate the next game instantly, period-by-period, or through broadcast mode.
+14. Review score, events, box score, three stars, injuries, coach notes, and generated press/player/owner/agent fallout.
+15. Check standings/news/player status/front-office changes.
+16. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp roster setup, and start the next season with AI roster repair.
+17. Validate, repair, export, import, save locally, and load later from the Save Desk.
 
 ## Useful Change Targets
 
@@ -185,6 +203,7 @@ npm run build
 - Tune simulation: start with `src/game/constants.ts`, `src/game/simulation/simulatePeriod.ts`, and `src/game/simulation/simulateGame.ts`.
 - Add player or team fields: update `src/game/types.ts`, then generation, save validation, and affected UI tables/cards.
 - Add front-office behavior: start with a pure helper in `src/game/systems`, then wire it through `src/store/franchiseStore.ts` and room panels.
+- Add living-ops behavior: start with `relationships.ts`, `decisionEvents.ts`, or `storyArcs.ts`, preserve repeat-key dedupe/event caps, then expose the result through the appropriate room panel.
 - Add roster behavior: start with `src/game/systems/rosterRules.ts`, `src/game/systems/rosterManagement.ts`, and `src/game/systems/aiRosterManagement.ts`, then update `RosterOfficePanel.tsx` and affected transaction/signing flows.
 - Add dynasty-phase behavior: start in `src/game/systems/seasonLifecycle.ts`, keep the phase transition serializable, then expose a small store action and phase-aware GM Office control.
 - Add save metadata: update `src/game/systems/saves.ts` and `SaveLoadPanel.tsx`.
@@ -198,4 +217,5 @@ npm run build
 - Do not add backend, auth, cloud saves, real licensed hockey content, or non-serializable renderer/browser objects to franchise state.
 - Phase 3 includes simplified free agency, contract renewal, draft execution, playoffs, and staff hiring.
 - Phase 5 includes a simplified roster ecosystem with active roster, scratches, affiliate roster, injured reserve, prospect pipeline, call-ups/send-downs, AI roster repair, training camp setup, and affiliate development.
+- Phase 6 includes fictional press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, media/fan/owner sentiment, story arcs, and decision events.
 - Waivers, buyouts, retained salary, contract clauses, arbitration, offer sheets, online play, backend/cloud saves, real branding, and playable on-ice hockey remain out of scope.

@@ -4,17 +4,22 @@ import { runOwnerGoalBalanceSample, type OwnerGoalBalanceSample } from "../../ga
 import { runReSigningBalanceSample, type ReSigningBalanceSample } from "../../game/systems/reSigningBalance";
 import { runDynastyPlaytest, type PlaytestReport } from "../../game/systems/dynastyPlaytest";
 import { validateDynastyInvariants } from "../../game/systems/dynastyInvariants";
+import { getActiveDecisionEvents } from "../../game/systems/decisionEvents";
+import { getTeamDynamics } from "../../game/systems/relationships";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
 
 export function DevToolsPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
+  const generateSampleDecisionEvent = useFranchiseStore((state) => state.generateSampleDecisionEvent);
+  const autoResolveActiveDecisionEvents = useFranchiseStore((state) => state.autoResolveActiveDecisionEvents);
   const [playtest, setPlaytest] = useState<PlaytestReport | undefined>();
   const [balance, setBalance] = useState<BalanceReport | undefined>();
   const [reSigning, setReSigning] = useState<ReSigningBalanceSample[] | undefined>();
   const [ownerBalance, setOwnerBalance] = useState<OwnerGoalBalanceSample | undefined>();
   const invariant = useMemo(() => (franchise ? validateDynastyInvariants(franchise) : undefined), [franchise]);
+  const dynamics = franchise ? getTeamDynamics(franchise, franchise.selectedTeamId) : undefined;
 
   if (!franchise) return null;
 
@@ -36,9 +41,12 @@ export function DevToolsPanel() {
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-one-season", 1, franchise.selectedTeamId))}>Run 1-season dry run</Button>
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-three-season", 3, franchise.selectedTeamId))}>Run 3-season dry run</Button>
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-five-season-roster", 5, franchise.selectedTeamId))}>Run 5-season roster stress</Button>
+        <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-five-season-story", 5, franchise.selectedTeamId))}>Run 5-season story stress</Button>
         <Button onClick={() => setBalance(generateBalanceReport(["dev-a", "dev-b"], 1))}>Run balance report</Button>
         <Button onClick={() => setReSigning(runReSigningBalanceSample(["dev-rs-a", "dev-rs-b"]))}>Re-signing sample</Button>
         <Button onClick={() => setOwnerBalance(runOwnerGoalBalanceSample(["dev-o-a", "dev-o-b", "dev-o-c"]))}>Owner sample</Button>
+        <Button onClick={() => generateSampleDecisionEvent("press")}>Generate sample event</Button>
+        <Button onClick={autoResolveActiveDecisionEvents}>Auto-resolve active events</Button>
       </section>
 
       {invariant && !invariant.valid && (
@@ -56,6 +64,36 @@ export function DevToolsPanel() {
           <span>Players <strong>{invariant?.summary.activePlayers}</strong></span>
           <span>Draft picks <strong>{invariant?.summary.draftPicks}</strong></span>
           <span>Prospects <strong>{invariant?.summary.prospects}</strong></span>
+          <span>Active events <strong>{getActiveDecisionEvents(franchise).length}</strong></span>
+          <span>Story arcs <strong>{franchise.storyArcs.length}</strong></span>
+        </div>
+      </section>
+
+      <section className="panel-section">
+        <h3>Living Ops Inspectors</h3>
+        <div className="season-pulse">
+          <span>Relationships <strong>{Object.keys(franchise.playerRelationships).length}</strong></span>
+          <span>Agents <strong>{franchise.agents.length}</strong></span>
+          <span>Chemistry <strong>{dynamics?.chemistry ?? 0}/100</strong></span>
+          <span>Media <strong>{franchise.mediaState.pressure}/100</strong></span>
+          <span>Fans <strong>{dynamics?.fanSentiment ?? 0}/100</strong></span>
+          <span>Owner trust <strong>{dynamics?.ownerTrust ?? 0}/100</strong></span>
+        </div>
+        <div className="asset-list asset-list--compact">
+          {franchise.decisionEvents.slice(0, 8).map((event) => (
+            <article key={event.id}>
+              <strong>{event.headline}</strong>
+              <span>{event.type} | {event.status} | {event.severity} | {event.locationRoom}</span>
+            </article>
+          ))}
+        </div>
+        <div className="asset-list asset-list--compact">
+          {franchise.storyArcs.slice(0, 8).map((arc) => (
+            <article key={arc.id}>
+              <strong>{arc.headline}</strong>
+              <span>{arc.type} | {arc.status} | intensity {arc.intensity} | progress {arc.progress}</span>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -74,6 +112,8 @@ export function DevToolsPanel() {
             <span>Replacements <strong>{playtest.emergencyReplacementCounts[playtest.emergencyReplacementCounts.length - 1]?.count ?? 0}</strong></span>
             <span>Affiliate moves <strong>{playtest.affiliatePromotions[playtest.affiliatePromotions.length - 1]?.count ?? 0}</strong></span>
             <span>Cap-over teams <strong>{playtest.capOverTeams[playtest.capOverTeams.length - 1]?.teams ?? 0}</strong></span>
+            <span>Story events <strong>{playtest.livingOps.eventsGenerated}</strong></span>
+            <span>Story arcs <strong>{playtest.livingOps.storyArcsStarted}/{playtest.livingOps.storyArcsResolved}</strong></span>
           </div>
         </section>
       )}

@@ -12,6 +12,7 @@ import { useSettingsStore } from "../store/settingsStore";
 import { useUiStore } from "../store/uiStore";
 
 const FacilityScene = lazy(() => import("../components/three/FacilityScene").then((module) => ({ default: module.FacilityScene })));
+const AgentDeskPanel = lazy(() => import("../components/rooms/AgentDeskPanel").then((module) => ({ default: module.AgentDeskPanel })));
 const ArenaPanel = lazy(() => import("../components/rooms/ArenaPanel").then((module) => ({ default: module.ArenaPanel })));
 const CoachOfficePanel = lazy(() => import("../components/rooms/CoachOfficePanel").then((module) => ({ default: module.CoachOfficePanel })));
 const ContractCapOfficePanel = lazy(() => import("../components/rooms/ContractCapOfficePanel").then((module) => ({ default: module.ContractCapOfficePanel })));
@@ -20,6 +21,9 @@ const FreeAgencyOfficePanel = lazy(() => import("../components/rooms/FreeAgencyO
 const GMOfficePanel = lazy(() => import("../components/rooms/GMOfficePanel").then((module) => ({ default: module.GMOfficePanel })));
 const LockerRoomPanel = lazy(() => import("../components/rooms/LockerRoomPanel").then((module) => ({ default: module.LockerRoomPanel })));
 const MedicalRoomPanel = lazy(() => import("../components/rooms/MedicalRoomPanel").then((module) => ({ default: module.MedicalRoomPanel })));
+const OwnerSuitePanel = lazy(() => import("../components/rooms/OwnerSuitePanel").then((module) => ({ default: module.OwnerSuitePanel })));
+const PlayerMeetingPanel = lazy(() => import("../components/rooms/PlayerMeetingPanel").then((module) => ({ default: module.PlayerMeetingPanel })));
+const PressRoomPanel = lazy(() => import("../components/rooms/PressRoomPanel").then((module) => ({ default: module.PressRoomPanel })));
 const RosterOfficePanel = lazy(() => import("../components/rooms/RosterOfficePanel").then((module) => ({ default: module.RosterOfficePanel })));
 const SaveLoadPanel = lazy(() => import("../components/rooms/SaveLoadPanel").then((module) => ({ default: module.SaveLoadPanel })));
 const ScoutingDepartmentPanel = lazy(() => import("../components/rooms/ScoutingDepartmentPanel").then((module) => ({ default: module.ScoutingDepartmentPanel })));
@@ -80,6 +84,14 @@ function panelFor(room: RoomId) {
   switch (room) {
     case "gm":
       return <GMOfficePanel />;
+    case "press":
+      return <PressRoomPanel />;
+    case "ownerSuite":
+      return <OwnerSuitePanel />;
+    case "agents":
+      return <AgentDeskPanel />;
+    case "playerMeetings":
+      return <PlayerMeetingPanel />;
     case "roster":
       return <RosterOfficePanel />;
     case "coach":
@@ -118,6 +130,10 @@ function panelFor(room: RoomId) {
 function subtitleFor(room: RoomId): string {
   const subtitles: Record<RoomId, string> = {
     gm: "Inbox, calendar, owner pressure, and save desk.",
+    press: "Press conferences, media pressure, fan pulse, and public answers.",
+    ownerSuite: "Owner trust, job security, goals, and private meetings.",
+    agents: "Agent relationships, public pressure, clients, and negotiation tone.",
+    playerMeetings: "Player conversations, team meetings, trust, roles, and chemistry.",
     roster: "Active roster, scratches, affiliate depth, injured reserve, and roster moves.",
     coach: "Line combinations, goalie decisions, and tactical identity.",
     locker: "Roster pulse, player cards, morale, form, fatigue, and stats.",

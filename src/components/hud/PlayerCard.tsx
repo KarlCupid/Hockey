@@ -1,10 +1,19 @@
 import { createPlayerCoachRead, createPlayerManagementRisk, getFatigueBand, getFormBand, getMoraleBand } from "../../game/systems/playerNotes";
 import { contractSummary } from "../../game/systems/contracts";
+import { createRelationshipNote, getPlayerRelationship, getPlayerTrustBand } from "../../game/systems/relationships";
 import type { Player } from "../../game/types";
+import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 import { PlayerPortrait } from "../branding/PlayerPortrait";
 import { StatBadge } from "./StatBadge";
+import { RelationshipBadge } from "./RelationshipBadge";
 
 export function PlayerCard({ player }: { player: Player }) {
+  const franchise = useFranchiseStore((state) => state.franchise);
+  const schedulePlayerMeeting = useFranchiseStore((state) => state.schedulePlayerMeeting);
+  const relationship = franchise ? getPlayerRelationship(franchise, player.id) : undefined;
+  const agent = franchise?.agents.find((candidate) => candidate.clientPlayerIds.includes(player.id));
+  const team = franchise ? selectedTeam(franchise) : undefined;
+  const activeStoryArcs = franchise?.storyArcs.filter((arc) => arc.status === "active" && arc.playerIds.includes(player.id)) ?? [];
   return (
     <article className="player-card">
       <header>
@@ -23,6 +32,7 @@ export function PlayerCard({ player }: { player: Player }) {
         <StatBadge label="Morale" value={getMoraleBand(player.morale)} tone={player.morale > 70 ? "good" : player.morale < 45 ? "bad" : "default"} />
         <StatBadge label="Form" value={getFormBand(player.form)} tone={player.form > 70 ? "good" : player.form < 45 ? "warn" : "default"} />
         <StatBadge label="Fatigue" value={getFatigueBand(player.fatigue)} tone={player.fatigue > 75 ? "bad" : player.fatigue > 60 ? "warn" : "good"} />
+        {relationship && <StatBadge label="Trust" value={getPlayerTrustBand(relationship.trust)} tone={relationship.trust >= 62 ? "good" : relationship.trust <= 42 ? "bad" : "warn"} />}
       </div>
       <dl className="mini-grid">
         <div>
@@ -45,7 +55,36 @@ export function PlayerCard({ player }: { player: Player }) {
           <dt>Injury</dt>
           <dd>{player.injuryStatus === "healthy" ? "Healthy" : `${player.injuryStatus} (${player.injuryGamesRemaining} game(s))`}</dd>
         </div>
+        {relationship && (
+          <>
+            <div>
+              <dt>Role Satisfaction</dt>
+              <dd>{relationship.roleSatisfaction}/100</dd>
+            </div>
+            <div>
+              <dt>Agent</dt>
+              <dd>{agent?.displayName ?? "Unassigned"}</dd>
+            </div>
+          </>
+        )}
       </dl>
+      {relationship && (
+        <div className="player-card__relationship">
+          <RelationshipBadge relationship={relationship} agent={agent} />
+          <p>{team ? createRelationshipNote(player, relationship, team) : relationship.notes[0]}</p>
+          <button type="button" onClick={() => schedulePlayerMeeting(player.id)}>Schedule Meeting</button>
+        </div>
+      )}
+      {activeStoryArcs.length > 0 && (
+        <div className="asset-list asset-list--compact">
+          {activeStoryArcs.map((arc) => (
+            <article key={arc.id}>
+              <strong>{arc.headline}</strong>
+              <span>{arc.summary}</span>
+            </article>
+          ))}
+        </div>
+      )}
       <div className="player-card__notes">
         <article>
           <small>Coach read</small>

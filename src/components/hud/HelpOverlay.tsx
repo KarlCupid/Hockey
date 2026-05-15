@@ -23,7 +23,7 @@ export function HelpOverlay() {
           </article>
           <article>
             <h3>Rooms</h3>
-            <p>GM Office drives phase flow. Arena simulates games. Offices handle contracts, trades, scouting, development, free agency, and staff.</p>
+            <p>GM Office drives phase flow. Press Room, Owner Suite, Agent Desk, and Player Meeting Room handle the living organization layer.</p>
           </article>
           <article>
             <h3>Season Phases</h3>
@@ -36,6 +36,22 @@ export function HelpOverlay() {
           <article>
             <h3>Front Office</h3>
             <p>Cap, morale, fatigue, form, scouting certainty, staff ratings, and owner goals are simplified but persistent across seasons.</p>
+          </article>
+          <article>
+            <h3>Relationships</h3>
+            <p>Players track trust, role satisfaction, communication, and agent context. Meetings and public comments move those values in small, bounded steps.</p>
+          </article>
+          <article>
+            <h3>Decision Events</h3>
+            <p>Press conferences, owner meetings, agent calls, rumors, and locker-room issues present choices with previews and simplified consequences.</p>
+          </article>
+          <article>
+            <h3>Story Arcs</h3>
+            <p>Goalie controversy, role demands, rookie buzz, trade rumors, owner pressure, rivalries, and playoff pressure can escalate or cool down over time.</p>
+          </article>
+          <article>
+            <h3>Consequences</h3>
+            <p>Choices can affect morale, form, fatigue, role satisfaction, chemistry, fan sentiment, owner trust, media pressure, agents, and contract interest.</p>
           </article>
           <article>
             <h3>Save Data</h3>

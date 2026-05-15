@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { calculateActiveRosterCapHit, calculateAffiliateCommitments, calculateCapSpace, calculateOrganizationCapCommitments, formatMoney } from "../../game/systems/contracts";
 import { getDepthChart } from "../../game/systems/rosterManagement";
 import { getPlayerRosterStatus, getRosterStatusLabel, validateRosterForGame, validateRosterForSeason } from "../../game/systems/rosterRules";
+import { getPlayerRelationship } from "../../game/systems/relationships";
 import type { Player } from "../../game/types";
 import { selectedTeam, useFranchiseStore } from "../../store/franchiseStore";
 import { StatBadge } from "../hud/StatBadge";
@@ -72,7 +73,10 @@ export function RosterOfficePanel() {
                 <article key={move.id}>
                   <strong>{player?.displayName ?? "Roster move"}</strong>
                   <span>{move.date} | {getRosterStatusLabel(move.fromStatus)} to {getRosterStatusLabel(move.toStatus)}</span>
-                  <small>{move.reason}</small>
+                  <small>
+                    {move.reason}
+                    {player ? ` Relationship now: trust ${getPlayerRelationship(franchise, player.id).trust}/100, role satisfaction ${getPlayerRelationship(franchise, player.id).roleSatisfaction}/100.` : ""}
+                  </small>
                 </article>
               );
             })}

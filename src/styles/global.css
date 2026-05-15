@@ -1830,6 +1830,90 @@ textarea {
   border-color: rgba(245, 198, 91, 0.42);
 }
 
+.decision-card,
+.story-card,
+.player-card__relationship {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 0.75rem;
+}
+
+.decision-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.decision-card small,
+.story-card small,
+.relationship-badge {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.decision-card p,
+.story-card p,
+.player-card__relationship p {
+  margin: 0;
+  color: #d6e5f1;
+}
+
+.decision-card--high,
+.decision-card--critical {
+  border-color: rgba(255, 126, 138, 0.56);
+}
+
+.decision-card--medium {
+  border-color: rgba(245, 198, 91, 0.42);
+}
+
+.decision-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.45rem;
+}
+
+.decision-options button {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+}
+
+.decision-options span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.relationship-badge {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.22rem 0.48rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.relationship-badge--good {
+  border-color: rgba(118, 227, 165, 0.45);
+  color: var(--good);
+}
+
+.relationship-badge--warn {
+  border-color: rgba(245, 198, 91, 0.45);
+  color: var(--warn);
+}
+
+.relationship-badge--bad {
+  border-color: rgba(255, 126, 138, 0.48);
+  color: var(--bad);
+}
+
 @keyframes score-flash {
   50% {
     background: color-mix(in srgb, var(--event-accent), transparent 72%);

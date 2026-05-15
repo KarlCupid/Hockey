@@ -3,7 +3,25 @@ import { z } from "zod";
 import { ACTIVE_ROSTER_LIMIT, ACTIVE_ROSTER_MINIMUM, AUTOSAVE_SLOT_ID, SALARY_CAP_CEILING, SALARY_CAP_FLOOR, SAVE_SLOT_COUNT, SCHEMA_VERSION } from "../constants";
 import { generateDraftClass } from "../generators/generateDraftClass";
 import { SeededRng } from "../rng";
-import type { FranchiseState, LeagueHistory, OwnerState, Player, PlayerDevelopmentPath, ProspectRights, RosterStatus, SaveSlotMetadata, ScoutingState, StaffState, Team } from "../types";
+import type {
+  AgentProfile,
+  DecisionEvent,
+  FranchiseState,
+  LeagueHistory,
+  MediaState,
+  OwnerState,
+  Player,
+  PlayerDevelopmentPath,
+  PlayerRelationship,
+  ProspectRights,
+  RosterStatus,
+  SaveSlotMetadata,
+  ScoutingState,
+  StaffState,
+  StoryArc,
+  Team,
+  TeamDynamics
+} from "../types";
 import { generateAffiliateForTeam } from "./affiliate";
 import { repairAllTeamRosters } from "./aiRosterManagement";
 import { contractSummary, createContractForPlayer } from "./contracts";
@@ -16,6 +34,14 @@ import { generateStaffForLeague } from "./staff";
 import { recordString } from "./standings";
 import { generateTradeBlock, generateUntouchables, inferTeamNeeds } from "./trades";
 import { autoSetInitialRosterStatuses } from "./rosterManagement";
+import { defaultMediaState } from "./fanMedia";
+import {
+  generateAgentsForPlayers,
+  generateInitialPlayerRelationships,
+  generateInitialTeamDynamics,
+  normalizeRelationship,
+  normalizeTeamDynamics
+} from "./relationships";
 
 const saveSchema = z.object({
   schemaVersion: z.number(),
@@ -117,6 +143,17 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     history,
     ownerState: input.ownerState ?? emptyOwnerState(input),
     prospectPools,
+    decisionEvents: input.decisionEvents ?? [],
+    storyArcs: input.storyArcs ?? [],
+    playerRelationships: input.playerRelationships ?? {},
+    agents: input.agents ?? [],
+    teamDynamics: input.teamDynamics ?? {},
+    mediaState: input.mediaState ?? {
+      pressure: 45,
+      narrative: "quiet",
+      recentQuestions: [],
+      columnistTone: "neutral"
+    },
     scouting,
     development: input.development ?? { plans: [], recentUpdates: [] },
     tradeHistory: input.tradeHistory ?? [],
@@ -125,8 +162,7 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     saveStatus: "idle"
   };
   const ownerState = hydrateOwnerState(ownerBase);
-
-  return repairAllTeamRosters({
+  const livingBase = hydrateLivingOpsState({
     ...ownerBase,
     ownerState,
     playoffState: input.playoffState ?? (phase === "playoffs" ? createPlayoffState(ownerBase.league) : undefined),
@@ -135,7 +171,9 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     scouting,
     rosterMoveHistory: input.rosterMoveHistory ?? [],
     saveStatus: "idle"
-  }, "playtestRepair");
+  });
+  const repaired = repairAllTeamRosters(livingBase, "playtestRepair");
+  return hydrateLivingOpsState(repaired);
 }
 
 export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityReport {
@@ -154,6 +192,7 @@ export function validateSaveIntegrity(franchise: FranchiseState): SaveIntegrityR
 
 export function repairFranchiseState(franchise: FranchiseState): FranchiseState {
   const hydrated = hydrateFranchiseState(franchise);
+  const repairedLiving = hydrateLivingOpsState(hydrated);
   return {
     ...hydrated,
     league: {
@@ -169,6 +208,12 @@ export function repairFranchiseState(franchise: FranchiseState): FranchiseState 
       }))
     },
     prospectPools: Object.fromEntries(hydrated.league.teams.map((team) => [team.id, hydrated.prospectPools[team.id] ?? []])),
+    decisionEvents: repairedLiving.decisionEvents,
+    storyArcs: repairedLiving.storyArcs,
+    playerRelationships: repairedLiving.playerRelationships,
+    agents: repairedLiving.agents,
+    teamDynamics: repairedLiving.teamDynamics,
+    mediaState: repairedLiving.mediaState,
     saveStatus: "idle"
   };
 }
@@ -258,6 +303,135 @@ export function metadataFor(slotId: string, franchise: FranchiseState): SaveSlot
     schemaVersion: franchise.schemaVersion,
     seasonPhase: franchise.seasonPhase
   };
+}
+
+function hydrateLivingOpsState(input: FranchiseState): FranchiseState {
+  const playerIds = new Set(input.league.teams.flatMap((team) => team.roster.map((player) => player.id)));
+  const teamIds = new Set(input.league.teams.map((team) => team.id));
+  const staffIds = new Set(Object.values(input.staffState?.teamStaff ?? {}).flatMap((staff) => staff.map((member) => member.id)));
+  const prospectIds = new Set([
+    ...input.scouting.draftClass.map((prospect) => prospect.id),
+    ...Object.values(input.prospectPools ?? {}).flatMap((pool) => pool.map((rights) => rights.prospectId))
+  ]);
+  const agents = hydrateAgents(input, playerIds);
+  const withAgents = { ...input, agents };
+  const generatedRelationships = generateInitialPlayerRelationships(withAgents);
+  const playerRelationships: Record<string, PlayerRelationship> = {};
+  playerIds.forEach((playerId) => {
+    const existing = input.playerRelationships?.[playerId];
+    playerRelationships[playerId] = normalizeRelationship({
+      ...(generatedRelationships[playerId] ?? {
+        playerId,
+        trust: 55,
+        roleSatisfaction: 55,
+        communication: 55,
+        pressureTolerance: 55,
+        notes: []
+      }),
+      ...(existing ?? {}),
+      playerId,
+      agentId: agents.find((agent) => agent.clientPlayerIds.includes(playerId))?.id ?? existing?.agentId
+    });
+  });
+
+  const dynamicsBase = generateInitialTeamDynamics({ ...withAgents, playerRelationships });
+  const teamDynamics: Record<string, TeamDynamics> = {};
+  teamIds.forEach((teamId) => {
+    teamDynamics[teamId] = normalizeTeamDynamics({
+      ...dynamicsBase[teamId],
+      ...(input.teamDynamics?.[teamId] ?? {}),
+      rivalryHeatByTeamId: {
+        ...dynamicsBase[teamId].rivalryHeatByTeamId,
+        ...(input.teamDynamics?.[teamId]?.rivalryHeatByTeamId ?? {})
+      }
+    });
+  });
+  const mediaState: MediaState = normalizeMediaState(input.mediaState ?? defaultMediaState({ ...withAgents, playerRelationships, teamDynamics }));
+
+  return {
+    ...input,
+    agents,
+    playerRelationships,
+    teamDynamics,
+    mediaState,
+    decisionEvents: sanitizeDecisionEvents(input.decisionEvents ?? [], teamIds, playerIds, staffIds, prospectIds),
+    storyArcs: sanitizeStoryArcs(input.storyArcs ?? [], teamIds, playerIds, staffIds)
+  };
+}
+
+function hydrateAgents(input: FranchiseState, playerIds: Set<string>): AgentProfile[] {
+  const generated = generateAgentsForPlayers(input, new SeededRng(`${input.franchiseId}-agents-repair`));
+  const existing = Array.isArray(input.agents) && input.agents.length ? input.agents : generated;
+  const agents = existing.map((agent, index) => ({
+    ...agent,
+    id: agent.id ?? `agent-${index + 1}`,
+    displayName: agent.displayName ?? generated[index % generated.length]?.displayName ?? `Agent ${index + 1}`,
+    personality: agent.personality ?? generated[index % generated.length]?.personality ?? "Collaborative",
+    clientPlayerIds: (agent.clientPlayerIds ?? []).filter((playerId) => playerIds.has(playerId)),
+    relationship: clampNumber(agent.relationship, 55),
+    publicPressure: clampNumber(agent.publicPressure, 45),
+    negotiationStyle: agent.negotiationStyle ?? generated[index % generated.length]?.negotiationStyle ?? "Prefers direct negotiation.",
+    notes: (agent.notes ?? []).slice(0, 8)
+  }));
+  const assigned = new Set(agents.flatMap((agent) => agent.clientPlayerIds));
+  Array.from(playerIds)
+    .filter((playerId) => !assigned.has(playerId))
+    .forEach((playerId, index) => {
+      const agent = agents[index % Math.max(1, agents.length)] ?? generated[0];
+      if (!agents.includes(agent)) agents.push(agent);
+      agent.clientPlayerIds = [...agent.clientPlayerIds, playerId];
+    });
+  return agents.length ? agents : generated;
+}
+
+function sanitizeDecisionEvents(
+  events: DecisionEvent[],
+  teamIds: Set<string>,
+  playerIds: Set<string>,
+  staffIds: Set<string>,
+  prospectIds: Set<string>
+): DecisionEvent[] {
+  const activeRepeatKeys = new Set<string>();
+  return events
+    .filter((event) => teamIds.has(event.teamId))
+    .filter((event) => (event.playerIds ?? []).every((playerId) => playerIds.has(playerId)))
+    .filter((event) => (event.staffIds ?? []).every((staffId) => staffIds.has(staffId)))
+    .filter((event) => (event.prospectIds ?? []).every((prospectId) => prospectIds.has(prospectId)))
+    .filter((event) => {
+      if (event.status !== "active" || !event.repeatKey) return true;
+      if (activeRepeatKeys.has(event.repeatKey)) return false;
+      activeRepeatKeys.add(event.repeatKey);
+      return true;
+    })
+    .slice(0, 80);
+}
+
+function sanitizeStoryArcs(events: StoryArc[], teamIds: Set<string>, playerIds: Set<string>, staffIds: Set<string>): StoryArc[] {
+  return events
+    .filter((arc) => teamIds.has(arc.teamId))
+    .filter((arc) => arc.playerIds.every((playerId) => playerIds.has(playerId)))
+    .filter((arc) => (arc.staffIds ?? []).every((staffId) => staffIds.has(staffId)))
+    .map((arc) => ({
+      ...arc,
+      intensity: clampNumber(arc.intensity, 50),
+      progress: clampNumber(arc.progress, 0),
+      recentEventIds: (arc.recentEventIds ?? []).slice(0, 10),
+      tags: (arc.tags ?? []).slice(0, 8)
+    }))
+    .slice(0, 24);
+}
+
+function normalizeMediaState(mediaState: MediaState): MediaState {
+  return {
+    pressure: clampNumber(mediaState.pressure, 45),
+    narrative: ["quiet", "optimistic", "skeptical", "hotSeat", "playoffBuzz", "rebuildDebate"].includes(mediaState.narrative) ? mediaState.narrative : "quiet",
+    recentQuestions: (mediaState.recentQuestions ?? []).slice(0, 8),
+    columnistTone: ["friendly", "neutral", "critical", "provocative"].includes(mediaState.columnistTone) ? mediaState.columnistTone : "neutral"
+  };
+}
+
+function clampNumber(value: number | undefined, fallback: number): number {
+  return Math.max(0, Math.min(100, Math.round(Number.isFinite(value) ? Number(value) : fallback)));
 }
 
 function hydrateTeamPlayers(team: Team, franchiseId: string): Team {
@@ -368,6 +542,12 @@ function collectMissingFieldRepairs(input: FranchiseState): string[] {
   if (!input.scouting) repaired.push("scouting");
   if (!input.development) repaired.push("development");
   if (!input.rosterMoveHistory) repaired.push("rosterMoveHistory");
+  if (!input.decisionEvents) repaired.push("decisionEvents");
+  if (!input.storyArcs) repaired.push("storyArcs");
+  if (!input.playerRelationships) repaired.push("playerRelationships");
+  if (!input.agents) repaired.push("agents");
+  if (!input.teamDynamics) repaired.push("teamDynamics");
+  if (!input.mediaState) repaired.push("mediaState");
   input.league.teams.forEach((team) => {
     if (!team.affiliate) repaired.push(`${team.id}.affiliate`);
     if (!team.rosterMoveLog) repaired.push(`${team.id}.rosterMoveLog`);

@@ -14,9 +14,11 @@ npm run dev
 ## Verify
 
 ```bash
+npm run typecheck
 npm test
 npm run test:smoke
 npm run build
+npm run check
 ```
 
 ## What Is Included
@@ -37,6 +39,7 @@ npm run build
 - Phase 8 release-candidate UX with guided tutorial, Learn the Game guide, achievements, milestones, generated local audio, accessibility controls, local telemetry, bug-report export, broadcast polish, and smoke tests
 - Phase 9 replayability tools with Custom League Lab, local fictional data packs, scenario starts, team creator, roster/player editor helpers, draft class editor helpers, data-pack validation/repair, and JSON import/export
 - Phase 10 custom rules support with generalized league sizes, schedule generation, playoff formats, draft rounds/class sizing, Data Pack v2 validation, and multi-season custom dry runs
+- Phase 11 public beta readiness with PWA install metadata, static/offline-friendly shell caching, release/version labels, runtime health logs, save snapshots/recovery, beta checklists, demo mode, compatibility notes, and release scripts
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -177,9 +180,24 @@ Phase 10 broadens Phase 9 custom starts into full-dynasty fictional league rules
 - Custom League Lab adds a Rules tab for team count, schedule/playoff/draft/cap/roster/affiliate settings, validation, and repair to the nearest supported format.
 - Schema version 8 hydrates older saves by adding a default 12-team rule set when missing.
 
+## Phase 11 Public Beta Readiness, PWA Packaging, Performance, And Runtime QA
+
+Phase 11 packages the existing deep franchise game into a more testable public beta candidate without adding another hockey rules layer:
+
+- Start screen now includes `Try Demo Franchise`, a deterministic sandbox entry point with an Assistant GM recommendation, mild press/story beat, roster/scouting prompts, an upcoming game, and near-progress achievement context. Demo play does not overwrite saves unless the user manually saves.
+- Install-friendly PWA metadata is included through `public/manifest.webmanifest`, generated local SVG icons, app meta tags, and a small first-party service worker that caches only the static app shell/assets. User saves and data packs remain in localForage and are not cached by the service worker.
+- Release metadata is centralized in `src/game/systems/version.ts` and appears in the start screen, TopBar, Settings, Save Desk, Dev Tools, bug reports, diagnostics, and save metadata.
+- Save writes can create local snapshots before overwriting slots, keep capped slot history, restore/export/delete snapshots, and recover the last good snapshot if a current save is corrupt.
+- Runtime health logging records local errors, warnings, save repair events, import warnings, PWA warnings, audio warnings, and performance warnings. Logs are capped, serializable, clearable, and included in bug reports.
+- Performance budget helpers document app-shell, room-panel, total-JS, and known `three-r3f` chunk expectations. Dev Tools shows current settings impact and low-spec recommendations.
+- Settings includes a low-spec preset for reduced 3D detail, reduced motion/flashes, compact tables, muted ambience, and faster broadcast pacing.
+- Responsive polish improves 1366x768 and 1440x900 desktop/laptop use, adds safer modal/table scrolling, and shows a desktop recommendation on very small screens.
+- Beta Playtest Guide checklists cover the first 30 minutes, first season, Custom League Lab, dynasty stability, accessibility/audio, and bug-report export.
+- Release scripts include `npm run typecheck`, `npm run test:phase11`, `npm run test:release`, `npm run build:report`, and `npm run check`.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, data packs, and custom rule presets are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, network telemetry, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, data packs, custom rule presets, beta diagnostics, and save recovery are simplified fictional prototype systems.
 
 ## Controls
 
@@ -197,4 +215,11 @@ This prototype intentionally avoids backend services, authentication, real hocke
 
 ## Save Data
 
-Saves and imported data packs are local-only through IndexedDB/localForage. There are three manual save slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, local bug-report export, and Data Pack Library access. Older saves hydrate to schema version 8 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, owner goal outcome history, optional custom data-pack metadata, and league rule sets.
+Saves and imported data packs are local-only through IndexedDB/localForage. There are three manual save slots and one autosave created after completed games. Manual overwrites create capped local snapshots, autosaves keep a smaller snapshot history, and the Save Desk can restore, export, delete, or recover the last good snapshot. The Save Desk shows schema version, app version, release phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, local bug-report export, runtime health, and Data Pack Library access. Older saves hydrate to schema version 8 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, owner goal outcome history, optional custom data-pack metadata, and league rule sets.
+
+## Public Beta Notes
+
+- See [BETA_TESTING.md](BETA_TESTING.md) for suggested playtest flows, bug-report instructions, compatibility notes, and local-only privacy details.
+- The PWA service worker is static-shell only. It does not cache user saves, data packs, local telemetry, bug reports, or diagnostics.
+- The known large `three-r3f` production chunk is isolated and documented as the expected 3D dependency cost for this prototype.
+- Modern desktop browsers with WebGL, IndexedDB, and ES module support are the target. Smaller viewports get a desktop recommended warning rather than a separate mobile layout.

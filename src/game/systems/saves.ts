@@ -53,6 +53,7 @@ import { createGmProfile } from "./gmProfile";
 import { capTelemetry } from "./localTelemetry";
 import { normalizeMilestones } from "./milestones";
 import { normalizeTutorialState } from "./tutorial";
+import { getVersionSummary } from "./version";
 import { NARRATIVE_TEMPLATE_VERSION } from "../content/narrativeTemplates";
 import {
   generateAgentsForPlayers,
@@ -91,8 +92,29 @@ export interface SaveIntegrityReport {
   lastValidatedAt: string;
 }
 
+export interface SaveSnapshotMetadata {
+  slotId: string;
+  snapshotId: string;
+  createdAt: string;
+  reason: string;
+  teamName: string;
+  season: number;
+  phase: FranchiseState["seasonPhase"];
+  schemaVersion: number;
+  integrityStatus: "valid" | "warnings" | "errors";
+}
+
+interface SaveSnapshotRecord {
+  metadata: SaveSnapshotMetadata;
+  payload: string;
+}
+
 export function saveKey(slotId: string): string {
   return `franchise-ice:${slotId}`;
+}
+
+export function saveSnapshotKey(snapshotId: string): string {
+  return `franchise-ice:snapshot:${snapshotId}`;
 }
 
 export function serializeFranchise(franchise: FranchiseState): string {
@@ -316,6 +338,27 @@ export async function writeSave(slotId: string, franchise: FranchiseState): Prom
   return metadataFor(slotId, updated);
 }
 
+export function validateBeforeWrite(franchise: FranchiseState): SaveIntegrityReport {
+  return validateSaveIntegrity(franchise);
+}
+
+export async function writeSaveWithBackup(slotId: string, franchise: FranchiseState, reason = "manual save"): Promise<SaveSlotMetadata> {
+  const existingPayload = await localforage.getItem<string>(saveKey(slotId));
+  if (existingPayload) {
+    const existing = safeDeserializeFranchise(existingPayload);
+    if (existing.franchise) {
+      await createSaveSnapshot(existing.franchise, `Before ${reason}`, slotId);
+    }
+  }
+  const integrity = validateBeforeWrite(franchise);
+  if (integrity.errors.length) {
+    throw new Error(`Save blocked by integrity errors: ${integrity.errors.slice(0, 2).join("; ")}`);
+  }
+  const metadata = await writeSave(slotId, franchise);
+  await pruneOldSnapshots(slotId, slotId === AUTOSAVE_SLOT_ID ? 2 : 5);
+  return metadata;
+}
+
 export async function readSave(slotId: string): Promise<FranchiseState | null> {
   const payload = await localforage.getItem<string>(saveKey(slotId));
   if (!payload) return null;
@@ -336,11 +379,79 @@ export async function listSaveMetadata(): Promise<SaveSlotMetadata[]> {
   return metadata;
 }
 
+export async function createSaveSnapshot(franchise: FranchiseState, reason: string, slotId = "unslotted"): Promise<SaveSnapshotMetadata> {
+  const createdAt = new Date().toISOString();
+  const snapshotId = `${slotId}-${createdAt.replace(/[:.]/g, "-")}-${franchise.franchiseId.replace(/[^a-z0-9-]+/gi, "-")}`.slice(0, 180);
+  const metadata = snapshotMetadataFor(slotId, snapshotId, franchise, reason, createdAt);
+  const record: SaveSnapshotRecord = {
+    metadata,
+    payload: serializeFranchise({ ...franchise, saveStatus: "idle" })
+  };
+  await localforage.setItem(saveSnapshotKey(snapshotId), record);
+  return metadata;
+}
+
+export async function listSaveSnapshots(slotId: string): Promise<SaveSnapshotMetadata[]> {
+  const keys = await localforage.keys();
+  const records = await Promise.all(
+    keys
+      .filter((key) => key.startsWith(`franchise-ice:snapshot:${slotId}-`))
+      .map((key) => localforage.getItem<SaveSnapshotRecord>(key).catch(() => null))
+  );
+  return records
+    .filter((record): record is SaveSnapshotRecord => Boolean(record?.metadata?.snapshotId))
+    .map((record) => record.metadata)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+}
+
+export async function restoreSaveSnapshot(snapshotId: string): Promise<FranchiseState | null> {
+  const record = await localforage.getItem<SaveSnapshotRecord>(saveSnapshotKey(snapshotId));
+  if (!record?.payload) return null;
+  return deserializeFranchise(record.payload);
+}
+
+export async function deleteSaveSnapshot(snapshotId: string): Promise<void> {
+  await localforage.removeItem(saveSnapshotKey(snapshotId));
+}
+
+export async function pruneOldSnapshots(slotId: string, maxCount = 5): Promise<SaveSnapshotMetadata[]> {
+  const snapshots = await listSaveSnapshots(slotId);
+  const stale = snapshots.slice(Math.max(0, maxCount));
+  await Promise.all(stale.map((snapshot) => deleteSaveSnapshot(snapshot.snapshotId)));
+  return snapshots.slice(0, maxCount);
+}
+
+export async function recoverLastGoodSave(slotId: string): Promise<FranchiseState | null> {
+  const snapshots = await listSaveSnapshots(slotId);
+  for (const snapshot of snapshots) {
+    const restored = await restoreSaveSnapshot(snapshot.snapshotId).catch(() => null);
+    if (!restored) continue;
+    const integrity = validateSaveIntegrity(restored);
+    if (!integrity.errors.length) return restored;
+  }
+  return null;
+}
+
+export async function exportSaveSnapshotToJson(snapshotId: string): Promise<string | undefined> {
+  const record = await localforage.getItem<SaveSnapshotRecord>(saveSnapshotKey(snapshotId));
+  return record ? JSON.stringify(record, null, 2) : undefined;
+}
+
+export async function importSaveSnapshotJson(raw: string): Promise<SaveSnapshotMetadata> {
+  const parsed = JSON.parse(raw) as SaveSnapshotRecord;
+  if (!parsed?.metadata?.snapshotId || !parsed.payload) throw new Error("Snapshot JSON is missing metadata or payload.");
+  const restored = deserializeFranchise(parsed.payload);
+  const metadata = snapshotMetadataFor(parsed.metadata.slotId, parsed.metadata.snapshotId, restored, parsed.metadata.reason, parsed.metadata.createdAt);
+  await localforage.setItem(saveSnapshotKey(metadata.snapshotId), { metadata, payload: serializeFranchise(restored) });
+  return metadata;
+}
+
 export function metadataFor(slotId: string, franchise: FranchiseState): SaveSlotMetadata {
   const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId) as Team;
   const gameNumber = franchise.league.schedule.filter(
     (game) => game.played && (game.homeTeamId === team.id || game.awayTeamId === team.id)
   ).length;
+  const version = getVersionSummary();
 
   return {
     slotId,
@@ -352,7 +463,25 @@ export function metadataFor(slotId: string, franchise: FranchiseState): SaveSlot
     lastSaved: franchise.updatedAt,
     seasonYear: franchise.league.seasonYear,
     schemaVersion: franchise.schemaVersion,
+    appVersion: version.appVersion,
+    releasePhase: version.buildPhase,
     seasonPhase: franchise.seasonPhase
+  };
+}
+
+function snapshotMetadataFor(slotId: string, snapshotId: string, franchise: FranchiseState, reason: string, createdAt: string): SaveSnapshotMetadata {
+  const team = franchise.league.teams.find((candidate) => candidate.id === franchise.selectedTeamId) as Team;
+  const integrity = validateSaveIntegrity(franchise);
+  return {
+    slotId,
+    snapshotId,
+    createdAt,
+    reason,
+    teamName: team?.fullName ?? franchise.selectedTeamId,
+    season: franchise.league.seasonYear,
+    phase: franchise.seasonPhase,
+    schemaVersion: franchise.schemaVersion,
+    integrityStatus: integrity.errors.length ? "errors" : integrity.warnings.length ? "warnings" : "valid"
   };
 }
 

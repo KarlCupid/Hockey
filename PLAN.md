@@ -131,3 +131,16 @@
 - Add schema version 8 hydration so older saves and old data packs receive a safe default 12-team rule set when missing.
 - Add Phase 10 tests and smoke coverage for custom league generation, first-game simulation, save/export/import, two-season dry runs, and unsupported-rule rejection.
 - Keep all content fictional-only, local-only, serializable, and out of backend/cloud/online, real branding, waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, and playable on-ice hockey.
+
+## Milestone 17: Phase 11 Public Beta Readiness, PWA Packaging, Performance, Compatibility, Runtime QA, and Release Polish
+
+- Add centralized release metadata for app version, release phase/channel, save schema, build date, compatibility, and visible release labels.
+- Add install-friendly static app packaging through manifest metadata, generated local icons, app-shell-only service worker caching, and docs that clarify saves stay in localForage.
+- Add performance budgets, build-manifest reporting, manual chunk review, documented `three-r3f` exception, and low-spec settings recommendations.
+- Add a capped local runtime health monitor for errors, warnings, save repair, data-pack import issues, PWA/audio/performance notices, diagnostics, and bug reports.
+- Add local save snapshots, overwrite backups, last-good recovery, snapshot import/export, snapshot UI, and tests around corrupt current-save recovery.
+- Add deterministic demo/sample franchise entry for public beta testers without overwriting saves by default.
+- Improve desktop/laptop responsiveness, modal/table scrolling, compact low-spec preset, and a desktop-recommended warning for very small screens.
+- Add beta playtest checklist content, first-run links, GM Office checklist visibility, and documentation for first 30 minutes, first season, custom league, accessibility/audio, and bug-report tests.
+- Add release scripts for `typecheck`, `test:phase11`, `test:release`, `build:report`, and `check`.
+- Keep Phase 11 focused on shipping, testing, installability, compatibility, diagnostics, and release polish without backend/cloud/online services, network telemetry, real licensed content, or new hockey rules complexity.

@@ -11,10 +11,16 @@ import {
   exportSaveToJson,
   importSaveFromJson,
   listSaveMetadata,
+  listSaveSnapshots,
   readSave,
   repairFranchiseState,
+  recoverLastGoodSave,
+  restoreSaveSnapshot,
+  deleteSaveSnapshot,
+  exportSaveSnapshotToJson,
   validateSaveIntegrity,
-  writeSave
+  writeSaveWithBackup,
+  type SaveSnapshotMetadata
 } from "../game/systems/saves";
 import { capNewsItems, createPhaseTransitionNews } from "../game/systems/storyEngine";
 import { repairAllTeamRosters } from "../game/systems/aiRosterManagement";
@@ -22,6 +28,7 @@ import { tickAffiliateDevelopment } from "../game/systems/affiliate";
 import { evaluateAchievements, type AchievementContext } from "../game/systems/achievements";
 import { dismissAssistantGmReport as dismissAssistantGmReportPure, generateAssistantGmReport } from "../game/systems/assistantGm";
 import { createBugReport, createDiagnosticSummary, serializeBugReport } from "../game/systems/bugReport";
+import { createDemoFranchise } from "../game/systems/demoMode";
 import { getCapWarnings } from "../game/systems/contracts";
 import { createDifficultyTuning } from "../game/systems/difficulty";
 import {
@@ -89,6 +96,7 @@ import { completeTutorialStep as completeTutorialStepPure, dismissTutorialStep a
 import { assembleGameResult, nextGameForTeam, simulateGame } from "../game/simulation/simulateGame";
 import { useSettingsStore } from "./settingsStore";
 import { useUiStore } from "./uiStore";
+import { useRuntimeHealthStore } from "./runtimeHealthStore";
 import type { TacticKey } from "../game/systems/tactics";
 import type {
   DevelopmentFocus,
@@ -121,10 +129,12 @@ import type {
 interface FranchiseStore {
   franchise: FranchiseState | null;
   saves: SaveSlotMetadata[];
+  saveSnapshots: SaveSnapshotMetadata[];
   loadError?: string;
   activeTradeProposal?: TradeProposal;
   lastTradeEvaluation?: TradeEvaluation;
   startNewFranchise: (teamId: string, setupOptions?: FranchiseSetupOptions) => void;
+  startDemoFranchise: () => void;
   startFranchiseFromDataPack: (pack: DataPack, selectedTeamId: string, setupOptions?: FranchiseSetupOptions) => void;
   updateDifficultySettings: (patch: Partial<{ difficulty: GameDifficulty; storyFrequency: StoryFrequency }>) => void;
   dismissAssistantGmReport: (reportId: string) => void;
@@ -135,9 +145,14 @@ interface FranchiseStore {
   exportBugReport: (userNote?: string, includeFullSave?: boolean) => string | undefined;
   copyDiagnosticSummary: () => string | undefined;
   refreshSaves: () => Promise<void>;
+  refreshSnapshots: (slotId: string) => Promise<void>;
   saveToSlot: (slotId: string) => Promise<void>;
   loadFromSlot: (slotId: string) => Promise<void>;
   deleteSlot: (slotId: string) => Promise<void>;
+  restoreSnapshot: (snapshotId: string) => Promise<void>;
+  deleteSnapshot: (snapshotId: string, slotId?: string) => Promise<void>;
+  exportSnapshotJson: (snapshotId: string) => Promise<string | undefined>;
+  recoverSlot: (slotId: string) => Promise<void>;
   importFromJson: (raw: string) => void;
   exportCurrentJson: () => string | undefined;
   repairCurrentSave: () => void;
@@ -197,6 +212,7 @@ interface FranchiseStore {
 export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   franchise: null,
   saves: [],
+  saveSnapshots: [],
   loadError: undefined,
   activeTradeProposal: undefined,
   lastTradeEvaluation: undefined,
@@ -204,6 +220,13 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const franchise = recordTelemetryIfEnabled(createFranchise(teamId, setupOptions ?? undefined), "phaseAdvanced", "New franchise created", {
       teamId,
       seasonYear: new Date().getFullYear()
+    });
+    set({ franchise, loadError: undefined });
+  },
+  startDemoFranchise: () => {
+    const franchise = recordTelemetryIfEnabled(createDemoFranchise(), "phaseAdvanced", "Demo franchise opened", {
+      teamId: "harbor-city",
+      seasonYear: 2026
     });
     set({ franchise, loadError: undefined });
   },
@@ -269,15 +292,19 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   exportBugReport: (userNote, includeFullSave = false) => {
     const franchise = get().franchise;
     if (!franchise) return undefined;
-    return serializeBugReport(createBugReport(franchise, { userNote, includeFullSave, lastRoom: useUiActiveRoom() }));
+    return serializeBugReport(createBugReport(franchise, { userNote, includeFullSave, lastRoom: useUiActiveRoom(), runtimeHealth: useRuntimeHealthStore.getState().runtimeHealth }));
   },
   copyDiagnosticSummary: () => {
     const franchise = get().franchise;
-    return franchise ? createDiagnosticSummary(franchise, useUiActiveRoom()) : undefined;
+    return franchise ? createDiagnosticSummary(franchise, useUiActiveRoom(), useRuntimeHealthStore.getState().runtimeHealth) : undefined;
   },
   refreshSaves: async () => {
     const saves = await listSaveMetadata().catch(() => []);
     set({ saves });
+  },
+  refreshSnapshots: async (slotId) => {
+    const saveSnapshots = await listSaveSnapshots(slotId).catch(() => []);
+    set({ saveSnapshots });
   },
   saveToSlot: async (slotId) => {
     const franchise = get().franchise;
@@ -285,10 +312,19 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     set({ franchise: { ...franchise, saveStatus: "saving" } });
     try {
       const readyToSave = completeTutorialStepPure(franchise, "save-franchise");
-      await writeSave(slotId, { ...readyToSave, updatedAt: new Date().toISOString() });
+      await writeSaveWithBackup(slotId, { ...readyToSave, updatedAt: new Date().toISOString() }, slotId === AUTOSAVE_SLOT_ID ? "autosave" : "manual save");
       const saves = await listSaveMetadata();
-      set({ franchise: { ...readyToSave, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves });
+      const saveSnapshots = await listSaveSnapshots(slotId).catch(() => get().saveSnapshots);
+      set({ franchise: { ...readyToSave, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves, saveSnapshots });
     } catch (error) {
+      useRuntimeHealthStore.getState().addRuntimeEvent({
+        type: "warning",
+        severity: "high",
+        message: "Save failed",
+        details: error instanceof Error ? error.message : "Unknown save failure",
+        roomId: useUiActiveRoom(),
+        phase: franchise.seasonPhase
+      });
       set({ franchise: { ...franchise, saveStatus: "error" }, loadError: error instanceof Error ? error.message : "Save failed" });
     }
   },
@@ -301,12 +337,41 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       }
       set({ franchise: recordTelemetryIfEnabled(save, "saveLoaded", `Loaded ${slotId}`, { slotId }), loadError: undefined });
     } catch (error) {
+      const recovered = await recoverLastGoodSave(slotId).catch(() => null);
+      useRuntimeHealthStore.getState().addRuntimeEvent({
+        type: "warning",
+        severity: recovered ? "medium" : "high",
+        message: recovered ? `Load failed for ${slotId}; last good snapshot is available.` : `Load failed for ${slotId}.`,
+        details: error instanceof Error ? error.message : "Save could not be loaded.",
+        roomId: useUiActiveRoom()
+      });
       set({ loadError: error instanceof Error ? error.message : "Save could not be loaded." });
     }
   },
   deleteSlot: async (slotId) => {
     await deleteSave(slotId);
     await get().refreshSaves();
+  },
+  restoreSnapshot: async (snapshotId) => {
+    const restored = await restoreSaveSnapshot(snapshotId);
+    if (!restored) {
+      set({ loadError: "Snapshot could not be restored." });
+      return;
+    }
+    set({ franchise: recordTelemetryIfEnabled(restored, "saveLoaded", `Restored snapshot ${snapshotId.slice(0, 24)}`), loadError: undefined });
+  },
+  deleteSnapshot: async (snapshotId, slotId) => {
+    await deleteSaveSnapshot(snapshotId);
+    if (slotId) await get().refreshSnapshots(slotId);
+  },
+  exportSnapshotJson: async (snapshotId) => exportSaveSnapshotToJson(snapshotId),
+  recoverSlot: async (slotId) => {
+    const recovered = await recoverLastGoodSave(slotId);
+    if (!recovered) {
+      set({ loadError: "No recoverable snapshot was found for that slot." });
+      return;
+    }
+    set({ franchise: recordTelemetryIfEnabled(recovered, "saveLoaded", `Recovered ${slotId} from last good snapshot`, { slotId }), loadError: undefined });
   },
   importFromJson: (raw) => {
     try {
@@ -317,6 +382,13 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         loadError: integrity.errors.length ? integrity.errors[0] : integrity.warnings[0]
       });
     } catch (error) {
+      useRuntimeHealthStore.getState().addRuntimeEvent({
+        type: "warning",
+        severity: "high",
+        message: "Save import failed",
+        details: error instanceof Error ? error.message : "Unknown import failure",
+        roomId: useUiActiveRoom()
+      });
       set({ loadError: error instanceof Error ? error.message : "Save import failed." });
     }
   },
@@ -329,6 +401,14 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     if (!franchise) return;
     const repaired = recordTelemetryIfEnabled(applyPhase8Progress(repairFranchiseState(franchise), { type: "rosterRepair" }), "saveRepaired", "Manual save repair");
     const integrity = validateSaveIntegrity(repaired);
+    useRuntimeHealthStore.getState().addRuntimeEvent({
+      type: "saveRepair",
+      severity: integrity.errors.length ? "high" : integrity.warnings.length ? "medium" : "low",
+      message: "Manual save repair completed",
+      details: `warnings=${integrity.warnings.length}; errors=${integrity.errors.length}; repaired=${integrity.repairedFields.length}`,
+      roomId: useUiActiveRoom(),
+      phase: repaired.seasonPhase
+    });
     set({
       franchise: repaired,
       loadError: integrity.warnings[0] ?? undefined
@@ -432,7 +512,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       const autoSave = useSettingsStore.getState().settings.autoSave;
       set({ franchise: { ...next, saveStatus: autoSave ? "saving" : next.saveStatus } });
       const saved = autoSave
-        ? await writeSave(AUTOSAVE_SLOT_ID, next)
+        ? await writeSaveWithBackup(AUTOSAVE_SLOT_ID, next, "playoff autosave")
             .then(() => true)
             .catch(() => false)
         : true;
@@ -498,7 +578,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const autoSaveEnabled = useSettingsStore.getState().settings.autoSave;
     set({ franchise: { ...next, saveStatus: autosave && autoSaveEnabled ? "saving" : next.saveStatus } });
     if (autosave && autoSaveEnabled) {
-      const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
+      const saved = await writeSaveWithBackup(AUTOSAVE_SLOT_ID, next, "post-game autosave")
         .then(() => true)
         .catch(() => false);
       await get().refreshSaves();
@@ -604,7 +684,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       lastTradeEvaluation: evaluation
     });
     if (evaluation.accepted) {
-      const saved = await writeSave(AUTOSAVE_SLOT_ID, next)
+      const saved = await writeSaveWithBackup(AUTOSAVE_SLOT_ID, next, "accepted trade autosave")
         .then(() => true)
         .catch(() => false);
       await get().refreshSaves();

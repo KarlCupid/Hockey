@@ -17,4 +17,6 @@
 - All Phase 9 data packs must be validated before use and must reject or clearly flag obvious real-world restricted hockey branding terms.
 - Phase 10 explicitly allows generalized fictional league rules, 8/10/12/16 custom league sizes, custom schedule/playoff/draft formats, cap/roster rule presets, and data-pack v2 validation/repair.
 - Phase 10 rule combinations must be validated before use and unsupported combinations should be rejected or warned with clear user-facing reasons.
+- Phase 11 explicitly allows PWA/static packaging, release metadata, local runtime health logs, save backup/recovery, performance budgets, compatibility notes, demo/sample saves, beta playtest checklists, and release polish.
+- Phase 11 must not add network telemetry, backend, cloud sync, online sharing, or real licensed content.
 - Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

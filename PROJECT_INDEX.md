@@ -16,22 +16,27 @@ This index is the quick map for navigating the `Franchise Ice` prototype on GitH
 ```bash
 npm install
 npm run dev
+npm run typecheck
 npm test
 npm run test:smoke
 npm run build
+npm run check
 ```
 
 ## Entry Points
 
 - `index.html`: Vite HTML entry
-- `src/main.tsx`: React root mount
-- `src/app/App.tsx`: start screen, load screen, Phase 7 new-franchise setup wizard
-- `src/app/AppShell.tsx`: main facility shell, room modal routing, global controls, Phase 8 tutorial/hints/audio/shortcut wiring
-- `src/store/franchiseStore.ts`: franchise state, save/load, lineup/tactics mutations, simulation application, tutorial, telemetry, achievements, and bug-report export actions
+- `src/main.tsx`: React root mount plus safe service-worker registration
+- `src/serviceWorkerRegistration.ts`: production-only first-party service-worker registration wrapper
+- `public/manifest.webmanifest`, `public/sw.js`, `public/icons`: Phase 11 install-friendly static app metadata and app-shell cache
+- `src/app/App.tsx`: start screen, load screen, demo franchise entry, beta guide/release/install links, and Phase 7 new-franchise setup wizard
+- `src/app/AppShell.tsx`: main facility shell, room modal routing, global controls, responsive desktop warning, Phase 8 tutorial/hints/audio/shortcut wiring
+- `src/store/franchiseStore.ts`: franchise state, save/load/snapshot recovery, demo mode, lineup/tactics mutations, simulation application, tutorial, telemetry, achievements, runtime-health-aware diagnostics, and bug-report export actions
 - `src/store/dataPackStore.ts`: local-only imported data-pack library state, validation history, JSON import/export, repair, duplicate, rename, and localForage persistence
 - `src/store/uiStore.ts`: active room and nearby room UI state
-- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, guide reset token, Phase 6 story-event preferences, Phase 7 Assistant GM/badge/cadence settings, and Phase 8 audio/accessibility/tutorial/telemetry settings
+- `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, guide reset token, Phase 6 story-event preferences, Phase 7 Assistant GM/badge/cadence settings, and Phase 8/11 audio/accessibility/tutorial/telemetry/playtest-checklist settings
 - `src/store/audioStore.ts`: generated Web Audio engine wrapper and safe cue playback state
+- `src/store/runtimeHealthStore.ts`: capped local runtime health log persisted outside franchise saves
 
 ## Core Game Systems
 
@@ -53,7 +58,15 @@ npm run build
 - `src/game/systems/seasonSummary.ts`: selected-team season pulse and season-complete summary helper
 - `src/game/systems/injuries.ts`: injury and fatigue risk selectors
 - `src/game/systems/news.ts`: inbox/news generation from game state
-- `src/game/systems/saves.ts`: localForage save serialization, metadata, load/delete helpers
+- `src/game/systems/version.ts`: Phase 11 app version, release phase/channel, schema, compatibility, and release-label helpers
+- `src/game/systems/pwa.ts`: install metadata and safe service-worker registration helpers
+- `src/game/systems/performanceBudget.ts`: static bundle budgets, `three-r3f` known exception, build-manifest report helper, and runtime settings impact summary
+- `src/game/systems/runtimeHealth.ts`: serializable runtime event log, status, cap, summary, clear, and bug-report section helpers
+- `src/game/systems/displayModes.ts`: desktop/laptop viewport recommendations and low-spec settings preset
+- `src/game/systems/demoMode.ts`: deterministic fictional demo franchise/data-pack entry point for public beta playtests
+- `src/game/content/playtestChecklists.ts`: Phase 11 beta playtest checklist content
+- `src/game/systems/playtestChecklist.ts`: checklist validation and serializable progress helpers
+- `src/game/systems/saves.ts`: localForage save serialization, metadata, load/delete helpers, capped snapshots, snapshot import/export, overwrite backup, and last-good recovery
 - `src/game/systems/dynastyInvariants.ts`: full-franchise invariant checks for rosters, picks, prospects, phases, schedules, contracts, ratings, and JSON serializability
 - `src/game/systems/dynastyPlaytest.ts`: deterministic multi-season dry-run harness with phase reports, champion history, cap health, roster health, and owner-security trend
 - `src/game/systems/balanceReport.ts`: seeded balance report for scoring, economy, free agency, trades, draft/scouting, development, and owner gameplay
@@ -149,7 +162,7 @@ npm run build
 - `src/components/hud/AssistantGmReportCard.tsx`: Phase 7 Assistant GM report and recommendation card
 - `src/components/hud/StatBadge.tsx`: compact stat display
 - `src/components/hud/TeamBadge.tsx`: team identity mark
-- `src/components/rooms/GMOfficePanel.tsx`: master action queue, Assistant GM reports, GM profile/difficulty card, inbox, schedule, recent results, owner/fan/media pressure, living-ops dashboard, and save access
+- `src/components/rooms/GMOfficePanel.tsx`: master action queue, Assistant GM reports, optional beta checklist, GM profile/difficulty card, inbox, schedule, recent results, owner/fan/media pressure, living-ops dashboard, and save access
 - `src/components/rooms/RosterOfficePanel.tsx`: Phase 5 roster health, depth chart, active/scratch/affiliate/IR management, and roster move log
 - `src/components/rooms/CoachOfficePanel.tsx`: lineup editor, auto-fill, validation, tactic sliders
 - `src/components/rooms/LockerRoomPanel.tsx`: roster table, player cards, morale/form/fatigue/status
@@ -164,12 +177,12 @@ npm run build
 - `src/components/rooms/OwnerSuitePanel.tsx`: Phase 6 owner trust, goals, meetings, demand level, expectations, and response options
 - `src/components/rooms/AgentDeskPanel.tsx`: Phase 6 agent list, client pressure, active agent calls, and negotiation impact notes
 - `src/components/rooms/PlayerMeetingPanel.tsx`: Phase 6 players needing attention, team dynamics, player meetings, and team meetings
-- `src/components/rooms/SettingsPanel.tsx`: reduced motion/detail, reduce flashes, high contrast, larger text, keyboard hints, audio volumes, tutorial mode/reset, telemetry, autosave, confirmation, difficulty/story display, Assistant GM, room badges, consequence preview, density, scale, and guide reset settings
-- `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, narrative template, Assistant GM, action queue, cadence, and dry-run reporting tools
+- `src/components/rooms/SettingsPanel.tsx`: version/install/compatibility info, reduced motion/detail, low-spec preset, runtime health clear, reduce flashes, high contrast, larger text, keyboard hints, audio volumes, tutorial mode/reset, telemetry, autosave, confirmation, difficulty/story display, Assistant GM, room badges, consequence preview, density, scale, and guide reset settings
+- `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, narrative template, Assistant GM, action queue, cadence, performance budget, runtime health, version, and dry-run reporting tools
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
 - `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, broadcast beats, turning point, fan/media reaction, consequences, and filtered event feed
 - `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary, achievements, and franchise milestones
-- `src/components/rooms/SaveLoadPanel.tsx`: autosave/manual slot UI, save repair/export/import, diagnostic summary, and bug-report export
+- `src/components/rooms/SaveLoadPanel.tsx`: autosave/manual slot UI, save snapshots, last-good recovery, save repair/export/import, runtime-health-aware diagnostic summary, and bug-report export
 - `src/components/branding/TeamCrest.tsx`: fictional generated SVG crests
 - `src/components/branding/JerseySwatch.tsx`: generated jersey concept cards
 - `src/components/branding/TeamBrandCard.tsx`: team-selection and brand display card
@@ -207,6 +220,7 @@ npm run build
 - `src/tests/phase8ReleaseCandidate.test.ts`: Phase 8 coverage for tutorial, guide, achievements, milestones, audio, broadcast, accessibility, telemetry, bug reports, fan/owner reporting, save roundtrip, invariants, and mini smoke playtest
 - `src/tests/phase9Customization.test.ts`: Phase 9 coverage for data-pack validation/repair, real-world term flags, custom league generation, scenario modifiers, editor helpers, local data-pack store, save/bug-report metadata, content safety, and a two-season custom mini playtest
 - `src/tests/phase10LeagueRules.test.ts`: Phase 10 coverage for league-rule presets, generalized schedules, playoff formats, draft sizing/traded picks, custom franchise generation, data-pack repair, schema 7 hydration, bug-report rule summaries, Rules tab helpers, and custom two-season dry runs
+- `src/tests/phase11PublicBeta.test.ts`: Phase 11 coverage for version/PWA metadata, performance budgets, runtime health, save snapshots/recovery, demo mode, display modes, beta checklists, release smoke, custom 16-team dry runs, tutorial, and achievements
 
 ## Styles
 
@@ -222,10 +236,11 @@ npm run build
 - `PROJECT_INDEX.md`: this navigation index
 - `PLAYTEST_REPORT.md`: deterministic Phase 4 through Phase 10 playtest and balance report summary
 - `RELEASE_NOTES.md`: Phase 10 playtest notes, run instructions, known limitations, and safety/licensing notes
+- `BETA_TESTING.md`: Phase 11 public beta testing guide, diagnostics instructions, compatibility notes, privacy note, and playtest checklists
 
 ## Current Playable Flow
 
-1. Start app and click `New Franchise`.
+1. Start app and click `Try Demo Franchise` for a safe public-beta sandbox, or click `New Franchise`.
 2. Choose one of 12 fictional teams.
 3. Build a GM profile, choose a game mode, difficulty, story frequency, and optional opening preset.
 4. Enter the 3D hockey operations facility.
@@ -243,9 +258,10 @@ npm run build
 16. Check standings/news/player status/front-office changes.
 17. Finish the regular season, resolve playoffs, archive history, run retirements, draft, re-sign, sign free agents, hire staff, complete training camp roster setup, and start the next season with AI roster repair.
 18. Track local achievements and franchise milestones in the GM Office and Trophy Hall.
-19. Export local diagnostics or a bug report from the Save Desk when playtesting.
-20. Validate, repair, export, import, save locally, and load later from the Save Desk.
-21. Or open `Custom League Lab` from the start screen to edit a fictional local data pack, validate rules, and start a supported 8-, 10-, 12-, or 16-team custom league or scenario.
+19. Follow the Beta Playtest Guide from the start screen or GM Office if testing a release candidate.
+20. Export local diagnostics or a bug report from the Save Desk when playtesting; version, schema, compatibility, and runtime health are included.
+21. Validate, repair, export, import, snapshot, recover, save locally, and load later from the Save Desk.
+22. Or open `Custom League Lab` from the start screen to edit a fictional local data pack, validate rules, and start a supported 8-, 10-, 12-, or 16-team custom league or scenario.
 
 ## Useful Change Targets
 
@@ -257,6 +273,7 @@ npm run build
 - Add Phase 7 guidance/content behavior: start with `difficulty.ts`, `gmProfile.ts`, `livingOpsTuning.ts`, `assistantGm.ts`, `actionQueue.ts`, or `narrativeTemplateEngine.ts`, then expose it through GM Office, TopBar, Operations Map, Settings, Help, or Dev Tools.
 - Add Phase 8 onboarding/polish behavior: start with `tutorial.ts`, `guide.ts`, `achievements.ts`, `milestones.ts`, `broadcastStory.ts`, `accessibility.ts`, `localTelemetry.ts`, or `bugReport.ts`, then expose it through AppShell, Help, GM Office, Trophy Hall, Save Desk, Settings, or Game Result Center.
 - Add Phase 9/10 customization behavior: start with `leagueRules.ts`, `dataPackValidation.ts`, `dataPacks.ts`, `generateCustomLeague.ts`, `generateSchedule.ts`, `playoffs.ts`, `draftExecution.ts`, or `scenarios.ts`, then expose it through `DataPackLibrary.tsx`, Save Desk, Dev Tools, GM Office metadata, and tests.
+- Add Phase 11 release-readiness behavior: start with `version.ts`, `pwa.ts`, `performanceBudget.ts`, `runtimeHealth.ts`, `displayModes.ts`, `demoMode.ts`, `playtestChecklist.ts`, or `saves.ts`, then expose it through Start, Settings, Save Desk, Dev Tools, Help, GM Office, and tests.
 - Add roster behavior: start with `src/game/systems/rosterRules.ts`, `src/game/systems/rosterManagement.ts`, and `src/game/systems/aiRosterManagement.ts`, then update `RosterOfficePanel.tsx` and affected transaction/signing flows.
 - Add dynasty-phase behavior: start in `src/game/systems/seasonLifecycle.ts`, keep the phase transition serializable, then expose a small store action and phase-aware GM Office control.
 - Add save metadata: update `src/game/systems/saves.ts` and `SaveLoadPanel.tsx`.
@@ -275,5 +292,7 @@ npm run build
 - Phase 8 includes tutorial/onboarding, Learn the Game guide content, achievements/milestones, local/generated audio, accessibility improvements, local telemetry, bug-report export, release-candidate smoke tests, fan sentiment sampling, owner goal reporting, and presentation polish.
 - Phase 9 includes local custom league creation, fictional data packs, scenario starts, team creator, roster/player editor helpers, draft class editor helpers, generated branding previews, local JSON import/export, and validation/repair.
 - Phase 10 includes generalized fictional league rules, supported 8/10/12/16 team custom starts, custom schedule/playoff/draft formats, cap/roster rule presets, Data Pack v2 validation/repair, and custom multi-season dry runs.
+- Phase 11 includes PWA/static packaging, release metadata, local runtime health logs, save snapshot/recovery, performance budgets, compatibility notes, demo/sample franchise starts, beta playtest checklists, and release polish.
+- Phase 11 must stay local-only: no network telemetry, backend, cloud sync, online sharing, or real licensed content.
 - Unsupported custom rule combinations must be clearly rejected or documented with user-facing repair guidance.
 - Waivers, buyouts, retained salary, contract clauses, arbitration, offer sheets, online play, backend/cloud saves, real branding, and playable on-ice hockey remain out of scope.

@@ -17,6 +17,7 @@
 - Phase 8 focuses on release-candidate usability, tutorialization, generated/local audio, achievements, accessibility, diagnostics, and QA rather than adding another hockey rules layer.
 - Phase 9 increased replayability through local-only fictional customization: custom 12-team league starts, data packs, scenarios, team branding, roster/player editor helpers, draft-class editor helpers, validation/repair, and JSON import/export.
 - Phase 10 generalizes those custom starts to supported 8-, 10-, 12-, and 16-team fictional rule sets with schedule, playoff, draft, cap, roster, and Data Pack v2 validation.
+- Phase 11 packages the existing game for public beta readiness with local-only install metadata, release versioning, runtime health logs, save backups/recovery, performance budgets, compatibility notes, demo mode, beta checklists, and release scripts instead of adding another hockey rules layer.
 
 ## Files Added
 
@@ -35,6 +36,8 @@
 - Phase 8 UI/tests/docs: `src/store/audioStore.ts`, `src/components/hud/TutorialOverlay.tsx`, `src/components/hud/ContextualHint.tsx`, `src/components/hud/GuideOverlay.tsx`, `src/components/hud/AudioController.tsx`, updated AppShell/TopBar/Help/GM Office/Settings/Save Desk/Trophy Hall/Game Result Center/Arena Visualization, `src/tests/phase8ReleaseCandidate.test.ts`, and `RELEASE_NOTES.md`
 - Phase 9 systems/content/store: `src/game/systems/dataPacks.ts`, `src/game/systems/dataPackValidation.ts`, `src/game/generators/generateCustomLeague.ts`, `src/game/systems/scenarios.ts`, `src/game/content/scenarioTemplates.ts`, `src/game/content/fictionalCities.ts`, `src/game/content/teamNamePools.ts`, `src/game/content/arenaNames.ts`, `src/game/content/rivalryFlavor.ts`, and `src/store/dataPackStore.ts`
 - Phase 9 UI/tests/docs: `src/components/editors/DataPackLibrary.tsx`, `src/components/editors/TeamCreator.tsx`, `src/components/editors/ColorPickerField.tsx`, `src/components/editors/CrestShapePicker.tsx`, `src/components/editors/JerseyPatternPicker.tsx`, `src/components/editors/TeamPreviewCard.tsx`, `src/components/editors/RosterEditor.tsx`, `src/components/editors/PlayerEditor.tsx`, `src/components/editors/DraftClassEditor.tsx`, `src/components/rooms/DataPackLibraryPanel.tsx`, updated App/Save Desk/Dev Tools/GM Office/TopBar/Trophy Hall/guide/docs, and `src/tests/phase9Customization.test.ts`
+- Phase 10 systems/tests: `src/game/systems/leagueRules.ts`, generalized schedule/playoff/draft/data-pack rule integrations, and `src/tests/phase10LeagueRules.test.ts`
+- Phase 11 systems/content/store/assets/tests/docs: `src/game/systems/version.ts`, `src/game/systems/pwa.ts`, `src/serviceWorkerRegistration.ts`, `src/game/systems/performanceBudget.ts`, `src/game/systems/runtimeHealth.ts`, `src/store/runtimeHealthStore.ts`, `src/game/systems/displayModes.ts`, `src/game/systems/demoMode.ts`, `src/game/content/playtestChecklists.ts`, `src/game/systems/playtestChecklist.ts`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/franchise-ice-icon.svg`, `public/icons/franchise-ice-maskable.svg`, `public/robots.txt`, `scripts/build-report.mjs`, `src/tests/phase11PublicBeta.test.ts`, and `BETA_TESTING.md`
 
 ## V1.1 Changes
 
@@ -164,6 +167,27 @@
 - Added Phase 9 achievements: World Builder, Scenario Specialist, Custom Crest, and Data Pack Exported.
 - Added expanded fictional content pools for cities, team names, affiliates, arenas, rivalry flavor, crest shapes, jersey patterns, and scenario flavor.
 
+## Phase 10 Generalized League Rules And Data Pack v2 Changes
+
+- Added supported 8-, 10-, 12-, and 16-team rule presets with schedule, playoff, draft, cap, roster, affiliate, and trade-deadline settings.
+- Generalized schedule generation, playoff seeding/brackets/play-in handling, draft order/round sizing, and data-pack validation around the active rule set.
+- Added Data Pack v2 repair for missing rule sets, unsupported team counts, invalid playoff/schedule/draft combinations, and draft-class depth issues.
+- Expanded the Custom League Lab Rules tab and surfaced rule summaries in saves, bug reports, GM Office, TopBar, guide/help, and Dev Tools.
+- Added schema version 8 hydration so older saves receive a safe default 12-team fictional rule set when missing.
+
+## Phase 11 Public Beta Readiness Changes
+
+- Added centralized release metadata and compatibility summaries, now visible on the start screen, TopBar, Settings, Save Desk, Dev Tools, bug reports, diagnostics, and save metadata.
+- Added PWA install metadata with a local web manifest, generated SVG icons, app meta tags, robots file, and a small first-party service worker that caches only static app-shell assets.
+- Added performance budget helpers and a build-report script. The `three-r3f` chunk remains isolated and documented as a known 3D dependency exception.
+- Added a serializable, capped runtime health log with local error/warning capture, runtime health summaries, clear controls, and bug-report sections.
+- Added save snapshots, overwrite backups, snapshot restore/delete/export/import, capped pruning, and last-good recovery for corrupt current save data.
+- Added deterministic demo mode for public beta testers with fictional decision context, an upcoming game, Assistant GM guidance, scouting, and achievement progress.
+- Added display-mode and low-spec preset helpers, improved compact desktop responsiveness, modal/table overflow handling, and a desktop recommended warning for very small viewports.
+- Added beta playtest checklist content and progress helpers, start-screen beta guide links, optional GM Office checklist visibility, and Settings toggles.
+- Added release scripts for `npm run typecheck`, `npm run test:phase11`, `npm run test:release`, `npm run build:report`, and `npm run check`.
+- Updated docs with public beta testing instructions, install/static behavior, diagnostics, recovery, compatibility, privacy/local-only notes, and known limitations.
+
 ## Verification
 
 - Passed: `npm install`
@@ -228,6 +252,14 @@
 - Passed: `cmd /c npm test` with 13 test files and 186 tests after Phase 10 changes.
 - Passed: `cmd /c npm run build` after Phase 10 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
 - Passed in-app Browser smoke against the production `dist` build served locally: start screen rendered, Custom League Lab opened, Rules tab rendered, 16-team rule selection updated schedule/draft previews, supported status stayed visible, and console error capture was clean.
+- Passed: `cmd /c npm run typecheck` after Phase 11 changes.
+- Passed: `cmd /c npm run test:phase11` with 7 Phase 11 public beta tests.
+- Passed: `cmd /c npm test` with 14 test files and 193 tests after Phase 11 changes.
+- Passed: `cmd /c npm run test:smoke` with Phase 8, Phase 9, Phase 10, and Phase 11 smoke coverage: 4 files and 47 tests.
+- Passed: `cmd /c npm run build` after Phase 11 changes. The previous circular chunk warning was removed by simplifying the vendor manual chunk split. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Passed: `cmd /c npm run check`, which runs typecheck, full tests, smoke tests, and production build.
+- Passed: `cmd /c npm run build:report`; lightweight bundle report showed total JS about 1761.0 kB, `three-r3f` about 731.0 kB as a known exception, and `three-surfaces` about 436.4 kB marked for review.
+- Passed production preview/headless Edge smoke at `http://127.0.0.1:4188/`: rendered start screen contained `Try Demo Franchise`, `Beta Playtest Guide`, `Release Notes`, `Install Locally`, `Phase 11`, and `Franchise Ice v0.1.0`.
 
 ## Known Limitations
 
@@ -258,3 +290,7 @@
 - Phase 9/10 real-world content filtering is a basic obvious-term safety scan, not a legal guarantee.
 - Phase 10 full-dynasty custom starts support 8-, 10-, 12-, and 16-team fictional leagues through supported rule presets. Unsupported combinations such as 14-team starts, invalid playoff formats, and too-small draft classes are rejected or repaired with warnings.
 - Phase 9/10 generated branding uses CSS/SVG-style previews only. There are no image uploads, real logos, licensed marks, or external assets.
+- Phase 11 PWA/offline support is static-shell/local-only. The service worker caches app assets only and does not cache user saves, imported data packs, telemetry, runtime health logs, or bug reports.
+- Phase 11 runtime health, telemetry, diagnostics, bug reports, and save snapshots remain local/export-only; there is no network telemetry, backend, cloud sync, or online sharing.
+- Phase 11 responsive polish targets desktop/laptop browsers. Very small screens receive a desktop recommended message rather than a dedicated mobile layout.
+- Phase 11 bundle reporting documents the large `three-r3f` chunk as a known 3D dependency exception; `three-surfaces` remains a review target for future optimization.

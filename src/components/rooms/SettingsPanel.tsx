@@ -3,7 +3,13 @@ import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
 import { getDifficultyDescription, getDifficultyLabel, getGameModeLabel, getStoryFrequencyDescription } from "../../game/systems/difficulty";
 import { getAccessibilitySettingsSummary } from "../../game/systems/accessibility";
+import { getLowSpecSettingsPreset } from "../../game/systems/displayModes";
+import { summarizeRuntimePerformanceSettings } from "../../game/systems/performanceBudget";
+import { getInstallGuideText } from "../../game/systems/pwa";
+import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
+import { getCompatibilitySummary, getVersionSummary } from "../../game/systems/version";
 import type { GameDifficulty, StoryFrequency } from "../../game/types";
+import { useRuntimeHealthStore } from "../../store/runtimeHealthStore";
 import { Button } from "../ui/Button";
 import { SectionHeader } from "../ui/SectionHeader";
 
@@ -14,6 +20,8 @@ export function SettingsPanel() {
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
   const resetChecklist = useUiStore((state) => state.resetChecklist);
   const franchise = useFranchiseStore((state) => state.franchise);
+  const runtimeHealth = useRuntimeHealthStore((state) => state.runtimeHealth);
+  const clearRuntimeEvents = useRuntimeHealthStore((state) => state.clearRuntimeEvents);
   const resetLivingOpsState = useFranchiseStore((state) => state.resetLivingOpsState);
   const updateDifficultySettings = useFranchiseStore((state) => state.updateDifficultySettings);
   const resetTutorial = useFranchiseStore((state) => state.resetTutorial);
@@ -22,6 +30,9 @@ export function SettingsPanel() {
     resetGuides();
     resetChecklist();
   };
+  const version = getVersionSummary();
+  const compatibility = getCompatibilitySummary();
+  const performanceSummary = summarizeRuntimePerformanceSettings(settings);
 
   return (
     <div className="room-stack">
@@ -44,6 +55,7 @@ export function SettingsPanel() {
           <Toggle label="Local telemetry for diagnostics" checked={settings.telemetryEnabledLocalOnly} onChange={(value) => updateSettings({ telemetryEnabledLocalOnly: value })} />
           <Toggle label="Enable consequence previews" checked={settings.consequencePreviewsEnabled} onChange={(value) => updateSettings({ consequencePreviewsEnabled: value, hideConsequencePreviews: !value })} />
           <Toggle label="Event cadence debug display" checked={settings.eventCadenceDebugDisplay} onChange={(value) => updateSettings({ eventCadenceDebugDisplay: value })} />
+          <Toggle label="Show beta playtest checklist" checked={settings.showPlaytestChecklist} onChange={(value) => updateSettings({ showPlaytestChecklist: value })} />
           <Toggle label="Auto-resolve low severity events" checked={settings.autoResolveLowSeverityEvents} onChange={(value) => updateSettings({ autoResolveLowSeverityEvents: value })} />
           <Toggle label="Hide consequence previews" checked={settings.hideConsequencePreviews} onChange={(value) => updateSettings({ hideConsequencePreviews: value })} />
           <Toggle label="Confirm phase advances" checked={settings.confirmPhaseAdvances} onChange={(value) => updateSettings({ confirmPhaseAdvances: value })} />
@@ -107,6 +119,36 @@ export function SettingsPanel() {
               <option value="normal">Normal</option>
             </select>
           </label>
+        </div>
+        <div className="settings-subpanel">
+          <h3>Version And Install</h3>
+          <p className="muted">{version.releaseLabel}</p>
+          <p className="muted">{getInstallGuideText()}</p>
+          <ul className="compact-list">
+            <li>{compatibility.storage}</li>
+            <li>{compatibility.offline}</li>
+            <li>{compatibility.desktopBrowsers.join(", ")}</li>
+          </ul>
+        </div>
+        <div className="settings-subpanel">
+          <h3>Performance Preset</h3>
+          <ul className="compact-list">
+            {performanceSummary.notes.map((item) => <li key={item}>{item}</li>)}
+            {performanceSummary.activePerformanceFlags.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+          <Button
+            onClick={() => {
+              const preset = getLowSpecSettingsPreset();
+              updateSettings(preset);
+            }}
+          >
+            Apply low-spec preset
+          </Button>
+        </div>
+        <div className="settings-subpanel">
+          <h3>Runtime Health</h3>
+          <p className="muted">{summarizeRuntimeHealth(runtimeHealth)}</p>
+          <Button onClick={clearRuntimeEvents}>Clear local runtime log</Button>
         </div>
         <div className="settings-subpanel">
           <h3>Accessibility Summary</h3>

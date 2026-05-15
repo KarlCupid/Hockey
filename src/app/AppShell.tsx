@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect } from "react";
+import { useState } from "react";
 import { getContrastClass, getUiScaleClass, shortcutRoomForKey } from "../game/systems/accessibility";
+import { getRecommendedDisplayMode } from "../game/systems/displayModes";
 import { AudioController } from "../components/hud/AudioController";
 import { ContextualHint } from "../components/hud/ContextualHint";
 import { ErrorBoundary } from "../components/hud/ErrorBoundary";
@@ -49,6 +51,10 @@ export function AppShell() {
   const toggleHelp = useSettingsStore((state) => state.toggleHelp);
   const completeTutorialStep = useFranchiseStore((state) => state.completeTutorialStep);
   const recordTelemetryEvent = useFranchiseStore((state) => state.recordTelemetryEvent);
+  const [viewport, setViewport] = useState(() => ({
+    width: typeof window === "undefined" ? 1440 : window.innerWidth,
+    height: typeof window === "undefined" ? 900 : window.innerHeight
+  }));
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -72,12 +78,21 @@ export function AppShell() {
     completeTutorialStep(tutorialStepForRoom(activeRoom));
   }, [activeRoom, completeTutorialStep, recordTelemetryEvent]);
 
+  useEffect(() => {
+    const onResize = () => setViewport({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const displayMode = getRecommendedDisplayMode(viewport.width, viewport.height);
+
   return (
     <main
       className={`app-shell ${getUiScaleClass(settings)} ${getContrastClass(settings)} app-shell--density-${settings.tableDensity} ${settings.reduceFlashes ? "app-shell--reduce-flashes" : ""}`}
     >
       <a className="skip-link" href="#active-room-panel">Skip to active panel</a>
       <AudioController />
+      {!displayMode.supported && <div className="desktop-recommended-banner">{displayMode.message}</div>}
       <ErrorBoundary fallback={<LoadingPanel label="3D facility recovered. Open a room from the map." />}>
         <Suspense fallback={<LoadingPanel label="Loading 3D operations hub..." />}>
           <FacilityScene />

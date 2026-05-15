@@ -42,6 +42,7 @@ export interface AppSettings {
   roomBadgesEnabled: boolean;
   consequencePreviewsEnabled: boolean;
   eventCadenceDebugDisplay: boolean;
+  showPlaytestChecklist: boolean;
   dynastyGuideResetToken: number;
 }
 
@@ -90,6 +91,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   roomBadgesEnabled: true,
   consequencePreviewsEnabled: true,
   eventCadenceDebugDisplay: false,
+  showPlaytestChecklist: true,
   dynastyGuideResetToken: 0
 };
 

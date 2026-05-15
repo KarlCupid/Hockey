@@ -255,6 +255,8 @@ export interface BugReport {
   id: string;
   createdAt: string;
   appVersion: string;
+  releasePhase?: string;
+  releaseChannel?: string;
   schemaVersion: number;
   currentPhase: SeasonPhase;
   selectedTeamId: string;
@@ -263,6 +265,17 @@ export interface BugReport {
   dataPackMetadata?: FranchiseState["dataPackMetadata"];
   lastRoom?: RoomId;
   recentTelemetry: LocalTelemetryEvent[];
+  runtimeHealthSummary?: string;
+  runtimeHealthEvents?: Array<{
+    id: string;
+    timestamp: string;
+    type: string;
+    message: string;
+    severity: string;
+    roomId?: RoomId;
+    phase?: SeasonPhase;
+    details?: string;
+  }>;
   saveIntegritySummary: string;
   invariantSummary: string;
   consoleNotes?: string[];
@@ -1865,5 +1878,7 @@ export interface SaveSlotMetadata {
   lastSaved: string;
   seasonYear: number;
   schemaVersion: number;
+  appVersion?: string;
+  releasePhase?: string;
   seasonPhase: SeasonPhase;
 }

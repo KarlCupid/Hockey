@@ -6,8 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:report": "npm run build && node scripts/build-report.mjs",
+    "check": "npm run typecheck && npm test && npm run test:smoke && npm run build",
     "test": "vitest run --config vitest.config.ts",
-    "test:smoke": "vitest run --config vitest.config.ts src/tests/phase8ReleaseCandidate.test.ts src/tests/phase9Customization.test.ts src/tests/phase10LeagueRules.test.ts",
+    "test:phase10": "vitest run --config vitest.config.ts src/tests/phase10LeagueRules.test.ts",
+    "test:phase11": "vitest run --config vitest.config.ts src/tests/phase11PublicBeta.test.ts",
+    "test:release": "npm run test:smoke && npm run test:phase11",
+    "test:smoke": "vitest run --config vitest.config.ts src/tests/phase8ReleaseCandidate.test.ts src/tests/phase9Customization.test.ts src/tests/phase10LeagueRules.test.ts src/tests/phase11PublicBeta.test.ts",
+    "typecheck": "tsc --noEmit",
     "test:watch": "vitest"
   },
   "dependencies": {

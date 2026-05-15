@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { useFranchiseStore } from "../../store/franchiseStore";
+import { useRuntimeHealthStore } from "../../store/runtimeHealthStore";
+import { useUiStore } from "../../store/uiStore";
 
 interface ErrorBoundaryState {
   error?: Error;
@@ -16,6 +18,14 @@ export class ErrorBoundary extends Component<{ children: ReactNode; fallback?: R
     console.error("Franchise Ice panel error", error, info.componentStack);
     useFranchiseStore.getState().recordTelemetryEvent("errorBoundary", error.message.slice(0, 120), {
       stackLength: info.componentStack?.length ?? 0
+    });
+    useRuntimeHealthStore.getState().addRuntimeEvent({
+      type: "error",
+      severity: "high",
+      message: error.message || "Panel render error",
+      details: info.componentStack?.slice(0, 800),
+      roomId: useUiStore.getState().activeRoom,
+      phase: useFranchiseStore.getState().franchise?.seasonPhase
     });
   }
 

@@ -5,8 +5,12 @@ import { DataPackLibrary } from "../components/editors/DataPackLibrary";
 import { LoadingPanel } from "../components/hud/LoadingPanel";
 import { FICTIONAL_TEAMS } from "../game/constants";
 import { getDifficultyDescription, getGameModeDescription, getStoryFrequencyDescription } from "../game/systems/difficulty";
+import { getDemoScenarioSummary } from "../game/systems/demoMode";
 import { getGmBackgroundDescription, getGmTraits } from "../game/systems/gmProfile";
 import { getPhaseLabel } from "../game/systems/phaseGuidance";
+import { getPlaytestChecklists } from "../game/systems/playtestChecklist";
+import { getInstallGuideText } from "../game/systems/pwa";
+import { getVersionSummary } from "../game/systems/version";
 import type { FranchiseStartPreset, GameDifficulty, GameMode, GMAvatarStyle, GMBackground, StoryFrequency } from "../game/types";
 import { useFranchiseStore } from "../store/franchiseStore";
 
@@ -20,6 +24,7 @@ export function App() {
   const loadFromSlot = useFranchiseStore((state) => state.loadFromSlot);
   const deleteSlot = useFranchiseStore((state) => state.deleteSlot);
   const startNewFranchise = useFranchiseStore((state) => state.startNewFranchise);
+  const startDemoFranchise = useFranchiseStore((state) => state.startDemoFranchise);
   const startFranchiseFromDataPack = useFranchiseStore((state) => state.startFranchiseFromDataPack);
   const [selectingTeam, setSelectingTeam] = useState(false);
   const [customLabOpen, setCustomLabOpen] = useState(false);
@@ -32,6 +37,8 @@ export function App() {
   const [difficulty, setDifficulty] = useState<GameDifficulty>("standard");
   const [storyFrequency, setStoryFrequency] = useState<StoryFrequency>("normal");
   const [startPreset, setStartPreset] = useState<FranchiseStartPreset>("balanced");
+  const [startInfo, setStartInfo] = useState<"beta" | "release" | "install" | undefined>();
+  const version = getVersionSummary();
 
   useEffect(() => {
     void refreshSaves();
@@ -193,12 +200,55 @@ export function App() {
         <p>Walk the facility. Own the lineup board. Carry the press conference after the final horn.</p>
         <div className="button-row">
           <button type="button" onClick={() => setSelectingTeam(true)}>New Franchise</button>
+          <button type="button" onClick={startDemoFranchise}>Try Demo Franchise</button>
           <button type="button" disabled={!autosave} onClick={() => autosave && void loadFromSlot("autosave")}>Continue</button>
           <button type="button" onClick={() => setCustomLabOpen(true)}>Custom League Lab</button>
         </div>
+        <div className="button-row button-row--subtle">
+          <button type="button" onClick={() => setStartInfo(startInfo === "beta" ? undefined : "beta")}>Beta Playtest Guide</button>
+          <button type="button" onClick={() => setStartInfo(startInfo === "release" ? undefined : "release")}>Release Notes</button>
+          <button type="button" onClick={() => setStartInfo(startInfo === "install" ? undefined : "install")}>Install Locally</button>
+        </div>
+        <footer className="start-screen__footer">
+          <span>{version.releaseLabel}</span>
+          <span>Local-only beta. Fictional teams and saves stay on this device.</span>
+        </footer>
       </div>
       <section className="load-card">
-        <h2>Load Franchise</h2>
+        <h2>{startInfo ? START_INFO_TITLES[startInfo] : "Load Franchise"}</h2>
+        {startInfo === "beta" && (
+          <div className="asset-list asset-list--compact">
+            <p className="muted">{getDemoScenarioSummary()}</p>
+            {getPlaytestChecklists().slice(0, 4).map((checklist) => (
+              <article key={checklist.id}>
+                <strong>{checklist.title}</strong>
+                <span>{checklist.description}</span>
+              </article>
+            ))}
+          </div>
+        )}
+        {startInfo === "release" && (
+          <div className="asset-list asset-list--compact">
+            <article>
+              <strong>{version.buildPhase}</strong>
+              <span>Public beta readiness build with PWA metadata, runtime health logs, save snapshots, demo mode, low-spec settings, and beta diagnostics.</span>
+            </article>
+            <article>
+              <strong>Known limitations</strong>
+              <span>No backend, auth, cloud sync, online sharing, real licensed content, or playable on-ice hockey.</span>
+            </article>
+          </div>
+        )}
+        {startInfo === "install" && (
+          <div className="asset-list asset-list--compact">
+            <article>
+              <strong>Install locally</strong>
+              <span>{getInstallGuideText()}</span>
+            </article>
+          </div>
+        )}
+        {!startInfo && (
+        <>
         {loadError && <p className="error-text">{loadError}</p>}
         {saves.length ? (
           saves.map((save) => (
@@ -218,10 +268,18 @@ export function App() {
         ) : (
           <p className="empty-state">No local saves yet.</p>
         )}
+        </>
+        )}
       </section>
     </main>
   );
 }
+
+const START_INFO_TITLES = {
+  beta: "Beta Playtest Guide",
+  release: "Release Notes",
+  install: "Install Locally"
+} as const;
 
 const GM_BACKGROUNDS: GMBackground[] = [
   "Former Coach",

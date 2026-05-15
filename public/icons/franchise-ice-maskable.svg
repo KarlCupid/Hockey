@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Franchise Ice maskable icon">
+  <rect width="512" height="512" fill="#07111f"/>
+  <circle cx="256" cy="256" r="210" fill="#0f2d4a" stroke="#61c9ff" stroke-width="24"/>
+  <path d="M128 256h256M256 128v256" stroke="#8ee7d1" stroke-width="16" opacity=".82"/>
+  <circle cx="256" cy="256" r="64" fill="none" stroke="#f5fbff" stroke-width="16"/>
+  <text x="256" y="284" text-anchor="middle" font-family="Arial, sans-serif" font-size="112" font-weight="900" fill="#f5c65b">FI</text>
+</svg>

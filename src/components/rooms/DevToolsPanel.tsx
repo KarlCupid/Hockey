@@ -15,6 +15,9 @@ import { generateAssistantGmReport } from "../../game/systems/assistantGm";
 import { createDifficultyTuning } from "../../game/systems/difficulty";
 import { getEventCadenceTuning } from "../../game/systems/livingOpsTuning";
 import { createRuleSetForTeamCount, getRuleSetDescription } from "../../game/systems/leagueRules";
+import { checkBundleBudgetFromManifest, summarizeRuntimePerformanceSettings } from "../../game/systems/performanceBudget";
+import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
+import { getVersionSummary } from "../../game/systems/version";
 import {
   createDecisionEventFromTemplate,
   getTemplateContextFromFranchise,
@@ -23,6 +26,8 @@ import {
 } from "../../game/systems/narrativeTemplateEngine";
 import { SeededRng } from "../../game/rng";
 import { useFranchiseStore } from "../../store/franchiseStore";
+import { useRuntimeHealthStore } from "../../store/runtimeHealthStore";
+import { useSettingsStore } from "../../store/settingsStore";
 import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
 import type { DataPack, LeagueSize } from "../../game/types";
@@ -31,6 +36,9 @@ export function DevToolsPanel() {
   const franchise = useFranchiseStore((state) => state.franchise);
   const generateSampleDecisionEvent = useFranchiseStore((state) => state.generateSampleDecisionEvent);
   const autoResolveActiveDecisionEvents = useFranchiseStore((state) => state.autoResolveActiveDecisionEvents);
+  const settings = useSettingsStore((state) => state.settings);
+  const runtimeHealth = useRuntimeHealthStore((state) => state.runtimeHealth);
+  const clearRuntimeEvents = useRuntimeHealthStore((state) => state.clearRuntimeEvents);
   const [playtest, setPlaytest] = useState<PlaytestReport | undefined>();
   const [balance, setBalance] = useState<BalanceReport | undefined>();
   const [reSigning, setReSigning] = useState<ReSigningBalanceSample[] | undefined>();
@@ -50,12 +58,31 @@ export function DevToolsPanel() {
     return createDecisionEventFromTemplate(selectNarrativeTemplate(NARRATIVE_TEMPLATES, context, rng), context, rng);
   }, [franchise]);
   const builtInScenarioIssues = useMemo(() => validateBuiltInScenarios(), []);
+  const version = useMemo(() => getVersionSummary(), []);
+  const performanceSummary = useMemo(() => summarizeRuntimePerformanceSettings(settings), [settings]);
+  const bundleReport = useMemo(
+    () =>
+      checkBundleBudgetFromManifest({
+        "assets/index.js": { file: "assets/index.js", size: 210 * 1024 },
+        "assets/three-r3f.js": { file: "assets/three-r3f.js", size: 997 * 1024 },
+        "assets/DataPackLibrary.js": { file: "assets/DataPackLibrary.js", size: 180 * 1024 }
+      }),
+    []
+  );
 
   if (!franchise) return null;
 
   return (
     <div className="room-stack">
       <section className="command-strip command-strip--front-office">
+        <div>
+          <small>Release</small>
+          <strong>{version.appVersion}</strong>
+        </div>
+        <div>
+          <small>Phase</small>
+          <strong>{version.buildPhase}</strong>
+        </div>
         <div>
           <small>Invariant Status</small>
           <strong>{invariant?.valid ? "Passing" : "Needs attention"}</strong>
@@ -76,6 +103,7 @@ export function DevToolsPanel() {
         <Button onClick={() => setBalance(generateBalanceReport(["dev-a", "dev-b"], 1))}>Run balance report</Button>
         <Button onClick={() => setReSigning(runReSigningBalanceSample(["dev-rs-a", "dev-rs-b"]))}>Re-signing sample</Button>
         <Button onClick={() => setOwnerBalance(runOwnerGoalBalanceSample(["dev-o-a", "dev-o-b", "dev-o-c"]))}>Owner sample</Button>
+        <Button onClick={clearRuntimeEvents}>Clear runtime log</Button>
         <Button onClick={() => generateSampleDecisionEvent("press")}>Generate sample event</Button>
         <Button onClick={autoResolveActiveDecisionEvents}>Auto-resolve active events</Button>
         <Button onClick={() => {
@@ -106,6 +134,22 @@ export function DevToolsPanel() {
           const custom = createCustomFranchiseFromDataPack(pack, pack.leagueTemplate?.teams[0]?.id, undefined, { seed: "dev-scenario-dry-run" });
           setDataPackReport(`Scenario dry run: ${scenario.name} | events=${custom.decisionEvents.length} | cap=${custom.league.teams[0].capCeiling}`);
         }}>Scenario dry run</Button>
+      </section>
+
+      <section className="panel-section">
+        <h3>Phase 11 Runtime, Bundle, And Performance</h3>
+        <div className="season-pulse">
+          <span>Runtime <strong>{runtimeHealth.status}</strong></span>
+          <span>Health events <strong>{runtimeHealth.events.length}</strong></span>
+          <span>Total JS budget <strong>{bundleReport.totalStatus}</strong></span>
+          <span>Known exceptions <strong>{bundleReport.knownExceptions.length}</strong></span>
+          <span>Low-spec recommended <strong>{performanceSummary.lowSpecRecommended ? "Yes" : "No"}</strong></span>
+        </div>
+        <p className="muted">{summarizeRuntimeHealth(runtimeHealth)}</p>
+        <ul className="compact-list">
+          {bundleReport.knownExceptions.map((item) => <li key={item}>{item}</li>)}
+          {performanceSummary.recommendedLowSpecSettings.map((item) => <li key={item}>{item}</li>)}
+        </ul>
       </section>
 
       {invariant && !invariant.valid && (

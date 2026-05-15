@@ -201,6 +201,22 @@ tr.is-selected {
   font-size: 0.75rem;
 }
 
+.desktop-recommended-banner {
+  position: fixed;
+  left: 50%;
+  top: 0.5rem;
+  z-index: 75;
+  width: min(680px, calc(100vw - 1rem));
+  transform: translateX(-50%);
+  border: 1px solid rgba(245, 198, 91, 0.62);
+  border-radius: 8px;
+  background: rgba(28, 22, 8, 0.92);
+  color: #ffe7a8;
+  padding: 0.55rem 0.75rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -690,6 +706,21 @@ meter {
   max-width: 42rem;
   color: #c8d8e6;
   font-size: 1.1rem;
+}
+
+.start-screen__footer {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1.2rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.button-row--subtle button {
+  padding: 0.46rem 0.62rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--line);
+  color: #d6e5f1;
 }
 
 .brand-mark {
@@ -2436,5 +2467,85 @@ textarea {
     grid-column: 1;
     grid-row: auto;
     justify-self: stretch;
+  }
+}
+
+@media (max-width: 1380px), (max-height: 780px) {
+  .top-bar {
+    grid-template-columns: auto minmax(180px, 1fr) minmax(220px, 1fr);
+    gap: 0.55rem;
+    padding: 0.55rem;
+  }
+
+  .top-bar__status {
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+  }
+
+  .top-bar__meta {
+    flex-wrap: wrap;
+  }
+
+  .ops-panel {
+    max-height: calc(100vh - 5.75rem);
+  }
+
+  .ops-panel__body {
+    max-height: calc(100vh - 10rem);
+  }
+
+  .first-day {
+    top: 6.9rem;
+    max-height: calc(100vh - 8rem);
+    overflow: auto;
+  }
+
+  .ops-map,
+  .ops-map-toggle {
+    top: 6.9rem;
+  }
+
+  .ops-map {
+    max-height: calc(100vh - 8rem);
+    overflow: auto;
+  }
+}
+
+@media (max-width: 1040px) {
+  .start-screen {
+    grid-template-columns: 1fr;
+    align-items: start;
+    padding: 1rem;
+  }
+
+  .start-screen__intro h1 {
+    font-size: 3rem;
+  }
+
+  .room-grid--two,
+  .room-grid--locker,
+  .settings-grid,
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding-top: 9.25rem;
+  }
+
+  .ops-panel {
+    width: 100%;
+  }
+}
+
+@media (max-height: 700px) {
+  .tutorial-overlay,
+  .contextual-hint,
+  .first-day {
+    display: none;
+  }
+
+  .modal-backdrop {
+    padding-top: 5rem;
   }
 }

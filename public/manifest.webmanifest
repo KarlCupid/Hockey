@@ -1,0 +1,24 @@
+{
+  "name": "Franchise Ice",
+  "short_name": "Franchise Ice",
+  "description": "A local-only fictional hockey operations franchise beta.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#040914",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "/icons/franchise-ice-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/franchise-ice-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

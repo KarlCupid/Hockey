@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { SAVE_SLOT_COUNT } from "../../game/constants";
 import { getPhaseLabel } from "../../game/systems/phaseGuidance";
 import { validateSaveIntegrity } from "../../game/systems/saves";
+import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
 import { useFranchiseStore } from "../../store/franchiseStore";
+import { useRuntimeHealthStore } from "../../store/runtimeHealthStore";
 import { useUiStore } from "../../store/uiStore";
 import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
@@ -17,6 +19,12 @@ export function SaveLoadPanel() {
     loadFromSlot,
     deleteSlot,
     loadError,
+    saveSnapshots,
+    refreshSnapshots,
+    restoreSnapshot,
+    deleteSnapshot,
+    exportSnapshotJson,
+    recoverSlot,
     importFromJson,
     exportCurrentJson,
     repairCurrentSave,
@@ -24,21 +32,31 @@ export function SaveLoadPanel() {
     copyDiagnosticSummary
   } = useFranchiseStore();
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
+  const runtimeHealth = useRuntimeHealthStore((state) => state.runtimeHealth);
+  const clearRuntimeEvents = useRuntimeHealthStore((state) => state.clearRuntimeEvents);
   const [importText, setImportText] = useState("");
   const [exportText, setExportText] = useState("");
   const [bugReportText, setBugReportText] = useState("");
   const [bugReportNote, setBugReportNote] = useState("");
   const [includeFullSave, setIncludeFullSave] = useState(false);
+  const [selectedSlotId, setSelectedSlotId] = useState("slot-1");
+  const [snapshotExportText, setSnapshotExportText] = useState("");
   const integrity = useMemo(() => (franchise ? validateSaveIntegrity(franchise) : undefined), [franchise]);
 
   useEffect(() => {
     void refreshSaves();
   }, [refreshSaves]);
 
+  useEffect(() => {
+    void refreshSnapshots(selectedSlotId);
+  }, [refreshSnapshots, selectedSlotId]);
+
   const slots = Array.from({ length: SAVE_SLOT_COUNT }, (_, index) => `slot-${index + 1}`);
   async function confirmSave(slotId: string, occupied: boolean) {
     if (occupied && !window.confirm("Overwrite this manual save slot?")) return;
     await saveToSlot(slotId);
+    setSelectedSlotId(slotId);
+    await refreshSnapshots(slotId);
     markChecklistItem("saveFranchise");
   }
 
@@ -84,6 +102,9 @@ export function SaveLoadPanel() {
                 {metadata && <small className="muted">Season {metadata.seasonYear} | schema v{metadata.schemaVersion}</small>}
               </div>
               <div className="button-row">
+                <button type="button" className={selectedSlotId === slotId ? "is-active" : ""} onClick={() => setSelectedSlotId(slotId)}>
+                  Snapshots
+                </button>
                 <button type="button" onClick={() => void confirmSave(slotId, Boolean(metadata))}>
                   {metadata ? "Overwrite" : "Save"}
                 </button>
@@ -97,6 +118,31 @@ export function SaveLoadPanel() {
             </article>
           );
         })}
+        <section className="settings-subpanel">
+          <h3>Local Save Snapshots</h3>
+          <p className="muted">Before overwrites, Franchise Ice keeps local-only backups for the selected slot. Snapshots stay in IndexedDB and never leave this device unless exported.</p>
+          <div className="button-row">
+            <Button onClick={() => void recoverSlot(selectedSlotId)}>Recover last good save</Button>
+            <Button onClick={() => void refreshSnapshots(selectedSlotId)}>Refresh snapshots</Button>
+          </div>
+          <div className="asset-list asset-list--compact">
+            {saveSnapshots.length ? saveSnapshots.map((snapshot) => (
+              <article key={snapshot.snapshotId}>
+                <strong>{snapshot.teamName}</strong>
+                <span>{snapshot.reason} | {getPhaseLabel(snapshot.phase)} | Season {snapshot.season} | {snapshot.integrityStatus} | {new Date(snapshot.createdAt).toLocaleString()}</span>
+                <div className="button-row">
+                  <button type="button" onClick={() => void restoreSnapshot(snapshot.snapshotId)}>Restore</button>
+                  <button type="button" onClick={() => void exportSnapshotJson(snapshot.snapshotId).then((value) => setSnapshotExportText(value ?? ""))}>Export</button>
+                  <button type="button" onClick={() => void deleteSnapshot(snapshot.snapshotId, snapshot.slotId)}>Delete</button>
+                </div>
+              </article>
+            )) : <p className="empty-state">No snapshots for {selectedSlotId} yet.</p>}
+          </div>
+          <label className="select-field">
+            <span>Snapshot export</span>
+            <textarea readOnly value={snapshotExportText} placeholder="Export a snapshot to populate this field." />
+          </label>
+        </section>
       </section>
       <section className="panel-section">
         <h3>Autosave</h3>
@@ -111,6 +157,9 @@ export function SaveLoadPanel() {
                 </span>
               </div>
               <div className="button-row">
+                <button type="button" className={selectedSlotId === save.slotId ? "is-active" : ""} onClick={() => setSelectedSlotId(save.slotId)}>
+                  Snapshots
+                </button>
                 <button type="button" onClick={() => void loadFromSlot(save.slotId)}>
                   Continue
                 </button>
@@ -145,6 +194,7 @@ export function SaveLoadPanel() {
         </div>
         <h3>Diagnostics & Bug Report</h3>
         <p className="muted">Creates a local JSON report for playtests. The full save is excluded unless you turn it on.</p>
+        <p className="muted">Runtime health: {summarizeRuntimeHealth(runtimeHealth)}</p>
         <label className="checkbox-row settings-toggle">
           <input type="checkbox" checked={includeFullSave} onChange={(event) => setIncludeFullSave(event.target.checked)} />
           <span>Include full save JSON</span>
@@ -156,6 +206,7 @@ export function SaveLoadPanel() {
         <div className="button-row">
           <Button onClick={() => setBugReportText(copyDiagnosticSummary() ?? "")}>Copy diagnostic summary</Button>
           <Button onClick={() => setBugReportText(exportBugReport(bugReportNote, includeFullSave) ?? "")}>Export bug report JSON</Button>
+          <Button onClick={clearRuntimeEvents}>Clear runtime log</Button>
         </div>
         <label className="select-field">
           <span>Diagnostic output</span>

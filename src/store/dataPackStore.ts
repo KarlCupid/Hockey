@@ -2,6 +2,7 @@ import localforage from "localforage";
 import { create } from "zustand";
 import type { DataPack, DataPackValidationReport } from "../game/types";
 import { exportDataPackJson, importDataPackJson, repairDataPack, validateDataPack } from "../game/systems/dataPacks";
+import { useRuntimeHealthStore } from "./runtimeHealthStore";
 
 const dataPackDb = localforage.createInstance({
   name: "FranchiseIce",
@@ -43,6 +44,7 @@ export const useDataPackStore = create<DataPackStore>((set, get) => ({
   },
   addPack: async (pack) => {
     const report = validateDataPack(pack);
+    logImportWarnings(report, `Data pack saved: ${pack.name}`);
     const ready = { ...pack, validation: report, updatedAt: new Date().toISOString() };
     set((state) => ({
       importedPacks: [ready, ...state.importedPacks.filter((candidate) => candidate.id !== ready.id)],
@@ -66,6 +68,7 @@ export const useDataPackStore = create<DataPackStore>((set, get) => ({
     const pack = get().importedPacks.find((candidate) => candidate.id === packId);
     if (!pack) return undefined;
     const report = validateDataPack(pack);
+    logImportWarnings(report, `Data pack validated: ${pack.name}`);
     set((state) => ({
       importedPacks: state.importedPacks.map((candidate) => (candidate.id === packId ? { ...candidate, validation: report } : candidate)),
       validationHistory: [report, ...state.validationHistory].slice(0, 20)
@@ -81,6 +84,7 @@ export const useDataPackStore = create<DataPackStore>((set, get) => ({
   },
   importPackFromJson: async (raw) => {
     const result = importDataPackJson(raw);
+    logImportWarnings(result.report, result.pack ? `Data pack imported: ${result.pack.name}` : "Data pack import failed");
     if (result.pack) await get().addPack(result.pack);
     else set((state) => ({ validationHistory: [result.report, ...state.validationHistory].slice(0, 20) }));
     return result;
@@ -113,4 +117,23 @@ export const useDataPackStore = create<DataPackStore>((set, get) => ({
 
 function packKey(packId: string): string {
   return `${DATA_PACK_KEY_PREFIX}${packId}`;
+}
+
+function logImportWarnings(report: DataPackValidationReport, message: string) {
+  const meaningfulWarnings = report.warnings.filter((warning) => !warning.includes("Basic fictional-content filter"));
+  const issueCount =
+    report.errors.length +
+    meaningfulWarnings.length +
+    report.realWorldContentFlags.length +
+    report.unsupportedReasons.length +
+    report.duplicateIdWarnings.length;
+  if (!issueCount) return;
+  useRuntimeHealthStore.getState().addRuntimeEvent({
+    type: "importWarning",
+    severity: report.errors.length || report.realWorldContentFlags.length ? "high" : "medium",
+    message,
+    details: [...report.errors, ...report.unsupportedReasons, ...report.duplicateIdWarnings, ...report.realWorldContentFlags.map((term) => `Restricted term: ${term}`), ...meaningfulWarnings]
+      .slice(0, 8)
+      .join(" | ")
+  });
 }

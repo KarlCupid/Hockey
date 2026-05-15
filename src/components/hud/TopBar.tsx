@@ -8,6 +8,7 @@ import { validateRosterForGame } from "../../game/systems/rosterRules";
 import { getUrgentActionCount } from "../../game/systems/actionQueue";
 import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
 import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
+import { getReleaseLabel } from "../../game/systems/version";
 import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -82,6 +83,7 @@ export function TopBar() {
         <span>Roster: {rosterHealth}</span>
         <span>Urgent: {urgentActions}</span>
         <span>AGM: {assistantAlerts}</span>
+        <span>{getReleaseLabel()}</span>
         <strong>{activeRoom ? roomLabel(activeRoom) : nearbyRoom ? roomLabel(nearbyRoom) : "Facility Hub"}</strong>
         <div className="top-bar__actions">
           <button type="button" onClick={() => setHelpOpen(true)} aria-label="Open help">?</button>

@@ -4,12 +4,15 @@ import { exportSaveToJson, validateSaveIntegrity } from "./saves";
 import { validateDynastyInvariants } from "./dynastyInvariants";
 import { getRuleSetDescription, normalizeLeagueRuleSet } from "./leagueRules";
 import { summarizeTelemetry } from "./localTelemetry";
+import { createRuntimeHealthBugReportSection, type RuntimeHealthState } from "./runtimeHealth";
+import { getVersionSummary } from "./version";
 
 export interface BugReportOptions {
   appVersion?: string;
   lastRoom?: RoomId;
   userNote?: string;
   consoleNotes?: string[];
+  runtimeHealth?: RuntimeHealthState;
   includeFullSave?: boolean;
 }
 
@@ -17,10 +20,13 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
   const integrity = validateSaveIntegrity(franchise);
   const invariants = validateDynastyInvariants(franchise);
   const createdAt = new Date().toISOString();
+  const version = getVersionSummary();
   return {
     id: `bug-report-${franchise.franchiseId}-${createdAt}`,
     createdAt,
-    appVersion: options.appVersion ?? "local-dev",
+    appVersion: options.appVersion ?? version.appVersion,
+    releasePhase: version.buildPhase,
+    releaseChannel: version.releaseChannel,
     schemaVersion: franchise.schemaVersion ?? SCHEMA_VERSION,
     currentPhase: franchise.seasonPhase,
     selectedTeamId: franchise.selectedTeamId,
@@ -29,6 +35,8 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
     dataPackMetadata: franchise.dataPackMetadata,
     lastRoom: options.lastRoom,
     recentTelemetry: (franchise.localTelemetry ?? []).slice(0, 40),
+    runtimeHealthSummary: options.runtimeHealth ? createRuntimeHealthBugReportSection(options.runtimeHealth) : undefined,
+    runtimeHealthEvents: options.runtimeHealth?.events.slice(0, 20),
     saveIntegritySummary: [
       `schema=${integrity.schemaVersion}`,
       `warnings=${integrity.warnings.length}`,
@@ -51,10 +59,12 @@ export function serializeBugReport(report: BugReport): string {
   return JSON.stringify(report, null, 2);
 }
 
-export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: RoomId): string {
-  const report = createBugReport(franchise, { lastRoom });
+export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: RoomId, runtimeHealth?: RuntimeHealthState): string {
+  const report = createBugReport(franchise, { lastRoom, runtimeHealth });
+  const version = getVersionSummary();
   return [
     "Franchise Ice Diagnostic Summary",
+    `Version: ${version.releaseLabel}`,
     `Report: ${report.id}`,
     `Schema: ${report.schemaVersion}`,
     `Phase: ${report.currentPhase}`,
@@ -63,6 +73,7 @@ export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: Ro
     `Rules: ${report.ruleSetSummary ?? "standard fictional rules"}`,
     `Data pack: ${report.dataPackMetadata?.dataPackName ?? "none"}`,
     `Last room: ${report.lastRoom ?? "unknown"}`,
+    `Runtime health: ${report.runtimeHealthSummary ?? "not attached"}`,
     `Integrity: ${report.saveIntegritySummary}`,
     `Invariants: ${report.invariantSummary}`
   ].join("\n");

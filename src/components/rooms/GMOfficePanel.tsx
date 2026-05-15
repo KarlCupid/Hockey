@@ -24,6 +24,7 @@ import { getAchievementSummary } from "../../game/systems/achievements";
 import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
 import { getRecentMilestones } from "../../game/systems/milestones";
 import { getCurrentTutorialStep, getTutorialSteps } from "../../game/systems/tutorial";
+import { getPlaytestChecklists, validatePlaytestChecklists } from "../../game/systems/playtestChecklist";
 import type { FranchiseState } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
@@ -52,6 +53,7 @@ export function GMOfficePanel() {
   const resolveDecisionEvent = useFranchiseStore((state) => state.resolveDecisionEvent);
   const dismissAssistantGmReport = useFranchiseStore((state) => state.dismissAssistantGmReport);
   const confirmPhaseAdvances = useSettingsStore((state) => state.settings.confirmPhaseAdvances);
+  const showPlaytestChecklist = useSettingsStore((state) => state.settings.showPlaytestChecklist);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
   useEffect(() => {
@@ -85,6 +87,8 @@ export function GMOfficePanel() {
   const tutorialComplete = tutorialSteps.filter((step) => step.completed).length;
   const achievementSummary = getAchievementSummary(franchise);
   const recentMilestones = getRecentMilestones(franchise, 3);
+  const playtestIssues = validatePlaytestChecklists();
+  const playtestChecklists = getPlaytestChecklists();
   const confirmAndRun = (action: string, run: () => void) => {
     if (!confirmPhaseAdvances) {
       run();
@@ -226,6 +230,24 @@ export function GMOfficePanel() {
           <div className="assistant-report-grid">
             {assistantReports.map((report) => (
               <AssistantGmReportCard key={report.id} report={report} onGoTo={setActiveRoom} onDismiss={dismissAssistantGmReport} />
+            ))}
+          </div>
+        </section>
+      )}
+      {showPlaytestChecklist && (
+        <section className="panel-section">
+          <SectionHeader title="Beta Playtest Checklist" eyebrow="Phase 11" />
+          {playtestIssues.length > 0 && (
+            <WarningCallout title="Checklist Content Issue" tone="warning">
+              {playtestIssues.slice(0, 3).map((issue) => <p key={issue}>{issue}</p>)}
+            </WarningCallout>
+          )}
+          <div className="asset-list asset-list--compact">
+            {playtestChecklists.slice(0, 4).map((checklist) => (
+              <article key={checklist.id}>
+                <strong>{checklist.title}</strong>
+                <span>{checklist.steps.map((step) => step.label).join(" | ")}</span>
+              </article>
             ))}
           </div>
         </section>

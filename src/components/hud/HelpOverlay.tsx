@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { getKeyboardShortcuts } from "../../game/systems/accessibility";
+import { getInstallGuideText } from "../../game/systems/pwa";
+import { getReleaseLabel } from "../../game/systems/version";
 import { useSettingsStore } from "../../store/settingsStore";
 import { GuideOverlay } from "./GuideOverlay";
 
@@ -61,6 +63,14 @@ export function HelpOverlay() {
             <article>
               <h3>Save Data</h3>
               <p>Saves, diagnostics, telemetry, and bug reports stay local. Bug reports exclude the full save unless you choose to include it.</p>
+            </article>
+            <article>
+              <h3>Install Locally</h3>
+              <p>{getInstallGuideText()}</p>
+            </article>
+            <article>
+              <h3>Public Beta</h3>
+              <p>{getReleaseLabel()} includes demo mode, save snapshots, runtime health, low-spec settings, and local diagnostics for playtesters.</p>
             </article>
             <article>
               <h3>Out of Scope</h3>

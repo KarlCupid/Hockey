@@ -1,13 +1,20 @@
 import { START_DATE } from "../constants";
 import type { ScheduleGame, Team } from "../types";
 
-export function generateSchedule(teams: Team[]): ScheduleGame[] {
+export function generateSchedule(teams: Team[], targetGamesPerTeam?: number): ScheduleGame[] {
   const ids = teams.map((team) => team.id);
   const rounds = createRoundRobin(ids);
+  const mirroredRounds = [...rounds, ...rounds.map((round) => round.map(([home, away]) => [away, home] as [string, string]))];
+  const desiredDays = Math.max(1, Math.round(targetGamesPerTeam ?? mirroredRounds.length));
+  const scheduledRounds = Array.from({ length: desiredDays }, (_, index) => {
+    const round = mirroredRounds[index % mirroredRounds.length];
+    const cycle = Math.floor(index / mirroredRounds.length);
+    return cycle % 2 === 0 ? round : round.map(([home, away]) => [away, home] as [string, string]);
+  });
   const schedule: ScheduleGame[] = [];
   const start = new Date(`${START_DATE}T12:00:00Z`);
 
-  [...rounds, ...rounds.map((round) => round.map(([home, away]) => [away, home] as [string, string]))].forEach(
+  scheduledRounds.forEach(
     (round, dayIndex) => {
       const date = new Date(start);
       date.setUTCDate(start.getUTCDate() + dayIndex * 2);

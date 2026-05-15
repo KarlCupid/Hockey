@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { TeamBrandCard } from "../components/branding/TeamBrandCard";
+import { DataPackLibrary } from "../components/editors/DataPackLibrary";
 import { LoadingPanel } from "../components/hud/LoadingPanel";
 import { FICTIONAL_TEAMS } from "../game/constants";
 import { getDifficultyDescription, getGameModeDescription, getStoryFrequencyDescription } from "../game/systems/difficulty";
@@ -19,7 +20,9 @@ export function App() {
   const loadFromSlot = useFranchiseStore((state) => state.loadFromSlot);
   const deleteSlot = useFranchiseStore((state) => state.deleteSlot);
   const startNewFranchise = useFranchiseStore((state) => state.startNewFranchise);
+  const startFranchiseFromDataPack = useFranchiseStore((state) => state.startFranchiseFromDataPack);
   const [selectingTeam, setSelectingTeam] = useState(false);
+  const [customLabOpen, setCustomLabOpen] = useState(false);
   const [setupStep, setSetupStep] = useState(1);
   const [selectedTeamId, setSelectedTeamId] = useState<string | undefined>();
   const [gmName, setGmName] = useState("Alex Mercer");
@@ -162,6 +165,22 @@ export function App() {
     );
   }
 
+  if (customLabOpen) {
+    return (
+      <main className="start-screen start-screen--teams">
+        <div className="start-screen__intro">
+          <span className="brand-mark">FI</span>
+          <h1>Custom League Lab</h1>
+          <p>Build local fictional leagues, scenarios, teams, rosters, draft classes, and data packs.</p>
+          <div className="button-row">
+            <button type="button" onClick={() => setCustomLabOpen(false)}>Back</button>
+          </div>
+        </div>
+        <DataPackLibrary onStartPack={(pack, selectedTeamId) => startFranchiseFromDataPack(pack, selectedTeamId, { gmName, gmBackground, avatarStyle, gameMode, difficulty, storyFrequency, startPreset })} />
+      </main>
+    );
+  }
+
   const autosave = saves.find((save) => save.slotId === "autosave");
   const confirmDelete = (slotId: string) => {
     if (window.confirm("Delete this local save? This cannot be undone.")) void deleteSlot(slotId);
@@ -175,6 +194,7 @@ export function App() {
         <div className="button-row">
           <button type="button" onClick={() => setSelectingTeam(true)}>New Franchise</button>
           <button type="button" disabled={!autosave} onClick={() => autosave && void loadFromSlot("autosave")}>Continue</button>
+          <button type="button" onClick={() => setCustomLabOpen(true)}>Custom League Lab</button>
         </div>
       </div>
       <section className="load-card">

@@ -165,6 +165,10 @@ export function hydrateFranchiseState(input: FranchiseState): FranchiseState {
     achievements: normalizeAchievements(input.achievements),
     milestones: normalizeMilestones(input.milestones),
     localTelemetry: capTelemetry(input.localTelemetry ?? []),
+    sourceDataPackId: input.sourceDataPackId,
+    sourceScenarioId: input.sourceScenarioId,
+    customLeagueName: input.customLeagueName,
+    dataPackMetadata: hydrateDataPackMetadata(input),
     staffState,
     history,
     ownerState: input.ownerState ?? emptyOwnerState(input),
@@ -621,6 +625,7 @@ function collectMissingFieldRepairs(input: FranchiseState): string[] {
   if (!(input as Partial<FranchiseState>).achievements) repaired.push("achievements");
   if (!(input as Partial<FranchiseState>).milestones) repaired.push("milestones");
   if (!(input as Partial<FranchiseState>).localTelemetry) repaired.push("localTelemetry");
+  if ((input.sourceDataPackId || input.customLeagueName) && !input.dataPackMetadata) repaired.push("dataPackMetadata");
   if (!input.seasonPhase) repaired.push("seasonPhase");
   if (!input.currentSeasonId) repaired.push("currentSeasonId");
   if (!input.staffState) repaired.push("staffState");
@@ -673,6 +678,24 @@ function getPhase8IntegrityWarnings(franchise: FranchiseState): string[] {
   if (!Array.isArray(franchise.localTelemetry)) warnings.push("Local telemetry buffer is missing.");
   if ((franchise.localTelemetry ?? []).length > 150) warnings.push("Local telemetry buffer exceeds the Phase 8 cap.");
   return warnings;
+}
+
+function hydrateDataPackMetadata(input: FranchiseState): FranchiseState["dataPackMetadata"] {
+  if (input.dataPackMetadata?.dataPackId && input.dataPackMetadata.dataPackName) {
+    return {
+      dataPackId: input.dataPackMetadata.dataPackId,
+      dataPackName: input.dataPackMetadata.dataPackName,
+      scenarioName: input.dataPackMetadata.scenarioName,
+      importedAt: input.dataPackMetadata.importedAt
+    };
+  }
+  if (!input.sourceDataPackId && !input.customLeagueName && !input.sourceScenarioId) return undefined;
+  return {
+    dataPackId: input.sourceDataPackId ?? "custom-local",
+    dataPackName: input.customLeagueName ?? "Custom Fictional League",
+    scenarioName: input.sourceScenarioId,
+    importedAt: input.createdAt
+  };
 }
 
 function validRosterStatus(status: Player["rosterStatus"]): status is RosterStatus {

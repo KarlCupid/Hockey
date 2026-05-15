@@ -66,6 +66,8 @@ export function StandingsPanel() {
           <span>Top scorer <strong>{pulse.topScorer}</strong></span>
           <span>Best goalie <strong>{pulse.bestGoalie}</strong></span>
           <span>Biggest concern <strong>{pulse.biggestConcern}</strong></span>
+          {franchise.customLeagueName && <span>World <strong>{franchise.customLeagueName}</strong></span>}
+          {franchise.dataPackMetadata?.scenarioName && <span>Scenario <strong>{franchise.dataPackMetadata.scenarioName}</strong></span>}
         </div>
         <h3>Current Playoff Picture</h3>
         <p className="muted">{franchise.seasonPhase === "playoffs" ? "Best-of-five fictional league bracket." : "Top eight qualify for the simplified best-of-five playoffs."}</p>

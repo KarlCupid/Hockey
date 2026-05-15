@@ -212,6 +212,8 @@ export function GMOfficePanel() {
             <span>Chemistry <strong>{franchise.teamDynamics[team.id]?.chemistry ?? 0}/100</strong></span>
             <span>Media pressure <strong>{franchise.mediaState.pressure}/100</strong></span>
             <span>Assistant help <strong>{franchise.difficultyTuning.assistantGmHelpLevel}</strong></span>
+            {franchise.customLeagueName && <span>World <strong>{franchise.customLeagueName}</strong></span>}
+            {franchise.dataPackMetadata?.scenarioName && <span>Scenario <strong>{franchise.dataPackMetadata.scenarioName}</strong></span>}
           </div>
           <p className="muted">{createMediaNarrative(franchise)}</p>
         </section>

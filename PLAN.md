@@ -108,3 +108,15 @@
 - Add targeted fan sentiment and owner goal reporting harnesses so release-candidate playtests capture specific balance signals.
 - Add Phase 8 smoke tests and `npm run test:smoke`, then keep full `npm test` and `npm run build` green.
 - Keep Phase 8 focused on release-candidate polish rather than waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online, real branding, or playable on-ice hockey.
+
+## Milestone 15: Phase 9 Custom League, Scenario Editor, Data Packs, Team Creator, and Content Expansion
+
+- Add typed local-only fictional data packs for leagues, scenarios, branding, rosters, draft classes, and full custom setups.
+- Build pure data-pack validation, safety scanning, repair, import/export, summaries, and basic real-world hockey branding term flags.
+- Add custom 12-team league generation from editable fictional team definitions, rules presets, roster strategies, branding, and draft class packs.
+- Add built-in fictional scenario templates plus a scenario application system for cap crunches, rebuilds, injury storms, owner pressure, playoff pushes, draft-heavy starts, and chaos starts.
+- Add a Custom League Lab with team creator, branding preview, roster/player editor helpers, draft class editor helpers, scenario starts, data-pack validation, import/export, and start-franchise actions.
+- Add a local data-pack library backed by localForage without backend, auth, cloud saves, online sharing, or external licensed assets.
+- Integrate custom league/scenario metadata into saves, bug reports, GM Office, Trophy Hall, achievements, guide/help content, Dev Tools, and playtest coverage.
+- Document the supported custom-league range honestly: full dynasty compatibility prioritizes 12-team packs while unsupported league sizes are validated and rejected until broader lifecycle support is added.
+- Keep all content fictional-only and keep waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online, real branding, professional audio, and playable on-ice hockey out of scope.

@@ -14,6 +14,10 @@ export type AchievementContext =
   | { type: "seasonTransition" }
   | { type: "developmentTick"; improved?: boolean }
   | { type: "rosterRepair" }
+  | { type: "customLeagueStarted" }
+  | { type: "scenarioStarted" }
+  | { type: "customBrandingCreated" }
+  | { type: "dataPackExported" }
   | { type: "playoffs"; seriesWon?: boolean; champion?: boolean; rivalryWin?: boolean };
 
 const DEFAULT_ACHIEVEMENTS: Achievement[] = [
@@ -35,7 +39,11 @@ const DEFAULT_ACHIEVEMENTS: Achievement[] = [
   achievement("development-win", "Development Win", "Improve a player overall through development.", "development"),
   achievement("rivalry-statement", "Rivalry Statement", "Beat a rival in the playoffs.", "playoffs"),
   achievement("emergency-solved", "Emergency Solved", "Repair an invalid roster.", "roster"),
-  achievement("long-view", "The Long View", "Complete five seasons.", "dynasty", undefined, 5)
+  achievement("long-view", "The Long View", "Complete five seasons.", "dynasty", undefined, 5),
+  achievement("world-builder", "World Builder", "Start a local fictional custom league.", "customization"),
+  achievement("scenario-specialist", "Scenario Specialist", "Start from a fictional scenario.", "customization"),
+  achievement("custom-crest", "Custom Crest", "Create or edit fictional team branding.", "customization"),
+  achievement("data-pack-exported", "Data Pack Exported", "Export a local fictional data pack JSON.", "customization")
 ];
 
 export function createDefaultAchievements(): Achievement[] {
@@ -116,6 +124,10 @@ export function evaluateAchievements(franchise: FranchiseState, context?: Achiev
   if (context.type === "ownerGoal") next = unlockAchievement(next, "owners-confidence");
   if (context.type === "developmentTick" && context.improved) next = unlockAchievement(next, "development-win");
   if (context.type === "rosterRepair") next = unlockAchievement(next, "emergency-solved");
+  if (context.type === "customLeagueStarted") next = unlockAchievement(next, "world-builder");
+  if (context.type === "scenarioStarted") next = unlockAchievement(unlockAchievement(next, "world-builder"), "scenario-specialist");
+  if (context.type === "customBrandingCreated") next = unlockAchievement(next, "custom-crest");
+  if (context.type === "dataPackExported") next = unlockAchievement(next, "data-pack-exported");
   if (context.type === "playoffs") {
     if (context.seriesWon) next = unlockAchievement(next, "series-winner");
     if (context.champion) next = unlockAchievement(next, "champion");

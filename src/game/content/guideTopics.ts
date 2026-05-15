@@ -263,6 +263,16 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       "Achievements celebrate first wins, trades, draft picks, playoff progress, owner success, development, and dynasty depth. Milestones create a franchise timeline in the Trophy Hall and GM Office.",
     relatedRoomIds: ["gm", "standings"],
     relatedActions: ["viewAchievements", "viewMilestones"]
+  },
+  {
+    id: "system-custom-league-lab",
+    title: "Custom League Lab",
+    category: "basics",
+    summary: "Create local fictional leagues, scenarios, rosters, draft classes, and data packs.",
+    body:
+      "Phase 9 adds a Custom League Lab for local-only fictional content. Data packs are JSON files you can validate, repair, import, export, and start from. The current full-dynasty custom start supports 12-team fictional leagues; other sizes are flagged until broader lifecycle support is added. The real-world content filter catches obvious restricted terms but is not a legal guarantee.",
+    relatedRoomIds: ["saves", "devTools", "gm"],
+    relatedActions: ["customLeague", "dataPack", "scenarioStart"]
   }
 ];
 

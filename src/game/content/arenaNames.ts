@@ -1,0 +1,22 @@
+export const FICTIONAL_ARENA_NAMES = [
+  "Harbor Light Arena",
+  "Rainline Forum",
+  "Northstar Ice Hall",
+  "Prairie Gate Center",
+  "Foundry Rink",
+  "Metro Pavilion",
+  "Summit House",
+  "Atlantic Shield Arena",
+  "Lakeside Crown Hall",
+  "Bayview Pier Arena",
+  "Capital Orbit Center",
+  "Desert Coil Forum",
+  "Cedar Lantern Arena",
+  "Quartz Coast Rink",
+  "Bridgeport Iceworks",
+  "Aurora Bay Forum",
+  "Copper Ridge Hall",
+  "Rivergate Arena",
+  "Pinehaven Ice House",
+  "Glacier Bend Center"
+];

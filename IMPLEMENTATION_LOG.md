@@ -15,6 +15,7 @@
 - Phase 6 adds a living hockey-operations layer through fictional meetings, relationships, media/fan/owner pressure, agent dynamics, story arcs, and decision events while avoiding another real-world CBA/rules layer.
 - Phase 7 improves game feel through difficulty/game modes, GM identity, narrative templates, Assistant GM guidance, action queues, room badges, setup presets, cadence tuning, and broader playtest reporting without adding real-world CBA complexity.
 - Phase 8 focuses on release-candidate usability, tutorialization, generated/local audio, achievements, accessibility, diagnostics, and QA rather than adding another hockey rules layer.
+- Phase 9 increases replayability through local-only fictional customization: custom 12-team league starts, data packs, scenarios, team branding, roster/player editor helpers, draft-class editor helpers, validation/repair, and JSON import/export. It keeps unsupported league sizes rejected until the full dynasty lifecycle supports them.
 
 ## Files Added
 
@@ -31,6 +32,8 @@
 - Phase 7 UI/tests: `src/components/hud/AssistantGmReportCard.tsx`, updated setup wizard/GM Office/TopBar/Operations Map/Settings/Help/Dev Tools/facility, and `src/tests/phase7GameFeel.test.ts`
 - Phase 8 systems/content/audio: `src/game/systems/tutorial.ts`, `src/game/content/guideTopics.ts`, `src/game/systems/guide.ts`, `src/game/systems/achievements.ts`, `src/game/systems/milestones.ts`, `src/game/audio/audioCues.ts`, `src/game/audio/audioEngine.ts`, `src/game/systems/broadcastStory.ts`, `src/game/systems/accessibility.ts`, `src/game/systems/localTelemetry.ts`, `src/game/systems/bugReport.ts`, `src/game/systems/fanSentimentBalance.ts`, `src/game/systems/ownerGoalReporting.ts`
 - Phase 8 UI/tests/docs: `src/store/audioStore.ts`, `src/components/hud/TutorialOverlay.tsx`, `src/components/hud/ContextualHint.tsx`, `src/components/hud/GuideOverlay.tsx`, `src/components/hud/AudioController.tsx`, updated AppShell/TopBar/Help/GM Office/Settings/Save Desk/Trophy Hall/Game Result Center/Arena Visualization, `src/tests/phase8ReleaseCandidate.test.ts`, and `RELEASE_NOTES.md`
+- Phase 9 systems/content/store: `src/game/systems/dataPacks.ts`, `src/game/systems/dataPackValidation.ts`, `src/game/generators/generateCustomLeague.ts`, `src/game/systems/scenarios.ts`, `src/game/content/scenarioTemplates.ts`, `src/game/content/fictionalCities.ts`, `src/game/content/teamNamePools.ts`, `src/game/content/arenaNames.ts`, `src/game/content/rivalryFlavor.ts`, and `src/store/dataPackStore.ts`
+- Phase 9 UI/tests/docs: `src/components/editors/DataPackLibrary.tsx`, `src/components/editors/TeamCreator.tsx`, `src/components/editors/ColorPickerField.tsx`, `src/components/editors/CrestShapePicker.tsx`, `src/components/editors/JerseyPatternPicker.tsx`, `src/components/editors/TeamPreviewCard.tsx`, `src/components/editors/RosterEditor.tsx`, `src/components/editors/PlayerEditor.tsx`, `src/components/editors/DraftClassEditor.tsx`, `src/components/rooms/DataPackLibraryPanel.tsx`, updated App/Save Desk/Dev Tools/GM Office/TopBar/Trophy Hall/guide/docs, and `src/tests/phase9Customization.test.ts`
 
 ## V1.1 Changes
 
@@ -146,6 +149,20 @@
 - Added targeted fan sentiment scenario sampling and owner goal reporting that captures outcomes before seasonal refresh.
 - Added `npm run test:smoke` and `src/tests/phase8ReleaseCandidate.test.ts` covering tutorial, guide, achievements, milestones, audio, broadcast, accessibility, telemetry, diagnostics, fan/owner reporting, save roundtrip, invariants, and a two-season mini playtest.
 
+## Phase 9 Custom League, Scenario Editor, Data Packs, Team Creator, and Content Expansion Changes
+
+- Added Phase 9 domain types for data packs, custom league templates, rules presets, custom teams/branding, custom players, roster packs, draft class packs, scenarios, scenario modifiers, validation reports, and data-pack metadata on franchise saves.
+- Kept save schema version 7 because custom franchise metadata is optional and hydrates safely; old saves receive no disruptive migration.
+- Added data-pack validation, repair, import/export, sanitization, duplicate ID handling, basic real-world hockey term flags, balance/rules checks, draft-class checks, scenario reference checks, and JSON serializability guards.
+- Added default local fictional data pack creation plus current-league export to a full data pack.
+- Added custom 12-team league generation from templates, roster strategies, custom team definitions, generated affiliate identities, custom branding fields, schedule length support, and custom franchise creation using existing staff, scouting, owner, relationship, Assistant GM, achievement, roster repair, save, and invariant systems.
+- Added 12 built-in fictional scenario starts and a scenario modifier system for cap pressure, injuries, morale, owner/fan sentiment, contracts, draft/prospect notes, roster notes, initial decision events, and story arcs.
+- Added Custom League Lab UI on the start screen plus Data Pack Library access in Save Desk, with tabs for library, teams, rosters, draft class, scenarios, and JSON import/export.
+- Added team creator, color/crest/jersey controls, team preview card, roster/player editor helpers, draft-class editor helpers, and local data-pack store backed by localForage.
+- Added custom metadata to TopBar, GM Office, Trophy Hall, bug reports, diagnostics, guide content, achievements, Dev Tools, and save hydration.
+- Added Phase 9 achievements: World Builder, Scenario Specialist, Custom Crest, and Data Pack Exported.
+- Added expanded fictional content pools for cities, team names, affiliates, arenas, rivalry flavor, crest shapes, jersey patterns, and scenario flavor.
+
 ## Verification
 
 - Passed: `npm install`
@@ -199,6 +216,12 @@
 - Passed: `cmd /c npm run test:smoke` with 1 file and 9 Phase 8 release-candidate tests.
 - Passed: `cmd /c npm test` with 11 test files and 155 tests after Phase 8 changes.
 - Passed: `cmd /c npm run build` after Phase 8 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Passed: `cmd /c npx tsc --noEmit` after Phase 9 changes.
+- Passed: `cmd /c npx vitest run --config vitest.config.ts src/tests/phase9Customization.test.ts` with 20 Phase 9 customization tests.
+- Passed: `cmd /c npm test` with 12 test files and 175 tests after Phase 9 changes.
+- Passed: `cmd /c npm run test:smoke` with 2 test files and 29 smoke/release/customization tests.
+- Passed: `cmd /c npm run build` after Phase 9 changes. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Attempted in-app Browser QA against `http://127.0.0.1:5179/` and `http://localhost:5179/`; the automation browser blocked local URL navigation in this session, so no browser workaround was used. Verification for Phase 9 relies on the full Vitest suite, smoke suite, TypeScript check, and production build.
 
 ## Known Limitations
 
@@ -225,3 +248,7 @@
 - Phase 8 achievements are local-only and not platform achievements.
 - Phase 8 audio is generated/local placeholder sound design, not final professional audio.
 - Phase 8 telemetry and bug reports are local-only and never sent anywhere automatically.
+- Phase 9 data packs are local JSON only and are never uploaded or shared online by the app.
+- Phase 9 real-world content filtering is a basic obvious-term safety scan, not a legal guarantee.
+- Phase 9 full-dynasty custom starts currently support 12-team leagues. The validator rejects or flags 8-, 10-, and 16-team starts until standings, playoffs, tuning, and lifecycle systems are broadened.
+- Phase 9 generated branding uses CSS/SVG-style previews only. There are no image uploads, real logos, licensed marks, or external assets.

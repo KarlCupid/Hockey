@@ -122,7 +122,8 @@ export interface Achievement {
     | "playoffs"
     | "dynasty"
     | "livingOps"
-    | "management";
+    | "management"
+    | "customization";
   unlockedAt?: string;
   progress: number;
   target: number;
@@ -198,6 +199,8 @@ export interface BugReport {
   schemaVersion: number;
   currentPhase: SeasonPhase;
   selectedTeamId: string;
+  customLeagueName?: string;
+  dataPackMetadata?: FranchiseState["dataPackMetadata"];
   lastRoom?: RoomId;
   recentTelemetry: LocalTelemetryEvent[];
   saveIntegritySummary: string;
@@ -951,10 +954,14 @@ export interface Team {
   abbreviation: string;
   primaryColor: string;
   secondaryColor: string;
+  accentColor?: string;
   marketSize: "Small" | "Medium" | "Large";
   ownerPatience: number;
   fanConfidence: number;
   teamPersonality: string;
+  arenaName?: string;
+  affiliateName?: string;
+  customBranding?: CustomTeamBranding;
   roster: Player[];
   lines: Lineup;
   tactics: Tactics;
@@ -1506,6 +1513,214 @@ export interface RoomBadge {
   count?: number;
 }
 
+export type DataPackType = "league" | "scenario" | "branding" | "roster" | "draftClass" | "full";
+
+export interface DataPack {
+  schemaVersion: number;
+  dataPackVersion: number;
+  id: string;
+  type: DataPackType;
+  name: string;
+  description: string;
+  authorLabel: string;
+  createdAt: string;
+  updatedAt: string;
+  fictionalOnly: boolean;
+  contentWarnings: string[];
+  leagueTemplate?: CustomLeagueTemplate;
+  scenario?: ScenarioDefinition;
+  branding?: CustomBrandingPack;
+  rosters?: CustomRosterPack;
+  draftClass?: CustomDraftClassPack;
+  validation?: DataPackValidationReport;
+}
+
+export interface CustomLeagueTemplate {
+  id: string;
+  name: string;
+  description: string;
+  seasonYear: number;
+  teamCount: number;
+  scheduleLength: number;
+  playoffTeamCount: number;
+  playoffSeriesLength: number;
+  draftRounds: number;
+  capCeiling: number;
+  capFloor: number;
+  teams: CustomTeamDefinition[];
+  rulesPreset: LeagueRulesPreset;
+  difficultySuggestion?: GameDifficulty;
+  storySuggestion?: StoryFrequency;
+}
+
+export interface LeagueRulesPreset {
+  id: string;
+  label: string;
+  description: string;
+  teamCount: number;
+  scheduleLength: number;
+  playoffTeamCount: number;
+  playoffSeriesLength: number;
+  draftRounds: number;
+  capCeiling: number;
+  capFloor: number;
+  rosterActiveMin: number;
+  rosterActiveMax: number;
+  affiliateEnabled: boolean;
+  tradeDifficultyModifier: number;
+  developmentPaceModifier: number;
+  injuryModifier: number;
+}
+
+export type TeamRosterStrategy =
+  | "balanced"
+  | "contender"
+  | "rebuild"
+  | "youngCore"
+  | "veteranHeavy"
+  | "goalieFirst"
+  | "defenseFirst"
+  | "highOffense"
+  | "random";
+
+export interface CustomTeamDefinition {
+  id: string;
+  city: string;
+  nickname: string;
+  fullName: string;
+  abbreviation: string;
+  marketSize: "Small" | "Medium" | "Large";
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  teamPersonality: string;
+  ownerPatience: number;
+  fanConfidence: number;
+  arenaName: string;
+  affiliateName: string;
+  rivalryTeamIds: string[];
+  branding: CustomTeamBranding;
+  rosterSeed?: string;
+  rosterStrategy?: TeamRosterStrategy;
+  players?: CustomPlayerDefinition[];
+}
+
+export interface CustomTeamBranding {
+  crestShape: string;
+  crestInitials: string;
+  jerseyPattern: string;
+  homeJersey: string;
+  awayJersey: string;
+  alternateJersey: string;
+  arenaMood: string;
+  broadcastStyle: string;
+  chant: string;
+  colorValidationWarnings?: string[];
+}
+
+export interface CustomPlayerDefinition {
+  id: string;
+  firstName: string;
+  lastName: string;
+  displayName: string;
+  age: number;
+  position: Position;
+  handedness: Handedness;
+  nationality: string;
+  archetype: PlayerArchetype;
+  personality: Personality;
+  overall: number;
+  potential: number;
+  roleExpectation: RoleExpectation;
+  contract?: Contract;
+  rosterStatus?: RosterStatus;
+  morale?: number;
+  form?: number;
+  fatigue?: number;
+}
+
+export interface CustomBrandingPack {
+  id: string;
+  name: string;
+  teams: Array<Pick<CustomTeamDefinition, "id" | "fullName" | "primaryColor" | "secondaryColor" | "accentColor" | "branding">>;
+}
+
+export interface CustomRosterPack {
+  id: string;
+  name: string;
+  teamRosters: Array<{ teamId: string; players: CustomPlayerDefinition[] }>;
+}
+
+export interface CustomDraftClassPack {
+  id: string;
+  seasonYear: number;
+  name: string;
+  prospects: Prospect[];
+}
+
+export interface ScenarioDefinition {
+  id: string;
+  name: string;
+  description: string;
+  scenarioType:
+    | "standardStart"
+    | "rebuild"
+    | "contender"
+    | "capCrunch"
+    | "injuryCrisis"
+    | "draftHeavy"
+    | "deadlinePressure"
+    | "playoffPush"
+    | "expansionStyle"
+    | "chaos";
+  selectedTeamSuggestion?: string;
+  startPhase?: SeasonPhase;
+  startingDayIndex?: number;
+  setupNotes: string[];
+  modifiers: ScenarioModifier[];
+  ownerGoalOverrides?: OwnerGoal[];
+  initialDecisionEvents?: DecisionEvent[];
+  initialStoryArcs?: StoryArc[];
+}
+
+export interface ScenarioModifier {
+  id: string;
+  label: string;
+  type:
+    | "capAdjustment"
+    | "rosterAdjustment"
+    | "injury"
+    | "morale"
+    | "fanSentiment"
+    | "ownerTrust"
+    | "draftPicks"
+    | "prospects"
+    | "contracts"
+    | "story";
+  targetTeamId?: string;
+  targetPlayerId?: string;
+  value?: number;
+  payload?: unknown;
+}
+
+export interface DataPackValidationReport {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  repairedFields: string[];
+  realWorldContentFlags: string[];
+  duplicateIdWarnings: string[];
+  balanceWarnings: string[];
+  generatedFallbacks: string[];
+}
+
+export interface DataPackLibraryState {
+  importedPacks: DataPack[];
+  selectedPackId?: string;
+  recentImports: string[];
+  validationHistory: DataPackValidationReport[];
+}
+
 export interface FranchiseSetupOptions {
   seed?: string;
   gmName?: string;
@@ -1552,6 +1767,15 @@ export interface FranchiseState {
   rosterMoveHistory: RosterMove[];
   transactionLog: TransactionLogItem[];
   lastResult?: GameResult;
+  sourceDataPackId?: string;
+  sourceScenarioId?: string;
+  customLeagueName?: string;
+  dataPackMetadata?: {
+    dataPackId: string;
+    dataPackName: string;
+    scenarioName?: string;
+    importedAt?: string;
+  };
   saveStatus: "idle" | "saving" | "saved" | "error";
   createdAt: string;
   updatedAt: string;

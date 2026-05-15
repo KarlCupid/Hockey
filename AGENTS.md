@@ -13,4 +13,6 @@
 - Phase 6 explicitly allows fictional press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, media/fan/owner sentiment, story arcs, and decision events with simplified consequences.
 - Phase 7 explicitly allows difficulty/game-mode settings, GM profile/background traits, Assistant GM reports, narrative content templates, event-cadence tuning, franchise setup options, and broader playtest/balance tuning.
 - Phase 8 explicitly allows tutorial/onboarding, achievements/milestones, local/generated audio, accessibility improvements, release-candidate QA, playtest telemetry summaries, bug-report export, and polish.
+- Phase 9 explicitly allows local custom league creation, fictional data packs, scenario editor, team creator, roster/player editor, draft class editor, custom branding, and local JSON import/export.
+- All Phase 9 data packs must be validated before use and must reject or clearly flag obvious real-world restricted hockey branding terms.
 - Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

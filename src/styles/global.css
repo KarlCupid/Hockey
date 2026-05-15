@@ -830,6 +830,151 @@ meter {
   }
 }
 
+.custom-league-lab,
+.editor-panel {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+.lab-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.color-picker-field span {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.color-picker-field input[type="color"] {
+  width: 44px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: transparent;
+}
+
+.custom-team-preview {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--team-primary) 50%, var(--line));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--team-primary) 20%, transparent), transparent 54%),
+    color-mix(in srgb, var(--team-secondary) 25%, var(--surface));
+}
+
+.custom-team-preview__crest {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  clip-path: polygon(50% 0, 92% 18%, 82% 78%, 50% 100%, 18% 78%, 8% 18%);
+  background: linear-gradient(135deg, var(--team-primary), var(--team-secondary));
+  color: var(--text);
+  border: 3px solid var(--team-accent);
+  font-weight: 900;
+}
+
+.custom-team-preview__jerseys {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.custom-jersey-mini {
+  width: 42px;
+  height: 52px;
+  position: relative;
+  display: block;
+  border-radius: 6px 6px 4px 4px;
+  background:
+    linear-gradient(90deg, transparent 0 25%, var(--jersey-shoulder) 25% 75%, transparent 75%),
+    linear-gradient(180deg, var(--jersey-base) 0 62%, var(--jersey-stripe) 62% 72%, var(--jersey-base) 72%);
+  border: 1px solid color-mix(in srgb, var(--jersey-shoulder) 65%, var(--line));
+}
+
+.custom-jersey-mini b {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 9px;
+  height: 9px;
+  border-radius: 0 0 8px 8px;
+  background: color-mix(in srgb, var(--jersey-shoulder) 65%, transparent);
+}
+
+.validation-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.validation-pill {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.validation-pill--ok {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 50%, var(--line));
+}
+
+.validation-pill--warning {
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 55%, var(--line));
+}
+
+.asset-button {
+  width: 100%;
+  text-align: left;
+}
+
+.player-editor-row {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(82px, 1fr));
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.player-editor-row input,
+.player-editor-row select,
+.custom-league-lab input,
+.custom-league-lab select,
+.custom-league-lab textarea {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .lab-header {
+    display: grid;
+  }
+
+  .custom-team-preview {
+    grid-template-columns: 1fr;
+  }
+
+  .player-editor-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Phase 4 design system, branding, settings, and hardening UI */
 .team-badge__mark {
   border: 0;

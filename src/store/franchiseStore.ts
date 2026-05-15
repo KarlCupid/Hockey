@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { AUTOSAVE_SLOT_ID } from "../game/constants";
 import { createFranchise } from "../game/generators/generateLeague";
+import { createCustomFranchiseFromDataPack } from "../game/generators/generateCustomLeague";
 import { clamp, SeededRng } from "../game/rng";
 import { createGameNews } from "../game/systems/news";
 import { autoFillBestLineup, validateLineup } from "../game/systems/lineupValidation";
@@ -111,6 +112,7 @@ import type {
   Tactics,
   Team,
   ContractOffer,
+  DataPack,
   TradeAsset,
   TradeEvaluation,
   TradeProposal
@@ -123,6 +125,7 @@ interface FranchiseStore {
   activeTradeProposal?: TradeProposal;
   lastTradeEvaluation?: TradeEvaluation;
   startNewFranchise: (teamId: string, setupOptions?: FranchiseSetupOptions) => void;
+  startFranchiseFromDataPack: (pack: DataPack, selectedTeamId: string, setupOptions?: FranchiseSetupOptions) => void;
   updateDifficultySettings: (patch: Partial<{ difficulty: GameDifficulty; storyFrequency: StoryFrequency }>) => void;
   dismissAssistantGmReport: (reportId: string) => void;
   completeTutorialStep: (stepId: string) => void;
@@ -203,6 +206,23 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
       seasonYear: new Date().getFullYear()
     });
     set({ franchise, loadError: undefined });
+  },
+  startFranchiseFromDataPack: (pack, selectedTeamId, setupOptions) => {
+    try {
+      const franchise = recordTelemetryIfEnabled(
+        createCustomFranchiseFromDataPack(pack, selectedTeamId, undefined, setupOptions ?? {}),
+        "phaseAdvanced",
+        pack.scenario ? "Scenario franchise created" : "Custom league franchise created",
+        {
+          teamId: selectedTeamId,
+          dataPackId: pack.id,
+          scenarioId: pack.scenario?.id ?? ""
+        }
+      );
+      set({ franchise, loadError: undefined });
+    } catch (error) {
+      set({ loadError: error instanceof Error ? error.message : "Custom data pack start failed." });
+    }
   },
   updateDifficultySettings: (patch) => {
     const franchise = get().franchise;

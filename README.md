@@ -35,6 +35,7 @@ npm run build
 - Phase 6 living hockey operations with press conferences, owner meetings, agent calls, player conversations, team meetings, relationships, story arcs, media pressure, fan sentiment, and owner trust
 - Phase 7 game-feel layer with setup wizard, GM profile/background traits, difficulty, game modes, story frequency, narrative templates, Assistant GM reports, action queue, room badges, and broader playtest tuning
 - Phase 8 release-candidate UX with guided tutorial, Learn the Game guide, achievements, milestones, generated local audio, accessibility controls, local telemetry, bug-report export, broadcast polish, and smoke tests
+- Phase 9 replayability tools with Custom League Lab, local fictional data packs, scenario starts, team creator, roster/player editor helpers, draft class editor helpers, data-pack validation/repair, and JSON import/export
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -150,9 +151,22 @@ Phase 8 turns the deep prototype into a more approachable beta without adding an
 
 Schema version 7 hydrates older saves with tutorial state, achievements, milestones, local telemetry, and owner goal outcome history.
 
+## Phase 9 Custom League Lab, Scenarios, and Data Packs
+
+Phase 9 makes the fictional dynasty more replayable without adding backend services or real hockey content:
+
+- Start screen now includes `Custom League Lab` alongside New Franchise, Continue, and Load Franchise.
+- Create and edit local fictional 12-team league packs with custom cities, nicknames, abbreviations, colors, generated crests, jersey concepts, arena names, affiliates, market size, owner patience, fan confidence, and roster strategy.
+- Edit fictional roster/player definitions and draft-class packs through typed helpers and validation.
+- Start from built-in fictional scenarios such as Rebuild on the Clock, Cap Crunch, Prospect Pipeline, Goalie Crisis, Playoff Push, Injury Storm, Draft Capital Empire, Rivalry Revenge, and Chaos Room.
+- Import/export data packs as local JSON only. Imported packs are stored locally in IndexedDB/localForage and never sent to a server.
+- Validate and repair packs before use. Validation checks schema shape, fictional-only flag, duplicate IDs, colors, abbreviations, positions, rating bounds, contracts, cap/rules feasibility, draft-class depth, scenario references, JSON serializability, and obvious restricted real-world hockey terms.
+- The real-world content filter is intentionally basic. It catches obvious terms such as NHL, National Hockey League, Stanley Cup, several club names, and a small famous-player blocklist, but it is not a legal guarantee.
+- Full dynasty compatibility currently prioritizes 12-team custom leagues. Experimental 8-, 10-, and 16-team templates are flagged/rejected for franchise starts until standings, playoffs, tuning, and long-run balance are broadened.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, and generated audio are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, and data packs are simplified fictional prototype systems.
 
 ## Controls
 
@@ -170,4 +184,4 @@ This prototype intentionally avoids backend services, authentication, real hocke
 
 ## Save Data
 
-Saves are local-only through IndexedDB/localForage. There are three manual slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, and local bug-report export. Older saves hydrate to schema version 7 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, and owner goal outcome history.
+Saves and imported data packs are local-only through IndexedDB/localForage. There are three manual save slots and one autosave created after completed games. The Save Desk shows schema version, phase, season, selected-team record, validation warnings, repair status, JSON export/import controls, local bug-report export, and Data Pack Library access. Older saves hydrate to schema version 7 with roster statuses, affiliates, roster logs, player pathway defaults, relationship state, agents, team dynamics, media state, decision events, story arcs, GM profile, difficulty tuning, Assistant GM reports, narrative template version, tutorial state, achievements, milestones, local telemetry, owner goal outcome history, and optional custom data-pack metadata.

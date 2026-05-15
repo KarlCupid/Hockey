@@ -23,6 +23,8 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
     schemaVersion: franchise.schemaVersion ?? SCHEMA_VERSION,
     currentPhase: franchise.seasonPhase,
     selectedTeamId: franchise.selectedTeamId,
+    customLeagueName: franchise.customLeagueName,
+    dataPackMetadata: franchise.dataPackMetadata,
     lastRoom: options.lastRoom,
     recentTelemetry: (franchise.localTelemetry ?? []).slice(0, 40),
     saveIntegritySummary: [
@@ -55,6 +57,8 @@ export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: Ro
     `Schema: ${report.schemaVersion}`,
     `Phase: ${report.currentPhase}`,
     `Team: ${report.selectedTeamId}`,
+    `Custom league: ${report.customLeagueName ?? "standard fictional league"}`,
+    `Data pack: ${report.dataPackMetadata?.dataPackName ?? "none"}`,
     `Last room: ${report.lastRoom ?? "unknown"}`,
     `Integrity: ${report.saveIntegritySummary}`,
     `Invariants: ${report.invariantSummary}`

@@ -1,5 +1,8 @@
 import { useMemo, useState } from "react";
 import { generateBalanceReport, type BalanceReport } from "../../game/systems/balanceReport";
+import { createDefaultDataPack, createDataPackFromCurrentLeague, createDataPackSummary, validateDataPack } from "../../game/systems/dataPacks";
+import { createCustomFranchiseFromDataPack } from "../../game/generators/generateCustomLeague";
+import { getBuiltInScenarios, createScenarioDataPack, validateBuiltInScenarios } from "../../game/systems/scenarios";
 import { runOwnerGoalBalanceSample, type OwnerGoalBalanceSample } from "../../game/systems/ownerBalance";
 import { runReSigningBalanceSample, type ReSigningBalanceSample } from "../../game/systems/reSigningBalance";
 import { runDynastyPlaytest, type PlaytestReport } from "../../game/systems/dynastyPlaytest";
@@ -30,6 +33,7 @@ export function DevToolsPanel() {
   const [balance, setBalance] = useState<BalanceReport | undefined>();
   const [reSigning, setReSigning] = useState<ReSigningBalanceSample[] | undefined>();
   const [ownerBalance, setOwnerBalance] = useState<OwnerGoalBalanceSample | undefined>();
+  const [dataPackReport, setDataPackReport] = useState<string>("");
   const invariant = useMemo(() => (franchise ? validateDynastyInvariants(franchise) : undefined), [franchise]);
   const dynamics = franchise ? getTeamDynamics(franchise, franchise.selectedTeamId) : undefined;
   const templateIssues = useMemo(() => validateNarrativeTemplates(NARRATIVE_TEMPLATES), []);
@@ -43,6 +47,7 @@ export function DevToolsPanel() {
     const context = getTemplateContextFromFranchise(franchise, { category: "press", tags: ["press"] });
     return createDecisionEventFromTemplate(selectNarrativeTemplate(NARRATIVE_TEMPLATES, context, rng), context, rng);
   }, [franchise]);
+  const builtInScenarioIssues = useMemo(() => validateBuiltInScenarios(), []);
 
   if (!franchise) return null;
 
@@ -71,6 +76,25 @@ export function DevToolsPanel() {
         <Button onClick={() => setOwnerBalance(runOwnerGoalBalanceSample(["dev-o-a", "dev-o-b", "dev-o-c"]))}>Owner sample</Button>
         <Button onClick={() => generateSampleDecisionEvent("press")}>Generate sample event</Button>
         <Button onClick={autoResolveActiveDecisionEvents}>Auto-resolve active events</Button>
+        <Button onClick={() => {
+          const pack = createDefaultDataPack();
+          setDataPackReport(createDataPackSummary(pack));
+        }}>Validate default pack</Button>
+        <Button onClick={() => {
+          const pack = createDataPackFromCurrentLeague(franchise);
+          setDataPackReport(createDataPackSummary(pack));
+        }}>Export current pack summary</Button>
+        <Button onClick={() => {
+          const pack = createDefaultDataPack();
+          const custom = createCustomFranchiseFromDataPack(pack, pack.leagueTemplate?.teams[0]?.id, undefined, { seed: "dev-custom-dry-run" });
+          setDataPackReport(`Custom dry run: ${custom.customLeagueName} | teams=${custom.league.teams.length} | errors=${validateDynastyInvariants(custom).errors.length}`);
+        }}>Custom league dry run</Button>
+        <Button onClick={() => {
+          const scenario = getBuiltInScenarios().find((item) => item.id === "cap-crunch") ?? getBuiltInScenarios()[0];
+          const pack = createScenarioDataPack(scenario, createDefaultDataPack());
+          const custom = createCustomFranchiseFromDataPack(pack, pack.leagueTemplate?.teams[0]?.id, undefined, { seed: "dev-scenario-dry-run" });
+          setDataPackReport(`Scenario dry run: ${scenario.name} | events=${custom.decisionEvents.length} | cap=${custom.league.teams[0].capCeiling}`);
+        }}>Scenario dry run</Button>
       </section>
 
       {invariant && !invariant.valid && (
@@ -164,6 +188,21 @@ export function DevToolsPanel() {
             {templateIssues.slice(0, 8).map((issue) => (
               <p key={issue}>{issue}</p>
             ))}
+          </WarningCallout>
+        )}
+      </section>
+
+      <section className="panel-section">
+        <h3>Phase 9 Data Pack Tools</h3>
+        <div className="season-pulse">
+          <span>Default pack <strong>{validateDataPack(createDefaultDataPack()).valid ? "valid" : "invalid"}</strong></span>
+          <span>Built-in scenarios <strong>{getBuiltInScenarios().length}</strong></span>
+          <span>Scenario issues <strong>{builtInScenarioIssues.length}</strong></span>
+        </div>
+        {dataPackReport && <p className="muted">{dataPackReport}</p>}
+        {builtInScenarioIssues.length > 0 && (
+          <WarningCallout title="Scenario Validator">
+            {builtInScenarioIssues.slice(0, 8).map((issue) => <p key={issue}>{issue}</p>)}
           </WarningCallout>
         )}
       </section>

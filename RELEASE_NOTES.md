@@ -1,4 +1,4 @@
-# Franchise Ice Phase 8 Release Candidate Notes
+# Franchise Ice Phase 9 Custom League Lab Notes
 
 ## Current Playable Features
 
@@ -7,6 +7,7 @@
 - Multi-season dynasty loop with simplified regular season, playoffs, draft, re-signing, free agency, staff hiring, training camp, aging, retirements, history, and owner goals.
 - Living hockey operations with fictional decision events, relationships, agents, media/fan/owner sentiment, story arcs, and Assistant GM guidance.
 - Phase 8 tutorial, Learn the Game guide, achievements, milestones, generated audio, accessibility settings, local telemetry, bug-report export, and release-candidate smoke tests.
+- Phase 9 Custom League Lab with local fictional data packs, custom 12-team league starts, scenario starts, team creator, roster/player editor helpers, draft-class editor helpers, generated branding previews, validation/repair, and JSON import/export.
 
 ## How To Run
 
@@ -32,6 +33,14 @@ npm run build
 5. Check achievements/milestones in the Trophy Hall.
 6. Export a diagnostic report from Save Desk if anything feels confusing or unstable.
 
+## Custom League Lab Flow
+
+1. From the start screen, choose `Custom League Lab`.
+2. Edit the working fictional data pack or load a local imported pack.
+3. Use Teams, Rosters, Draft Class, and Scenarios tabs to shape the setup.
+4. Validate or repair the pack before starting.
+5. Start a custom 12-team league or scenario. Custom metadata appears in the TopBar, GM Office, Trophy Hall, saves, and bug reports.
+
 ## What To Test
 
 - First-franchise onboarding clarity.
@@ -42,6 +51,7 @@ npm run build
 - High contrast, larger text, reduce flashes, keyboard shortcuts, and Help/Guide usability.
 - Save export/import, repair, diagnostics, and bug-report export.
 - Fan sentiment and owner goal reporting in longer playtests.
+- Data-pack validation, import/export roundtrip, repair behavior, scenario starts, custom first-game simulation, and custom save/load metadata.
 
 ## Known Limitations
 
@@ -49,11 +59,14 @@ npm run build
 - Achievements are local-only.
 - Audio is generated/local placeholder audio, not final professional sound design.
 - Telemetry and bug reports are local-only and never sent anywhere automatically.
+- Data packs are local JSON only and are not uploaded or shared online by the app.
+- The real-world content filter is a basic obvious-term scan and not a legal guarantee.
+- Full-dynasty custom starts currently support 12-team fictional leagues. Other league sizes are flagged/rejected until broader lifecycle support is added.
 - Waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online services, real hockey branding/content, and playable on-ice hockey remain out of scope.
 
 ## Safety And Licensing
 
-All teams, players, brands, headlines, achievements, guide content, and audio cues are fictional or generated locally. The app does not fetch licensed audio, logos, jerseys, fonts, or real hockey content.
+All teams, players, brands, data packs, scenarios, headlines, achievements, guide content, and audio cues are fictional or generated locally. The app does not fetch licensed audio, logos, jerseys, fonts, external data packs, or real hockey content.
 
 ## Browser Support Note
 

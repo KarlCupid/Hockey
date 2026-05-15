@@ -249,3 +249,36 @@
 - Audio is generated/local placeholder sound design, not final professional audio.
 - Telemetry and bug reports remain local-only and are never sent to a backend.
 - Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, and playable on-ice hockey remain out of scope.
+
+## Phase 9 Scope
+
+- Build: Phase 9 Custom League Lab, local fictional data packs, scenario starts, team creator, roster/player editor helpers, draft-class editor helpers, validation/repair, local JSON import/export, data-pack store, and content expansion.
+- Harness: `src/tests/phase9Customization.test.ts` plus `npm run test:smoke`.
+- Primary target: increase replayability and user creativity while keeping the game client-only, fictional-only, serializable, and compatible with existing dynasty systems.
+
+## Phase 9 Verification
+
+- `cmd /c npx vitest run --config vitest.config.ts src/tests/phase9Customization.test.ts`: passed with 20 tests.
+- `cmd /c npm test`: passed with 12 test files and 175 tests.
+- `cmd /c npm run test:smoke`: passed with 2 test files and 29 tests.
+- `cmd /c npm run build`: passed. Vite still reports the known large `three-r3f` dependency chunk warning.
+- Data-pack validation passes for the built-in fictional pack.
+- Invalid JSON returns a safe error report.
+- Obvious restricted real-world hockey terms are flagged.
+- Duplicate team/player/prospect IDs are flagged or repaired.
+- Out-of-range ratings are flagged and repair clamps them.
+- Data-pack export/import roundtrip passes.
+- Custom 12-team league generation creates valid team IDs, schedule IDs, cap settings, team branding metadata, scouting draft class, staff, owner state, relationships, Assistant GM report, and save metadata.
+- Unsupported non-12 team counts are rejected for Phase 9 dynasty starts with clear validation messaging.
+- Built-in scenario starts validate and apply cap crunch, injuries, owner pressure, initial decision events, and story arcs.
+- Custom franchise first-game simulation, save/load, bug-report metadata, and invariant checks pass.
+- A two-season custom mini playtest completes without fatal invariant errors after save-hydration refreshes relationship/agent state across roster churn.
+- In-app Browser QA was attempted against the local Vite server, but the automation browser blocked local URL navigation in this session; no browser workaround was used.
+
+## Phase 9 Notes
+
+- Full-dynasty custom starts currently prioritize 12-team leagues because core invariants, playoffs, standings presentation, and long-run balance are tuned around the existing 12-team league.
+- Experimental 8-, 10-, and 16-team templates are recognized by validation language but rejected for starting a franchise until broader lifecycle support is added.
+- Scenario consequences are simplified setup modifiers, not full alternate-rule simulations.
+- Data packs are local JSON only. There is no backend, online sharing, cloud save, authentication, or external asset upload.
+- The real-world content filter is a basic obvious-term scan and not a legal guarantee.

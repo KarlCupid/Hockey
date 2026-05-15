@@ -6,6 +6,7 @@ import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
 import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
+import { DataPackLibrary } from "../editors/DataPackLibrary";
 
 export function SaveLoadPanel() {
   const {
@@ -160,6 +161,8 @@ export function SaveLoadPanel() {
           <span>Diagnostic output</span>
           <textarea readOnly value={bugReportText} placeholder="Generate a diagnostic summary or bug report." />
         </label>
+        <h3>Data Packs</h3>
+        <DataPackLibrary currentFranchise={franchise} onStartPack={(pack, selectedTeamId) => useFranchiseStore.getState().startFranchiseFromDataPack(pack, selectedTeamId)} />
       </section>
     </div>
   );

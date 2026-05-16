@@ -1,10 +1,12 @@
 import type { FranchiseState, RoomId, TutorialState, TutorialStep } from "../types";
 
+export const FIRST_HOUR_TUTORIAL_ROOM_ROUTE: RoomId[] = ["gm", "roster", "coach", "arena", "saves"];
+
 export const TUTORIAL_STEP_DEFINITIONS: Omit<TutorialStep, "completed">[] = [
   {
     id: "move-facility",
     title: "Walk the facility",
-    body: "Use WASD to move through the operations hub. The nearest room marker will light up when you are close.",
+    body: "Start in the Central Concourse, then use WASD to move through the wings. The nearest room marker will light up when you are close.",
     targetAction: "movement",
     optional: false,
     category: "movement"

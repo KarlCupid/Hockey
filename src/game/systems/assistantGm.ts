@@ -1,6 +1,9 @@
 import { calculateCapSpace, formatMoney, getCapWarnings, getExpiringContracts } from "./contracts";
 import { getAffiliatePromotionCandidates } from "./affiliate";
 import { validateRosterForGame } from "./rosterRules";
+import { DEFAULT_FACILITY_BLUEPRINT } from "../facility/facilityBlueprint";
+import { getBreadcrumbForRoom, getRoomEntrancePrompt } from "../facility/facilityWayfinding";
+import { getDistrictForRoom, getRoomDefinition } from "../facility/facilityNavigation";
 import type { AssistantGmRecommendation, AssistantGmReport, FranchiseState, Player, RoomId } from "../types";
 
 export interface AssistantGmReportContext {
@@ -311,6 +314,8 @@ function recommendation(
   targetPlayerId?: string,
   relatedEventId?: string
 ): AssistantGmRecommendation {
+  const district = getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, targetRoomId);
+  const room = getRoomDefinition(DEFAULT_FACILITY_BLUEPRINT, targetRoomId);
   return {
     id,
     category,
@@ -319,6 +324,8 @@ function recommendation(
     body,
     actionLabel,
     targetRoomId,
+    targetDistrictLabel: district.label,
+    navigationHint: `${getBreadcrumbForRoom(DEFAULT_FACILITY_BLUEPRINT, targetRoomId).join(" -> ")}. ${getRoomEntrancePrompt(room)} near ${district.landmarkLabel}.`,
     targetPlayerId,
     estimatedImpact,
     ...(relatedEventId ? { targetTeamId: relatedEventId } : {})

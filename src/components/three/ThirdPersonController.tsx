@@ -8,21 +8,29 @@ import type { RoomZoneConfig } from "./RoomZone";
 
 export function ThirdPersonController({
   zones,
-  onNearbyChange
+  onNearbyChange,
+  onPositionChange,
+  spawnPoint = { x: 0, z: 0 },
+  worldBounds = { minX: -10.5, maxX: 10.5, minZ: -8.5, maxZ: 8.5 }
 }: {
   zones: RoomZoneConfig[];
   onNearbyChange: (room?: RoomId) => void;
+  onPositionChange?: (position: { x: number; z: number }) => void;
+  spawnPoint?: { x: number; z: number };
+  worldBounds?: { minX: number; maxX: number; minZ: number; maxZ: number };
 }) {
   const keys = useRef(new Set<string>());
-  const position = useRef(new THREE.Vector3(0, 0, 0));
+  const position = useRef(new THREE.Vector3(spawnPoint.x, 0, spawnPoint.z));
   const avatarRef = useRef<THREE.Group>(null);
   const lastNearby = useRef<RoomId | undefined>();
+  const lastPositionSent = useRef(new THREE.Vector3(Number.NaN, 0, Number.NaN));
   const camera = useThree((state) => state.camera);
   const controls = useRef<React.ElementRef<typeof OrbitControls>>(null);
   const cameraOffset = useMemo(() => new THREE.Vector3(0, 5.4, 7.2), []);
 
   useEffect(() => {
     camera.position.copy(position.current).add(cameraOffset);
+    onPositionChange?.({ x: position.current.x, z: position.current.z });
     const down = (event: KeyboardEvent) => keys.current.add(event.key.toLowerCase());
     const up = (event: KeyboardEvent) => keys.current.delete(event.key.toLowerCase());
     window.addEventListener("keydown", down);
@@ -31,7 +39,7 @@ export function ThirdPersonController({
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
     };
-  }, [camera, cameraOffset]);
+  }, [camera, cameraOffset, onPositionChange]);
 
   useFrame((state, delta) => {
     const before = position.current.clone();
@@ -48,8 +56,8 @@ export function ThirdPersonController({
     if (move.lengthSq() > 0) {
       move.normalize().multiplyScalar(delta * 4.2);
       position.current.add(move);
-      position.current.x = THREE.MathUtils.clamp(position.current.x, -10.5, 10.5);
-      position.current.z = THREE.MathUtils.clamp(position.current.z, -8.5, 8.5);
+      position.current.x = THREE.MathUtils.clamp(position.current.x, worldBounds.minX, worldBounds.maxX);
+      position.current.z = THREE.MathUtils.clamp(position.current.z, worldBounds.minZ, worldBounds.maxZ);
     }
     const deltaPosition = position.current.clone().sub(before);
     avatarRef.current?.position.copy(position.current);
@@ -57,7 +65,12 @@ export function ThirdPersonController({
     controls.current?.target.copy(position.current).add(new THREE.Vector3(0, 0.85, 0));
     controls.current?.update();
 
-    const nearby = zones.find((zone) => position.current.distanceTo(new THREE.Vector3(zone.position[0], 0, zone.position[2])) < 2.0)?.id;
+    if (position.current.distanceTo(lastPositionSent.current) > 0.75) {
+      lastPositionSent.current.copy(position.current);
+      onPositionChange?.({ x: Number(position.current.x.toFixed(2)), z: Number(position.current.z.toFixed(2)) });
+    }
+
+    const nearby = zones.find((zone) => position.current.distanceTo(new THREE.Vector3(zone.position[0], 0, zone.position[2])) < Math.max(1.8, (zone.radius ?? 1.15) + 0.75))?.id;
     if (nearby !== lastNearby.current) {
       lastNearby.current = nearby;
       onNearbyChange(nearby);

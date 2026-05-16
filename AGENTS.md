@@ -21,4 +21,6 @@
 - Phase 11 must not add network telemetry, backend, cloud sync, online sharing, or real licensed content.
 - Phase 12 explicitly allows local-only closed beta feedback forms, UX friction logging, presentation polish, content expansion, room-flow improvements, audio polish, beta QA scripts, and playtest-report dashboards.
 - Phase 12 feedback, diagnostics, telemetry, and friction reports must stay local/export-only and must not add network telemetry.
+- Phase 13 explicitly allows facility blueprinting, spatial districts, room adjacency, wayfinding, signage, minimap/floorplan improvements, primitive 3D room dressing, and navigation polish.
+- Facility room placement must be driven by a typed blueprint/config rather than hardcoded scattered coordinates.
 - Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

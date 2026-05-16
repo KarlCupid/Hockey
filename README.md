@@ -42,6 +42,7 @@ npm run check
 - Phase 10 custom rules support with generalized league sizes, schedule generation, playoff formats, draft rounds/class sizing, Data Pack v2 validation, and multi-season custom dry runs
 - Phase 11 public beta readiness with PWA install metadata, static/offline-friendly shell caching, release/version labels, runtime health logs, save snapshots/recovery, beta checklists, demo mode, compatibility notes, and release scripts
 - Phase 12 closed beta candidate polish with local-only feedback bundles, UX friction reports, first-hour onboarding checklists, post-game summary cards, audio previews, richer narrative content, facility atmosphere props, and balance dashboard v2
+- Phase 13 facility masterplan with typed room blueprinting, spatial districts, corridor routing, wayfinding prompts, district Operations Map, primitive signage, and reusable room placement config
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation
@@ -197,9 +198,19 @@ Phase 11 packages the existing deep franchise game into a more testable public b
 - Beta Playtest Guide checklists cover the first 30 minutes, first season, Custom League Lab, dynasty stability, accessibility/audio, and bug-report export.
 - Release scripts include `npm run typecheck`, `npm run test:phase11`, `npm run test:release`, `npm run build:report`, and `npm run check`.
 
+## Phase 13 Facility Masterplan, Districts, And Wayfinding
+
+Phase 13 fixes the 3D hub layout without adding another hockey management system:
+
+- Facility room placement now comes from a typed blueprint under `src/game/facility`.
+- The hub is organized into Central Concourse, Front Office, Hockey Ops, Team Wing, Arena, Media, Development, Customization, and Utility districts.
+- Corridors, landmarks, room shells, primitive props, Operations Map pins, prompts, breadcrumbs, Assistant GM room hints, feedback context, and Dev Tools validation all read from the blueprint.
+- The Operations Map now behaves more like a floorplan with district filters, current-district context, "You are here," route hints, and direct room fallback navigation.
+- Reduced 3D detail removes extra dressing but keeps rooms, signage, corridors, and interactions intact.
+
 ## Current Scope
 
-This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, network telemetry, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, data packs, custom rule presets, beta diagnostics, and save recovery are simplified fictional prototype systems.
+This prototype intentionally avoids backend services, authentication, real hockey licenses, real players, real teams, online sharing, waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, multiplayer, cloud saves, network telemetry, and playable on-ice hockey physics. Free agency, staff, contracts, draft execution, playoffs, affiliate development, roster repair, cap treatment, conversations, relationships, story events, difficulty/game modes, Assistant GM guidance, narrative templates, tutorial/guide content, achievements, local telemetry, generated audio, custom leagues, scenarios, data packs, custom rule presets, beta diagnostics, save recovery, and facility layout/wayfinding are simplified fictional prototype systems.
 
 ## Controls
 

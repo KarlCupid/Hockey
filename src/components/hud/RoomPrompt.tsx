@@ -1,44 +1,33 @@
+import { DEFAULT_FACILITY_BLUEPRINT } from "../../game/facility/facilityBlueprint";
+import { getRoomDefinition } from "../../game/facility/facilityNavigation";
+import { getBreadcrumbForRoom, getNearestRoomLabel, getRoomEntrancePrompt, getWayfindingLabel } from "../../game/facility/facilityWayfinding";
 import type { RoomId } from "../../game/types";
-
-const ROOM_LABELS: Record<RoomId, string> = {
-  gm: "GM Office",
-  press: "Press Room",
-  ownerSuite: "Owner Suite",
-  agents: "Agent Desk",
-  playerMeetings: "Player Meeting Room",
-  roster: "Roster Office",
-  coach: "Coach's Office",
-  locker: "Locker Room",
-  medical: "Medical Room",
-  arena: "Arena Bowl",
-  standings: "Standings Hall",
-  saves: "Save Desk",
-  contracts: "Contract & Cap Office",
-  trades: "Trade War Room",
-  scouting: "Scouting Department",
-  development: "Development Office",
-  freeAgency: "Free Agency Office",
-  staff: "Staff Office",
-  draft: "Draft Stage",
-  settings: "Settings",
-  devTools: "Dev Tools",
-  feedback: "Feedback Desk"
-};
+import { useUiStore } from "../../store/uiStore";
 
 export function roomLabel(room?: RoomId): string {
-  return room ? ROOM_LABELS[room] : "";
+  return room ? getRoomDefinition(DEFAULT_FACILITY_BLUEPRINT, room).label : "";
 }
 
 export function RoomPrompt({ room }: { room?: RoomId }) {
-  if (!room) {
-    return <div className="room-prompt room-prompt--quiet">Walk to a glowing room marker.</div>;
+  const facilityPosition = useUiStore((state) => state.facilityPosition);
+  const roomDefinition = room ? getRoomDefinition(DEFAULT_FACILITY_BLUEPRINT, room) : undefined;
+
+  if (!roomDefinition) {
+    return (
+      <div className="room-prompt room-prompt--quiet">
+        <strong>{getWayfindingLabel(DEFAULT_FACILITY_BLUEPRINT, facilityPosition)}</strong>
+        <span>Nearest room: {getNearestRoomLabel(DEFAULT_FACILITY_BLUEPRINT, facilityPosition)}.</span>
+      </div>
+    );
   }
 
   return (
     <div className="room-prompt">
       <span className="room-prompt__key">E</span>
-      <strong>{ROOM_LABELS[room]}</strong>
-      <span>You are here. Press E or click the marker to enter.</span>
+      <div>
+        <strong>{getRoomEntrancePrompt(roomDefinition)}</strong>
+        <span>{getBreadcrumbForRoom(DEFAULT_FACILITY_BLUEPRINT, roomDefinition.roomId).join(" -> ")}</span>
+      </div>
     </div>
   );
 }

@@ -31,6 +31,7 @@ export function AssistantGmReportCard({ report, onGoTo, onDismiss }: AssistantGm
                 <small>{recommendation.priority} | {recommendation.category} | {recommendation.estimatedImpact} impact</small>
                 <strong>{recommendation.title}</strong>
                 <span>{recommendation.body}</span>
+                {recommendation.targetDistrictLabel && <small>{recommendation.targetDistrictLabel} | {recommendation.navigationHint}</small>}
                 {targetRoomId && onGoTo && (
                   <button type="button" onClick={() => onGoTo(targetRoomId)}>
                     {recommendation.actionLabel}

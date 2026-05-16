@@ -13,6 +13,8 @@ import { OperationsMap } from "../components/hud/OperationsMap";
 import { RoomPrompt, roomLabel } from "../components/hud/RoomPrompt";
 import { TutorialOverlay } from "../components/hud/TutorialOverlay";
 import { TopBar } from "../components/hud/TopBar";
+import { DEFAULT_FACILITY_BLUEPRINT } from "../game/facility/facilityBlueprint";
+import { getDistrictForRoom } from "../game/facility/facilityNavigation";
 import type { RoomId } from "../game/types";
 import { useFranchiseStore } from "../store/franchiseStore";
 import { useSettingsStore } from "../store/settingsStore";
@@ -75,7 +77,8 @@ export function AppShell() {
 
   useEffect(() => {
     if (!activeRoom) return;
-    recordTelemetryEvent("roomOpened", `Opened ${activeRoom}`, { roomId: activeRoom });
+    const district = getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, activeRoom);
+    recordTelemetryEvent("roomOpened", `Opened ${activeRoom}`, { roomId: activeRoom, district: district.label });
     completeTutorialStep(tutorialStepForRoom(activeRoom));
   }, [activeRoom, completeTutorialStep, recordTelemetryEvent]);
 

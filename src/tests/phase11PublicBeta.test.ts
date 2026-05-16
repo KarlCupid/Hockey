@@ -114,7 +114,7 @@ describe("Phase 11 version, PWA, performance, runtime health, and display helper
   it("summarizes version, manifest metadata, and service worker no-op behavior", async () => {
     const version = getVersionSummary();
     expect(version.releaseLabel).toContain(version.appVersion);
-    expect(version.releaseLabel).toContain("Phase 12");
+    expect(version.releaseLabel).toContain("Phase 13");
     expect(version.releaseLabel).toContain("schema v8");
 
     const metadata = getPwaMetadata();

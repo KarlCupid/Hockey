@@ -1,8 +1,19 @@
-# Franchise Ice Phase 12 Closed Beta Candidate Notes
+# Franchise Ice Phase 13 Facility Masterplan Notes
 
 ## Status
 
-Franchise Ice is now a Phase 12 Closed Beta Candidate. The systems foundation remains client-only and feature-complete for beta purposes; this pass focuses on feedback capture, clarity, presentation, content depth, and QA.
+Franchise Ice is now a Phase 13 Facility Masterplan build. The systems foundation remains client-only and feature-complete for beta purposes; this pass focuses on spatial clarity, district layout, wayfinding, and room placement polish inside the 3D operations hub.
+
+## What Changed In Phase 13
+
+- Added a typed facility blueprint that owns every room's district, physical position, map position, size, entrance, related rooms, signage, and primitive prop theme.
+- Rebuilt the 3D hub around districts: Central Concourse, Front Office Wing, Hockey Ops Wing, Team Wing, Arena Bowl, Media Wing, Development Wing, Customization Lab, and Utility Kiosks.
+- Added blueprint-rendered district floors, corridors, landmarks, room shells, signage, and primitive room dressing while keeping reduced-detail navigation intact.
+- Upgraded Operations Map into a district floorplan with filters, search, "You are here," current district, route hints, room badges, and direct room fallback navigation.
+- Added district-aware RoomPrompt, TopBar status, Assistant GM recommendation hints, feedback entries, bug reports, guide content, and Dev Tools validation/export.
+- Added [FACILITY_BLUEPRINT.md](FACILITY_BLUEPRINT.md) and Phase 13 facility layout tests.
+
+## Phase 12 Context
 
 ## What Changed In Phase 12
 
@@ -24,6 +35,7 @@ Franchise Ice is now a Phase 12 Closed Beta Candidate. The systems foundation re
 - UX friction: intentionally block a sim with an invalid roster and confirm guidance appears.
 - Post-game result clarity: confirm next recommended action, fatigue/morale/story/achievement fallout, and no raw IDs.
 - Custom league: validate 8-, 10-, 12-, and 16-team fictional starts and export a safety save.
+- Facility navigation: start in Central Concourse, use Operations Map filters, walk to Front Office, Hockey Ops, Team Wing, Arena, Media, Development, Utility, and Customization districts, and verify prompts name the district/room clearly.
 - Accessibility/audio: reduced motion/detail, reduced flashes, audio previews, and safe no-op audio behavior.
 
 ## Current Playable Features
@@ -36,6 +48,7 @@ Franchise Ice is now a Phase 12 Closed Beta Candidate. The systems foundation re
 - Custom League Lab with local fictional data packs, scenario starts, team creator, roster/player editor helpers, draft-class editor helpers, generated branding previews, rule presets, validation/repair, and JSON import/export.
 - Phase 11 public beta package with install-friendly PWA metadata, static app-shell service worker, release labels, runtime health logs, save snapshots/recovery, demo mode, low-spec preset, beta checklist, and release scripts.
 - Phase 12 closed beta polish package with feedback export, friction reports, onboarding checklists, post-game clarity, audio previews, facility atmosphere, balance dashboard v2, and closed-beta QA docs.
+- Phase 13 facility masterplan package with blueprint-driven room placement, district-based 3D hub layout, Operations Map V2, and wayfinding improvements.
 
 ## How To Play
 
@@ -76,7 +89,7 @@ See [BETA_TESTING.md](BETA_TESTING.md) for longer first-season, custom-league, a
 ## Bug Reports And Diagnostics
 
 - Save Desk can export a local diagnostic summary or bug-report JSON.
-- Bug reports now include app version, Phase 12 release label, save schema version, release channel, compatibility summary, runtime health summary, UX friction summary, and local telemetry if enabled.
+- Bug reports now include app version, Phase 13 release label, save schema version, release channel, compatibility summary, runtime health summary, UX friction summary, current district, and local telemetry if enabled.
 - Full save JSON is excluded unless explicitly included.
 - Runtime health logs are capped, local, clearable, and never sent anywhere automatically.
 - Feedback bundles are capped, local, export-only, and exclude full save JSON by default.
@@ -95,6 +108,7 @@ See [BETA_TESTING.md](BETA_TESTING.md) for longer first-season, custom-league, a
 - The real-world content filter is a basic obvious-term scan and not a legal guarantee.
 - The `three-r3f` production chunk remains large because Three.js, React Three Fiber, and Drei are core to the 3D facility.
 - Audio is generated/local placeholder audio, not final professional sound design.
+- Facility art remains primitive/generated and the layout is stylized rather than a realistic architectural simulation.
 - Small screens show a desktop recommended message rather than a dedicated mobile layout.
 - Waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online services, real hockey branding/content, and playable on-ice hockey remain out of scope.
 

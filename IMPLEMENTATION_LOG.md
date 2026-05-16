@@ -18,6 +18,7 @@
 - Phase 9 increased replayability through local-only fictional customization: custom 12-team league starts, data packs, scenarios, team branding, roster/player editor helpers, draft-class editor helpers, validation/repair, and JSON import/export.
 - Phase 10 generalizes those custom starts to supported 8-, 10-, 12-, and 16-team fictional rule sets with schedule, playoff, draft, cap, roster, and Data Pack v2 validation.
 - Phase 11 packages the existing game for public beta readiness with local-only install metadata, release versioning, runtime health logs, save backups/recovery, performance budgets, compatibility notes, demo mode, beta checklists, and release scripts instead of adding another hockey rules layer.
+- Phase 13 moves the 3D hub from scattered room coordinates to a typed district blueprint that drives room placement, map positions, corridors, signage, wayfinding, Assistant GM navigation context, feedback/bug-report district context, and Dev Tools validation/export.
 
 ## Files Added
 
@@ -38,6 +39,8 @@
 - Phase 9 UI/tests/docs: `src/components/editors/DataPackLibrary.tsx`, `src/components/editors/TeamCreator.tsx`, `src/components/editors/ColorPickerField.tsx`, `src/components/editors/CrestShapePicker.tsx`, `src/components/editors/JerseyPatternPicker.tsx`, `src/components/editors/TeamPreviewCard.tsx`, `src/components/editors/RosterEditor.tsx`, `src/components/editors/PlayerEditor.tsx`, `src/components/editors/DraftClassEditor.tsx`, `src/components/rooms/DataPackLibraryPanel.tsx`, updated App/Save Desk/Dev Tools/GM Office/TopBar/Trophy Hall/guide/docs, and `src/tests/phase9Customization.test.ts`
 - Phase 10 systems/tests: `src/game/systems/leagueRules.ts`, generalized schedule/playoff/draft/data-pack rule integrations, and `src/tests/phase10LeagueRules.test.ts`
 - Phase 11 systems/content/store/assets/tests/docs: `src/game/systems/version.ts`, `src/game/systems/pwa.ts`, `src/serviceWorkerRegistration.ts`, `src/game/systems/performanceBudget.ts`, `src/game/systems/runtimeHealth.ts`, `src/store/runtimeHealthStore.ts`, `src/game/systems/displayModes.ts`, `src/game/systems/demoMode.ts`, `src/game/content/playtestChecklists.ts`, `src/game/systems/playtestChecklist.ts`, `public/manifest.webmanifest`, `public/sw.js`, `public/icons/franchise-ice-icon.svg`, `public/icons/franchise-ice-maskable.svg`, `public/robots.txt`, `scripts/build-report.mjs`, `src/tests/phase11PublicBeta.test.ts`, and `BETA_TESTING.md`
+- Phase 13 facility systems/tests/docs: `src/game/facility/facilityTypes.ts`, `src/game/facility/facilityBlueprint.ts`, `src/game/facility/facilityValidation.ts`, `src/game/facility/facilityNavigation.ts`, `src/game/facility/facilityWayfinding.ts`, `src/tests/phase13FacilityLayout.test.ts`, and `FACILITY_BLUEPRINT.md`
+- Phase 13 3D helper components: `src/components/three/FacilityDistrict.tsx`, `src/components/three/FacilityCorridor.tsx`, `src/components/three/FacilityLandmark.tsx`, `src/components/three/FacilityRoomShell.tsx`, `src/components/three/FacilitySignage.tsx`, and `src/components/three/FacilityPropSet.tsx`
 
 ## V1.1 Changes
 
@@ -308,3 +311,14 @@
 - Added balance dashboard v2 with custom rule labels, emergency replacement counts, story cadence, fan/media sentiment, and achievement unlock rates.
 - Added `phase12ClosedBetaPolish.test.ts` and included it in `npm run test:smoke`.
 - Verified final Phase 12 state with `cmd /c npm run typecheck` and `cmd /c npm run check`; the check reran typecheck, full tests, smoke tests, and production build. Full suite: 15 files / 227 tests. Smoke suite: 5 files / 81 tests. Build passed with the documented large `three-r3f` chunk warning.
+
+## Phase 13 Facility Masterplan Notes
+
+- Added a reusable typed facility blueprint with room definitions, districts, floors, map positions, related rooms, path nodes, landmarks, prop themes, validation, navigation, map filtering, blueprint export, and wayfinding helpers.
+- Refactored the 3D facility to render from the blueprint: district floor plates, corridors, landmarks, room shells, room zones, signage, primitive props, and reduced-detail-safe navigation surfaces.
+- Reworked Operations Map into a district-based floorplan with filters, search, current district, "You are here," route hints, room badges, and direct room fallback navigation.
+- Added current district/nearest-room wayfinding to TopBar and RoomPrompt, and threaded district context into telemetry, Assistant GM recommendations, feedback entries, bug reports, guide content, and Dev Tools.
+- Added `phase13FacilityLayout.test.ts` with blueprint coverage, route graph, wayfinding, Operations Map helpers, tutorial route, Assistant GM districts, feedback/bug-report district context, and blueprint serialization.
+- Verified final Phase 13 state with `cmd /c npm run typecheck`, `cmd /c npm test`, `cmd /c npm run test:smoke`, `cmd /c npm run build`, and `cmd /c npm run check`. Full suite: 16 files / 252 tests. Smoke suite: 6 files / 106 tests. Build passed with the documented large `three-r3f` chunk warning.
+- Passed in-app Browser QA at `http://127.0.0.1:5173/`: demo franchise entered the hub, district signage and room labels rendered, TopBar reported Central Concourse, RoomPrompt showed `Enter Save Desk`, Operations Map filters/route hints rendered, and console warning/error capture was clean. Desktop and mobile screenshot pixel checks were nonblank with varied color buckets.
+- Known limitation: the facility is still primitive/generated 3D art and a stylized operations complex, not a final professional environment or architectural simulation.

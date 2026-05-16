@@ -7,18 +7,20 @@ export interface RoomZoneConfig {
   label: string;
   position: Vector3Tuple;
   color: string;
+  radius?: number;
 }
 
 export function RoomZone({ zone, active, onOpen }: { zone: RoomZoneConfig; active: boolean; onOpen: (room: RoomId) => void }) {
+  const radius = zone.radius ?? 1.15;
   return (
     <group position={zone.position}>
       <mesh position={[0, 0.03, 0]} onClick={() => onOpen(zone.id)}>
-        <cylinderGeometry args={[1.15, 1.15, 0.06, 40]} />
+        <cylinderGeometry args={[radius, radius, 0.06, 40]} />
         <meshStandardMaterial color={zone.color} emissive={zone.color} emissiveIntensity={active ? 1.8 : 0.8} transparent opacity={active ? 0.62 : 0.36} />
       </mesh>
       {active && (
         <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[1.28, 1.36, 56]} />
+          <ringGeometry args={[radius + 0.13, radius + 0.21, 56]} />
           <meshStandardMaterial color={zone.color} emissive={zone.color} emissiveIntensity={1.4} transparent opacity={0.9} />
         </mesh>
       )}

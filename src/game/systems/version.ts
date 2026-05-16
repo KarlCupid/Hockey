@@ -3,9 +3,9 @@ import { SCHEMA_VERSION } from "../constants";
 export type ReleaseChannel = "local" | "beta" | "dev";
 
 export const APP_VERSION = "0.1.0";
-export const BUILD_PHASE = "Phase 12 Closed Beta Candidate";
+export const BUILD_PHASE = "Phase 13 Facility Masterplan";
 export const SAVE_SCHEMA_VERSION = SCHEMA_VERSION;
-export const BUILD_DATE = "2026-05-15";
+export const BUILD_DATE = "2026-05-16";
 export const RELEASE_CHANNEL: ReleaseChannel = "beta";
 
 export interface VersionSummary {

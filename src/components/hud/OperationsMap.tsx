@@ -1,42 +1,44 @@
+import { useMemo, useState } from "react";
 import type { RoomId } from "../../game/types";
+import { createDefaultFacilityBlueprint } from "../../game/facility/facilityBlueprint";
+import {
+  getDistrictForRoom,
+  getNearestRoomFromPosition,
+  getOperationsMapRooms,
+  getRoomMapBadgePosition,
+  getSuggestedRoomRoute,
+  OPERATIONS_MAP_FILTERS,
+  type OperationsMapFilterId
+} from "../../game/facility/facilityNavigation";
+import { getBreadcrumbForRoom, getCurrentDistrictFromPosition } from "../../game/facility/facilityWayfinding";
 import { getRoomBadges } from "../../game/systems/actionQueue";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useSettingsStore } from "../../store/settingsStore";
 import { useUiStore } from "../../store/uiStore";
 import { roomLabel } from "./RoomPrompt";
 
-const ROOMS: Array<{ id: RoomId; x: number; y: number; note: string }> = [
-  { id: "gm", x: 19, y: 20, note: "Inbox and ownership" },
-  { id: "press", x: 31, y: 12, note: "Media answers" },
-  { id: "ownerSuite", x: 12, y: 12, note: "Owner trust" },
-  { id: "agents", x: 38, y: 34, note: "Agent calls" },
-  { id: "playerMeetings", x: 74, y: 12, note: "Player meetings" },
-  { id: "roster", x: 18, y: 34, note: "Roster ecosystem" },
-  { id: "contracts", x: 36, y: 22, note: "Cap and contracts" },
-  { id: "freeAgency", x: 27, y: 34, note: "Open market" },
-  { id: "coach", x: 50, y: 14, note: "Lines and tactics" },
-  { id: "trades", x: 64, y: 22, note: "Players and picks" },
-  { id: "staff", x: 73, y: 34, note: "Hockey ops staff" },
-  { id: "locker", x: 81, y: 20, note: "Roster pulse" },
-  { id: "medical", x: 18, y: 76, note: "Injuries and fatigue" },
-  { id: "development", x: 35, y: 72, note: "Growth plans" },
-  { id: "arena", x: 50, y: 84, note: "Sim and broadcast" },
-  { id: "draft", x: 50, y: 68, note: "Draft stage" },
-  { id: "scouting", x: 65, y: 72, note: "Draft board" },
-  { id: "standings", x: 82, y: 76, note: "League table" },
-  { id: "saves", x: 50, y: 50, note: "Local saves" },
-  { id: "feedback", x: 60, y: 50, note: "Closed beta notes" }
-];
-
 export function OperationsMap() {
   const open = useUiStore((state) => state.operationsMapOpen);
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
   const activeRoom = useUiStore((state) => state.activeRoom);
+  const facilityPosition = useUiStore((state) => state.facilityPosition);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const setOpen = useUiStore((state) => state.setOperationsMapOpen);
   const franchise = useFranchiseStore((state) => state.franchise);
   const roomBadgesEnabled = useSettingsStore((state) => state.settings.showRoomBadges);
+  const [filter, setFilter] = useState<OperationsMapFilterId>("all");
+  const [query, setQuery] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState<RoomId | undefined>();
+  const blueprint = useMemo(() => createDefaultFacilityBlueprint(), []);
+  const rooms = useMemo(() => getOperationsMapRooms(blueprint, filter, query), [blueprint, filter, query]);
   const badges = franchise && roomBadgesEnabled ? getRoomBadges(franchise) : undefined;
+  const currentRoom = activeRoom ?? nearbyRoom;
+  const nearestRoom = getNearestRoomFromPosition(blueprint, facilityPosition);
+  const currentDistrict = currentRoom ? getDistrictForRoom(blueprint, currentRoom) : getCurrentDistrictFromPosition(blueprint, facilityPosition);
+  const targetRoom = selectedRoom ?? currentRoom ?? nearestRoom?.roomId;
+  const routeFrom = currentRoom ?? nearestRoom?.roomId ?? "saves";
+  const routeNodes = targetRoom && routeFrom !== targetRoom ? getSuggestedRoomRoute(blueprint, routeFrom, targetRoom) : [];
+  const youPosition = currentRoom ? getRoomMapBadgePosition(blueprint, currentRoom) : mapWorldToFloorplan(blueprint, facilityPosition);
 
   if (!open) {
     return (
@@ -47,57 +49,151 @@ export function OperationsMap() {
   }
 
   return (
-    <aside className="ops-map">
+    <aside className="ops-map ops-map--v2">
       <header>
         <div>
           <small>Operations Map</small>
-          <strong>{activeRoom ? `In ${roomLabel(activeRoom)}` : nearbyRoom ? `Near ${roomLabel(nearbyRoom)}` : "Facility Hub"}</strong>
+          <strong>{currentRoom ? `In ${roomLabel(currentRoom)}` : currentDistrict ? currentDistrict.label : "Facility Hub"}</strong>
+          <span>{currentDistrict?.landmarkLabel ?? "Central Concourse"}</span>
         </div>
         <button className="icon-button" type="button" onClick={() => setOpen(false)} aria-label="Close operations map">
           X
         </button>
       </header>
-      <div className="ops-map__rink" aria-hidden="true">
-        <span className="ops-map__you" style={{ left: `${nearbyRoom ? ROOMS.find((room) => room.id === nearbyRoom)?.x ?? 50 : 50}%`, top: `${nearbyRoom ? ROOMS.find((room) => room.id === nearbyRoom)?.y ?? 50 : 50}%` }}>
-          You
-        </span>
-        {ROOMS.map((room) => {
-          const roomBadges = badges?.[room.id] ?? [];
-          return (
-          <button
-            className={room.id === nearbyRoom ? "ops-map__pin is-nearby" : "ops-map__pin"}
-            key={room.id}
-            type="button"
-            style={{ left: `${room.x}%`, top: `${room.y}%` }}
-            onClick={() => {
-              setActiveRoom(room.id);
-              setOpen(false);
+
+      <div className="ops-map__filters" role="group" aria-label="Facility map filters">
+        {OPERATIONS_MAP_FILTERS.map((item) => (
+          <button key={item.id} type="button" className={filter === item.id ? "is-active" : ""} onClick={() => setFilter(item.id)}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <label className="ops-map__search">
+        <span>Search rooms</span>
+        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Coach, cap, arena..." />
+      </label>
+
+      <div className="ops-map__floorplan" aria-label="District floorplan">
+        {blueprint.districts.map((district) => (
+          <div
+            key={district.id}
+            className={`ops-map__district ops-map__district--${district.id}`}
+            style={{
+              left: `${districtToMapRect(blueprint, district).left}%`,
+              top: `${districtToMapRect(blueprint, district).top}%`,
+              width: `${districtToMapRect(blueprint, district).width}%`,
+              height: `${districtToMapRect(blueprint, district).height}%`,
+              borderColor: district.colorToken
             }}
           >
-            {roomLabel(room.id)}
-            {roomBadges.length > 0 && <span className={`ops-map__badge ops-map__badge--${roomBadges[0].tone}`}>{roomBadges[0].count ?? roomBadges.length}</span>}
-          </button>
+            <span>{district.label}</span>
+          </div>
+        ))}
+        <span className="ops-map__you" style={{ left: `${youPosition.x}%`, top: `${youPosition.y}%` }}>
+          You
+        </span>
+        {rooms.map((room) => {
+          const roomBadges = badges?.[room.roomId] ?? [];
+          return (
+            <button
+              className={room.roomId === currentRoom ? "ops-map__pin is-nearby" : selectedRoom === room.roomId ? "ops-map__pin is-selected" : "ops-map__pin"}
+              key={room.roomId}
+              type="button"
+              style={{ left: `${room.mapPosition.x}%`, top: `${room.mapPosition.y}%`, borderColor: room.colorToken }}
+              onClick={() => setSelectedRoom(room.roomId)}
+              onDoubleClick={() => {
+                setActiveRoom(room.roomId);
+                setOpen(false);
+              }}
+            >
+              {room.shortLabel}
+              {roomBadges.length > 0 && <span className={`ops-map__badge ops-map__badge--${roomBadges[0].tone}`}>{roomBadges[0].count ?? roomBadges.length}</span>}
+            </button>
           );
         })}
       </div>
-      <div className="ops-map__directory">
-        {ROOMS.map((room) => {
-          const roomBadges = badges?.[room.id] ?? [];
+
+      <section className="ops-map__route">
+        <small>Current district</small>
+        <strong>{currentDistrict?.label ?? "Facility Hub"}</strong>
+        <span>
+          {targetRoom
+            ? getBreadcrumbForRoom(blueprint, targetRoom).join(" -> ")
+            : "Central Concourse -> choose a room"}
+        </span>
+        <span>{routeNodes.length ? `Walk there: ${routeNodes.map((node) => node.label).join(" -> ")}` : "Walk there: already nearby or choose a destination."}</span>
+      </section>
+
+      <div className="ops-map__directory ops-map__directory--districts">
+        {blueprint.districts.map((district) => {
+          const districtRooms = rooms.filter((room) => room.districtId === district.id);
+          if (!districtRooms.length) return null;
           return (
-          <button key={room.id} type="button" onClick={() => setActiveRoom(room.id)}>
-            <strong>{roomLabel(room.id)}</strong>
-            <span>{room.note}</span>
-            {roomBadges.length > 0 && (
-              <small className="ops-map__directory-badges">
-                {roomBadges.slice(0, 2).map((badge) => (
-                  <b key={badge.id}>{badge.label}{badge.count ? ` ${badge.count}` : ""}</b>
-                ))}
-              </small>
-            )}
-          </button>
+            <section key={district.id}>
+              <h4>{district.label}</h4>
+              {districtRooms.map((room) => {
+                const roomBadges = badges?.[room.roomId] ?? [];
+                return (
+                  <article
+                    key={room.roomId}
+                    className={selectedRoom === room.roomId ? "is-active" : ""}
+                  >
+                    <button type="button" onClick={() => setSelectedRoom(room.roomId)}>
+                      <strong>{room.label}</strong>
+                    </button>
+                    <span>{room.description}</span>
+                    <small>{room.signage} | {district.landmarkLabel}</small>
+                    {roomBadges.length > 0 && (
+                      <small className="ops-map__directory-badges">
+                        {roomBadges.slice(0, 2).map((badge) => (
+                          <b key={badge.id}>{badge.label}{badge.count ? ` ${badge.count}` : ""}</b>
+                        ))}
+                      </small>
+                    )}
+                    <button
+                      type="button"
+                      className="ops-map__go"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setActiveRoom(room.roomId);
+                        setOpen(false);
+                      }}
+                    >
+                      Go to room
+                    </button>
+                  </article>
+                );
+              })}
+            </section>
           );
         })}
       </div>
     </aside>
   );
+}
+
+function mapWorldToFloorplan(blueprint: ReturnType<typeof createDefaultFacilityBlueprint>, position: { x: number; z: number }): { x: number; y: number } {
+  const minX = Math.min(...blueprint.districts.map((district) => district.bounds.x - district.bounds.width / 2));
+  const maxX = Math.max(...blueprint.districts.map((district) => district.bounds.x + district.bounds.width / 2));
+  const minZ = Math.min(...blueprint.districts.map((district) => district.bounds.z - district.bounds.depth / 2));
+  const maxZ = Math.max(...blueprint.districts.map((district) => district.bounds.z + district.bounds.depth / 2));
+  return {
+    x: clamp(((position.x - minX) / (maxX - minX)) * 100),
+    y: clamp(((position.z - minZ) / (maxZ - minZ)) * 100)
+  };
+}
+
+function districtToMapRect(blueprint: ReturnType<typeof createDefaultFacilityBlueprint>, district: ReturnType<typeof createDefaultFacilityBlueprint>["districts"][number]) {
+  const topLeft = mapWorldToFloorplan(blueprint, { x: district.bounds.x - district.bounds.width / 2, z: district.bounds.z - district.bounds.depth / 2 });
+  const bottomRight = mapWorldToFloorplan(blueprint, { x: district.bounds.x + district.bounds.width / 2, z: district.bounds.z + district.bounds.depth / 2 });
+  return {
+    left: topLeft.x,
+    top: topLeft.y,
+    width: bottomRight.x - topLeft.x,
+    height: bottomRight.y - topLeft.y
+  };
+}
+
+function clamp(value: number): number {
+  return Math.max(0, Math.min(100, value));
 }

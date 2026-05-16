@@ -1,4 +1,6 @@
 import type { FranchiseState, RoomId, SeasonPhase } from "../types";
+import { DEFAULT_FACILITY_BLUEPRINT } from "../facility/facilityBlueprint";
+import { getDistrictForRoom } from "../facility/facilityNavigation";
 import { validateDynastyInvariants } from "./dynastyInvariants";
 import { getRuleSetDescription, normalizeLeagueRuleSet } from "./leagueRules";
 import { summarizeTelemetry } from "./localTelemetry";
@@ -16,6 +18,8 @@ export interface BetaFeedbackEntry {
   category: BetaFeedbackCategory;
   severity: BetaFeedbackSeverity;
   roomId?: RoomId;
+  districtId?: string;
+  districtLabel?: string;
   phase?: SeasonPhase;
   headline: string;
   notes: string;
@@ -31,6 +35,8 @@ export interface BetaFeedbackState {
 
 export interface FeedbackContext {
   roomId?: RoomId;
+  districtId?: string;
+  districtLabel?: string;
   phase?: SeasonPhase;
   createdAt?: string;
   tags?: string[];
@@ -60,12 +66,16 @@ export function createFeedbackEntry(input: FeedbackInput, franchise?: FranchiseS
   const createdAt = context.createdAt ?? new Date().toISOString();
   const headline = input.headline.trim();
   const tags = normalizeTags([...(context.tags ?? []), ...(input.tags ?? [])]);
+  const roomId = input.roomId ?? context.roomId;
+  const district = roomId ? getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, roomId) : undefined;
   return {
     id: `feedback-${Date.parse(createdAt) || Date.now()}-${slugify(headline).slice(0, 32) || "entry"}`,
     createdAt,
     category: input.category ?? "suggestion",
     severity: input.severity ?? "medium",
-    roomId: input.roomId ?? context.roomId,
+    roomId,
+    districtId: input.districtId ?? context.districtId ?? district?.id,
+    districtLabel: input.districtLabel ?? context.districtLabel ?? district?.label,
     phase: input.phase ?? context.phase ?? franchise?.seasonPhase,
     headline,
     notes: input.notes?.trim() ?? "",
@@ -154,6 +164,7 @@ export function exportFeedbackBundle(franchise: FranchiseState | undefined, feed
     app: version,
     summary: summarizeFeedback(entries),
     entries,
+    districts: Array.from(new Set(entries.map((entry) => entry.districtLabel).filter(Boolean))),
     diagnostics: franchise && wantsDiagnostics ? createDiagnostics(franchise) : undefined,
     saveSummary: franchise && wantsSaveSummary ? createSaveSummary(franchise) : undefined,
     fullSaveJson: undefined

@@ -15,6 +15,9 @@ import { generateAssistantGmReport } from "../../game/systems/assistantGm";
 import { createDifficultyTuning } from "../../game/systems/difficulty";
 import { getEventCadenceTuning } from "../../game/systems/livingOpsTuning";
 import { createRuleSetForTeamCount, getRuleSetDescription } from "../../game/systems/leagueRules";
+import { createDefaultFacilityBlueprint, FACILITY_ROOM_IDS } from "../../game/facility/facilityBlueprint";
+import { createFacilityDevToolsReport, createFacilitySummary, exportFacilityBlueprintJson, getDistrictNavigationSummary } from "../../game/facility/facilityNavigation";
+import { validateFacilityBlueprint } from "../../game/facility/facilityValidation";
 import { checkBundleBudgetFromManifest, summarizeRuntimePerformanceSettings } from "../../game/systems/performanceBudget";
 import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
 import { getVersionSummary } from "../../game/systems/version";
@@ -46,7 +49,12 @@ export function DevToolsPanel() {
   const [reSigning, setReSigning] = useState<ReSigningBalanceSample[] | undefined>();
   const [ownerBalance, setOwnerBalance] = useState<OwnerGoalBalanceSample | undefined>();
   const [dataPackReport, setDataPackReport] = useState<string>("");
+  const [facilityExport, setFacilityExport] = useState("");
   const invariant = useMemo(() => (franchise ? validateDynastyInvariants(franchise) : undefined), [franchise]);
+  const facilityBlueprint = useMemo(() => createDefaultFacilityBlueprint(), []);
+  const facilityValidation = useMemo(() => validateFacilityBlueprint(facilityBlueprint, FACILITY_ROOM_IDS), [facilityBlueprint]);
+  const facilityDistricts = useMemo(() => getDistrictNavigationSummary(facilityBlueprint), [facilityBlueprint]);
+  const facilityDevReport = useMemo(() => createFacilityDevToolsReport(facilityBlueprint, FACILITY_ROOM_IDS), [facilityBlueprint]);
   const dynamics = franchise ? getTeamDynamics(franchise, franchise.selectedTeamId) : undefined;
   const templateIssues = useMemo(() => validateNarrativeTemplates(NARRATIVE_TEMPLATES), []);
   const assistantPreview = useMemo(() => (franchise ? generateAssistantGmReport(franchise, { type: "weekly" }) : undefined), [franchise]);
@@ -139,6 +147,33 @@ export function DevToolsPanel() {
           const custom = createCustomFranchiseFromDataPack(pack, pack.leagueTemplate?.teams[0]?.id, undefined, { seed: "dev-scenario-dry-run" });
           setDataPackReport(`Scenario dry run: ${scenario.name} | events=${custom.decisionEvents.length} | cap=${custom.league.teams[0].capCeiling}`);
         }}>Scenario dry run</Button>
+        <Button onClick={() => setFacilityExport(exportFacilityBlueprintJson(facilityBlueprint))}>Export facility JSON</Button>
+        <Button onClick={() => setFacilityExport(createFacilitySummary(facilityBlueprint))}>Copy facility summary</Button>
+      </section>
+
+      <section className="panel-section">
+        <h3>Phase 13 Facility Blueprint</h3>
+        <div className="season-pulse">
+          <span>Status <strong>{facilityValidation.valid ? "Valid" : "Needs attention"}</strong></span>
+          <span>Rooms <strong>{facilityBlueprint.rooms.length}</strong></span>
+          <span>Districts <strong>{facilityBlueprint.districts.length}</strong></span>
+          <span>Warnings <strong>{facilityValidation.warnings.length}</strong></span>
+          <span>Errors <strong>{facilityValidation.errors.length}</strong></span>
+          <span>Overlaps <strong>{facilityValidation.overlappingRooms.length}</strong></span>
+        </div>
+        <pre className="dev-output">{facilityDevReport}</pre>
+        <div className="asset-list asset-list--compact">
+          {facilityDistricts.map((district) => (
+            <article key={district.districtId}>
+              <strong>{district.label}</strong>
+              <span>{district.roomCount} rooms | Landmark: {district.landmarkLabel} | Connected: {district.connectedDistrictIds.join(", ") || "none"}</span>
+            </article>
+          ))}
+        </div>
+        <label className="select-field">
+          <span>Facility summary / blueprint JSON</span>
+          <textarea readOnly value={facilityExport} placeholder="Export blueprint JSON or copy the summary from the command strip." />
+        </label>
       </section>
 
       <section className="panel-section">

@@ -291,6 +291,8 @@ export interface BugReport {
   userNote?: string;
   includeFullSave?: boolean;
   fullSaveJson?: string;
+  lastDistrictId?: string;
+  lastDistrictLabel?: string;
 }
 
 export type DecisionEventType =
@@ -514,6 +516,8 @@ export interface AssistantGmRecommendation {
   body: string;
   actionLabel: string;
   targetRoomId?: RoomId;
+  targetDistrictLabel?: string;
+  navigationHint?: string;
   targetPlayerId?: string;
   targetTeamId?: string;
   estimatedImpact: "small" | "medium" | "large";

@@ -1,36 +1,19 @@
 import { Canvas } from "@react-three/fiber";
 import { Grid } from "@react-three/drei";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { getTeamBranding } from "../../game/assets/teamBranding";
-import type { RoomId } from "../../game/types";
+import { createDefaultFacilityBlueprint } from "../../game/facility/facilityBlueprint";
+import type { FacilityBlueprint } from "../../game/facility/facilityTypes";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useSettingsStore } from "../../store/settingsStore";
 import { useUiStore } from "../../store/uiStore";
+import { FacilityCorridor } from "./FacilityCorridor";
+import { FacilityDistrict } from "./FacilityDistrict";
+import { FacilityLandmark } from "./FacilityLandmark";
+import { FacilityPropSet } from "./FacilityPropSet";
+import { FacilityRoomShell } from "./FacilityRoomShell";
 import { RoomZone, type RoomZoneConfig } from "./RoomZone";
 import { ThirdPersonController } from "./ThirdPersonController";
-
-const ZONES: RoomZoneConfig[] = [
-  { id: "gm", label: "GM OFFICE", position: [-6.8, 0, -5.2], color: "#6ecbff" },
-  { id: "ownerSuite", label: "OWNER SUITE", position: [-9.6, 0, -7.2], color: "#f5c65b" },
-  { id: "press", label: "PRESS ROOM", position: [-2.0, 0, -7.2], color: "#d7e8ff" },
-  { id: "roster", label: "ROSTER OFFICE", position: [-9.1, 0, -3.4], color: "#76e3a5" },
-  { id: "contracts", label: "CAP OFFICE", position: [-3.8, 0, -5.2], color: "#f5c65b" },
-  { id: "freeAgency", label: "FREE AGENCY", position: [-7.4, 0, -1.4], color: "#d7e8ff" },
-  { id: "coach", label: "COACH OFFICE", position: [0, 0, -6.5], color: "#8ee7d1" },
-  { id: "trades", label: "TRADE WAR ROOM", position: [3.8, 0, -5.2], color: "#ff9f6e" },
-  { id: "staff", label: "STAFF OFFICE", position: [7.4, 0, -1.4], color: "#76e3a5" },
-  { id: "playerMeetings", label: "PLAYER MEETINGS", position: [9.4, 0, -7.2], color: "#8ee7d1" },
-  { id: "agents", label: "AGENT DESK", position: [-2.1, 0, -3.0], color: "#b58cff" },
-  { id: "locker", label: "LOCKER ROOM", position: [6.8, 0, -5.2], color: "#c8e9ff" },
-  { id: "medical", label: "MEDICAL", position: [-7.2, 0, 4.2], color: "#ff7e8a" },
-  { id: "development", label: "DEVELOPMENT", position: [-4.2, 0, 4.1], color: "#76e3a5" },
-  { id: "arena", label: "ARENA BOWL", position: [0, 0, 6.2], color: "#ffffff" },
-  { id: "draft", label: "DRAFT STAGE", position: [0, 0, 3.2], color: "#f5c65b" },
-  { id: "scouting", label: "SCOUTING", position: [4.2, 0, 4.1], color: "#a9c6ff" },
-  { id: "standings", label: "TROPHY HALL", position: [7.2, 0, 4.2], color: "#f5c65b" },
-  { id: "saves", label: "SAVE DESK", position: [0, 0, 0], color: "#b58cff" },
-  { id: "feedback", label: "FEEDBACK DESK", position: [2.6, 0, 0], color: "#8ee7d1" }
-];
 
 export function shouldRenderFacilityAtmosphere(reducedDetail: boolean): boolean {
   return !reducedDetail;
@@ -40,9 +23,13 @@ export function FacilityScene() {
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
   const setNearbyRoom = useUiStore((state) => state.setNearbyRoom);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
+  const setFacilityPosition = useUiStore((state) => state.setFacilityPosition);
   const franchise = useFranchiseStore((state) => state.franchise);
   const reduced3DDetail = useSettingsStore((state) => state.settings.reduced3DDetail);
   const selectedTeamId = franchise?.selectedTeamId ?? "harbor-city";
+  const blueprint = useMemo(() => createDefaultFacilityBlueprint(), []);
+  const zones = useMemo(() => createRoomZones(blueprint), [blueprint]);
+  const worldBounds = useMemo(() => getWorldBounds(blueprint), [blueprint]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -56,207 +43,111 @@ export function FacilityScene() {
     <div className="facility-canvas">
       <Canvas shadows camera={{ position: [0, 6, 8], fov: 48 }}>
         <color attach="background" args={["#07111f"]} />
-        <fog attach="fog" args={["#07111f", 12, 32]} />
+        <fog attach="fog" args={["#07111f", 14, 42]} />
         <ambientLight intensity={0.42} />
-        <directionalLight position={[4, 10, 5]} intensity={1.4} castShadow />
-        <pointLight position={[0, 3, 0]} intensity={1.2} color="#60c9ff" />
-        <FacilityGeometry selectedTeamId={selectedTeamId} reducedDetail={reduced3DDetail} />
-        <Grid args={[24, 18]} cellSize={1} sectionSize={4} cellColor="#17304d" sectionColor="#6ecbff" fadeDistance={22} fadeStrength={1.2} />
-        {ZONES.map((zone) => (
+        <directionalLight position={[5, 12, 6]} intensity={1.35} castShadow />
+        <pointLight position={[0, 3, 0]} intensity={1.1} color="#60c9ff" />
+        <FacilityGeometry blueprint={blueprint} selectedTeamId={selectedTeamId} reducedDetail={reduced3DDetail} />
+        <Grid args={[42, 34]} cellSize={1} sectionSize={4} cellColor="#17304d" sectionColor="#6ecbff" fadeDistance={36} fadeStrength={1.3} />
+        {zones.map((zone) => (
           <RoomZone key={zone.id} zone={zone} active={nearbyRoom === zone.id} onOpen={setActiveRoom} />
         ))}
-        <ThirdPersonController zones={ZONES} onNearbyChange={setNearbyRoom} />
+        <ThirdPersonController
+          zones={zones}
+          onNearbyChange={setNearbyRoom}
+          onPositionChange={setFacilityPosition}
+          spawnPoint={blueprint.spawnPoint}
+          worldBounds={worldBounds}
+        />
       </Canvas>
     </div>
   );
 }
 
-function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: string; reducedDetail: boolean }) {
+function FacilityGeometry({
+  blueprint,
+  selectedTeamId,
+  reducedDetail
+}: {
+  blueprint: FacilityBlueprint;
+  selectedTeamId: string;
+  reducedDetail: boolean;
+}) {
+  const bounds = getWorldBounds(blueprint);
+  const floorWidth = bounds.maxX - bounds.minX + 1.2;
+  const floorDepth = bounds.maxZ - bounds.minZ + 1.2;
+  const floorX = (bounds.minX + bounds.maxX) / 2;
+  const floorZ = (bounds.minZ + bounds.maxZ) / 2;
+
   return (
     <group>
-      <mesh receiveShadow position={[0, -0.02, 0]}>
-        <boxGeometry args={[24, 0.08, 20]} />
+      <mesh receiveShadow position={[floorX, -0.04, floorZ]}>
+        <boxGeometry args={[floorWidth, 0.08, floorDepth]} />
         <meshStandardMaterial color="#0b1728" roughness={0.72} />
       </mesh>
-      <mesh position={[0, 1.2, -9.8]}>
-        <boxGeometry args={[24, 2.4, 0.25]} />
-        <meshStandardMaterial color="#101d31" />
-      </mesh>
-      <mesh position={[0, 1.2, 9.8]}>
-        <boxGeometry args={[24, 2.4, 0.25]} />
-        <meshStandardMaterial color="#101d31" />
-      </mesh>
-      <mesh position={[-11.8, 1.2, 0]}>
-        <boxGeometry args={[0.25, 2.4, 20]} />
-        <meshStandardMaterial color="#101d31" />
-      </mesh>
-      <mesh position={[11.8, 1.2, 0]}>
-        <boxGeometry args={[0.25, 2.4, 20]} />
-        <meshStandardMaterial color="#101d31" />
-      </mesh>
+      {blueprint.districts.map((district) => (
+        <FacilityDistrict key={district.id} district={district} reducedDetail={reducedDetail} />
+      ))}
+      <FacilityCorridor blueprint={blueprint} reducedDetail={reducedDetail} />
+      {blueprint.rooms.map((room) => (
+        <FacilityRoomShell key={room.roomId} room={room} active={false} reducedDetail={reducedDetail} />
+      ))}
+      {blueprint.rooms.map((room) => (
+        <FacilityPropSet key={`${room.roomId}-props`} room={room} reducedDetail={reducedDetail || !room.reducedDetailSafe} />
+      ))}
+      {!reducedDetail &&
+        blueprint.landmarks.map((landmark) => (
+          <FacilityLandmark key={landmark.id} landmark={landmark} blueprint={blueprint} reducedDetail={reducedDetail} />
+        ))}
       <TeamBrandingWall teamId={selectedTeamId} />
-      <Desk position={[-6.8, 0, -6.6]} color="#1c334f" />
-      <AssistantGmTerminal />
-      <SetupPlaque />
-      <OwnerSuiteProps />
-      <PressRoomProps />
-      <WarRoomBoard position={[-8.6, 0, -5.0]} color="#6ecbff" />
-      <RosterOfficeProps />
-      <ContractOfficeProps />
-      <AgentDeskProps />
-      <FreeAgencyProps />
-      <Desk position={[0, 0, -7.6]} color="#183b3e" />
-      <CoachBoard />
-      <TradeRoomProps />
-      <StaffProps />
-      <PlayerMeetingProps />
-      <Lockers />
-      <MedicalTable />
-      <DevelopmentProps />
-      <MiniRink />
-      <DraftStageProps />
-      <ArenaTunnel />
-      <ScoutingProps />
-      <TrophyCases reducedDetail={reducedDetail} />
-      <SaveDesk />
-      <FeedbackDesk />
-      {shouldRenderFacilityAtmosphere(reducedDetail) && <AtmosphereProps selectedTeamId={selectedTeamId} />}
+      {shouldRenderFacilityAtmosphere(reducedDetail) && <AtmosphereLights blueprint={blueprint} selectedTeamId={selectedTeamId} />}
     </group>
   );
 }
 
-function AtmosphereProps({ selectedTeamId }: { selectedTeamId: string }) {
-  const brand = getTeamBranding(selectedTeamId);
-  const accent = brand.accentColor ?? "#f5c65b";
-  return (
-    <group>
-      {[[-9, -8.9], [-2, -8.9], [9, -8.9], [-7, 6.7], [7, 6.7]].map(([x, z], index) => (
-        <pointLight key={`${x}-${z}`} position={[x, 2.4, z]} intensity={0.32 + index * 0.03} color={index % 2 ? accent : "#d7e8ff"} />
-      ))}
-      {[-4.8, -2.4, 2.4, 4.8].map((x, index) => (
-        <mesh key={x} position={[x, 0.035, -8.25]}>
-          <boxGeometry args={[1.45, 0.04, 0.26]} />
-          <meshStandardMaterial color={index % 2 ? accent : brand.primaryColor} emissive={brand.primaryColor} emissiveIntensity={0.18} />
-        </mesh>
-      ))}
-      {[-8.2, -7.7, -7.2].map((x, index) => (
-        <mesh key={x} position={[x, 1.72, 8.92]}>
-          <boxGeometry args={[0.28, 0.88 - index * 0.1, 0.06]} />
-          <meshStandardMaterial color={index === 1 ? "#f5c65b" : brand.primaryColor} emissive={index === 1 ? "#f5c65b" : brand.primaryColor} emissiveIntensity={0.12} />
-        </mesh>
-      ))}
-      {[[-2.65, -8.88], [-1.35, -8.88]].map(([x, z]) => (
-        <pointLight key={`${x}-${z}`} position={[x, 1.72, z]} intensity={0.55} color="#ffffff" />
-      ))}
-    </group>
-  );
+function createRoomZones(blueprint: FacilityBlueprint): RoomZoneConfig[] {
+  return blueprint.rooms.map((room) => ({
+    id: room.roomId,
+    label: room.signage,
+    position: [room.position.x, 0, room.position.z],
+    color: room.colorToken,
+    radius: Math.max(0.95, Math.min(1.45, Math.max(room.size.width, room.size.depth) * 0.38))
+  }));
 }
 
-function RosterOfficeProps() {
-  return (
-    <group position={[-9.15, 0, -4.7]}>
-      <Desk position={[0, 0, 0]} color="#1f3a34" />
-      <mesh position={[1.15, 1.08, -0.08]}>
-        <boxGeometry args={[1.55, 1.05, 0.08]} />
-        <meshStandardMaterial color="#e9fff5" emissive="#76e3a5" emissiveIntensity={0.14} />
-      </mesh>
-      {[-0.45, 0, 0.45].map((x, index) => (
-        <mesh key={x} position={[1.15 + x, 1.1, 0]}>
-          <boxGeometry args={[0.22, 0.7 - index * 0.1, 0.05]} />
-          <meshStandardMaterial color={index === 1 ? "#f5c65b" : "#61c9ff"} />
-        </mesh>
-      ))}
-      <mesh position={[-0.74, 0.95, 0.34]} rotation={[0, 0, -0.2]}>
-        <boxGeometry args={[0.16, 0.5, 0.08]} />
-        <meshStandardMaterial color="#d7e8ff" emissive="#76e3a5" emissiveIntensity={0.2} />
-      </mesh>
-    </group>
-  );
-}
-
-function OwnerSuiteProps() {
-  return (
-    <group position={[-9.55, 0, -8.35]}>
-      <Desk position={[0, 0, 0]} color="#3d3417" />
-      <mesh position={[1.2, 1.12, -0.1]}>
-        <boxGeometry args={[1.55, 1.0, 0.08]} />
-        <meshStandardMaterial color="#f7e6a6" emissive="#f5c65b" emissiveIntensity={0.16} />
-      </mesh>
-      {[-0.45, 0, 0.45].map((x, index) => (
-        <mesh key={x} position={[1.2 + x, 1.12, 0]}>
-          <boxGeometry args={[0.18, 0.68 - index * 0.12, 0.04]} />
-          <meshStandardMaterial color={index === 0 ? "#ff7e8a" : "#61c9ff"} />
-        </mesh>
-      ))}
-      <mesh position={[-0.72, 0.95, 0.38]}>
-        <sphereGeometry args={[0.18, 20, 20]} />
-        <meshStandardMaterial color="#f5c65b" metalness={0.45} roughness={0.3} />
-      </mesh>
-    </group>
-  );
-}
-
-function PressRoomProps() {
-  return (
-    <group position={[-2.0, 0, -8.25]}>
-      <mesh position={[0, 0.55, 0]}>
-        <boxGeometry args={[1.35, 1.1, 0.72]} />
-        <meshStandardMaterial color="#253158" />
-      </mesh>
-      <mesh position={[0, 1.2, -0.38]}>
-        <boxGeometry args={[2.3, 1.25, 0.08]} />
-        <meshStandardMaterial color="#d7e8ff" emissive="#61c9ff" emissiveIntensity={0.14} />
-      </mesh>
-      {[-0.35, 0, 0.35].map((x) => (
-        <mesh key={x} position={[x, 1.22, 0.4]} rotation={[0.35, 0, 0]}>
-          <cylinderGeometry args={[0.035, 0.035, 0.46, 10]} />
-          <meshStandardMaterial color="#111827" />
-        </mesh>
-      ))}
-      {[-1.05, 1.05].map((x) => (
-        <pointLight key={x} position={[x, 1.8, 0.7]} intensity={0.45} color="#ffffff" />
-      ))}
-    </group>
-  );
-}
-
-function AgentDeskProps() {
-  return (
-    <group position={[-2.1, 0, -4.15]}>
-      <Desk position={[0, 0, 0]} color="#2b2140" />
-      <mesh position={[1.15, 1.08, -0.08]}>
-        <boxGeometry args={[1.35, 0.95, 0.08]} />
-        <meshStandardMaterial color="#e7d7ff" emissive="#b58cff" emissiveIntensity={0.14} />
-      </mesh>
-      <mesh position={[-0.62, 0.92, 0.32]} rotation={[0, 0, -0.25]}>
-        <torusGeometry args={[0.18, 0.045, 10, 18]} />
-        <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
-      </mesh>
-      {[-0.32, 0, 0.32].map((x) => (
-        <mesh key={x} position={[1.15 + x, 1.1, 0]}>
-          <boxGeometry args={[0.2, 0.5, 0.04]} />
-          <meshStandardMaterial color="#b58cff" />
-        </mesh>
-      ))}
-    </group>
-  );
+function getWorldBounds(blueprint: FacilityBlueprint): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  const districtBounds = blueprint.districts.flatMap((district) => [
+    { x: district.bounds.x - district.bounds.width / 2, z: district.bounds.z - district.bounds.depth / 2 },
+    { x: district.bounds.x + district.bounds.width / 2, z: district.bounds.z + district.bounds.depth / 2 }
+  ]);
+  const roomBounds = blueprint.rooms.flatMap((room) => [
+    { x: room.position.x - room.size.width / 2, z: room.position.z - room.size.depth / 2 },
+    { x: room.position.x + room.size.width / 2, z: room.position.z + room.size.depth / 2 }
+  ]);
+  const points = [...districtBounds, ...roomBounds, blueprint.spawnPoint];
+  return {
+    minX: Math.min(...points.map((point) => point.x)) - 1.2,
+    maxX: Math.max(...points.map((point) => point.x)) + 1.2,
+    minZ: Math.min(...points.map((point) => point.z)) - 1.2,
+    maxZ: Math.max(...points.map((point) => point.z)) + 1.2
+  };
 }
 
 function TeamBrandingWall({ teamId }: { teamId: string }) {
   const brand = getTeamBranding(teamId);
   return (
-    <group position={[0, 0, -9.62]}>
+    <group position={[0, 0, -5.85]}>
       <mesh position={[0, 1.25, 0]}>
-        <boxGeometry args={[3.4, 1.4, 0.08]} />
-        <meshStandardMaterial color={brand.secondaryColor} emissive={brand.primaryColor} emissiveIntensity={0.12} />
+        <boxGeometry args={[3.4, 1.35, 0.08]} />
+        <meshStandardMaterial color={brand.secondaryColor} emissive={brand.primaryColor} emissiveIntensity={0.1} />
       </mesh>
       <mesh position={[0, 1.26, 0.08]}>
         <circleGeometry args={[0.48, 32]} />
-        <meshStandardMaterial color={brand.primaryColor} emissive={brand.primaryColor} emissiveIntensity={0.35} />
+        <meshStandardMaterial color={brand.primaryColor} emissive={brand.primaryColor} emissiveIntensity={0.3} />
       </mesh>
       {[-0.7, 0.7].map((x) => (
         <mesh key={x} position={[x, 1.26, 0.1]}>
-          <boxGeometry args={[0.38, 0.9, 0.04]} />
+          <boxGeometry args={[0.38, 0.85, 0.04]} />
           <meshStandardMaterial color={brand.accentColor} />
         </mesh>
       ))}
@@ -264,408 +155,29 @@ function TeamBrandingWall({ teamId }: { teamId: string }) {
   );
 }
 
-function Desk({ position, color }: { position: [number, number, number]; color: string }) {
+function AtmosphereLights({ blueprint, selectedTeamId }: { blueprint: FacilityBlueprint; selectedTeamId: string }) {
+  const brand = getTeamBranding(selectedTeamId);
+  const accent = brand.accentColor ?? "#f5c65b";
   return (
-    <group position={position}>
-      <mesh position={[0, 0.35, 0]}>
-        <boxGeometry args={[2.3, 0.7, 0.9]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-      <mesh position={[0, 0.82, -0.2]}>
-        <boxGeometry args={[0.9, 0.45, 0.08]} />
-        <meshStandardMaterial color="#bfefff" emissive="#3bb4ff" emissiveIntensity={0.18} />
-      </mesh>
-    </group>
-  );
-}
-
-function AssistantGmTerminal() {
-  return (
-    <group position={[-5.2, 0, -6.15]}>
-      <mesh position={[0, 0.34, 0]}>
-        <boxGeometry args={[1.25, 0.58, 0.76]} />
-        <meshStandardMaterial color="#14243a" />
-      </mesh>
-      <mesh position={[0, 0.9, -0.18]} rotation={[-0.12, 0, 0]}>
-        <boxGeometry args={[0.9, 0.62, 0.07]} />
-        <meshStandardMaterial color="#dff8ff" emissive="#6ecbff" emissiveIntensity={0.28} />
-      </mesh>
-      {[0, 1, 2].map((index) => (
-        <mesh key={index} position={[-0.28 + index * 0.28, 0.92, -0.12]}>
-          <boxGeometry args={[0.12, 0.4 - index * 0.06, 0.035]} />
-          <meshStandardMaterial color={index === 1 ? "#f5c65b" : "#76e3a5"} emissive={index === 1 ? "#f5c65b" : "#76e3a5"} emissiveIntensity={0.12} />
-        </mesh>
+    <group>
+      {blueprint.districts.map((district, index) => (
+        <pointLight
+          key={district.id}
+          position={[district.landmarkPosition.x, 2.5, district.landmarkPosition.z]}
+          intensity={0.22 + (index % 3) * 0.03}
+          color={index % 2 ? accent : district.colorToken}
+        />
       ))}
-      <pointLight position={[0, 1.25, -0.25]} intensity={0.28} color="#6ecbff" />
-    </group>
-  );
-}
-
-function SetupPlaque() {
-  return (
-    <group position={[-6.6, 0, -8.88]}>
-      <mesh position={[0, 1.12, 0]}>
-        <boxGeometry args={[1.7, 0.85, 0.08]} />
-        <meshStandardMaterial color="#233244" emissive="#f5c65b" emissiveIntensity={0.09} />
-      </mesh>
-      {[0, 1, 2].map((index) => (
-        <mesh key={index} position={[-0.45 + index * 0.45, 1.14, 0.06]}>
-          <boxGeometry args={[0.28, 0.5, 0.035]} />
-          <meshStandardMaterial color={index === 0 ? "#6ecbff" : index === 1 ? "#f5c65b" : "#76e3a5"} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function WarRoomBoard({ position, color }: { position: [number, number, number]; color: string }) {
-  return (
-    <group position={position}>
-      <mesh position={[0, 1.1, 0]}>
-        <boxGeometry args={[1.7, 1.1, 0.08]} />
-        <meshStandardMaterial color="#dff6ff" emissive={color} emissiveIntensity={0.12} />
-      </mesh>
-      {[-0.45, 0, 0.45].map((x) => (
-        <mesh key={x} position={[x, 1.1, 0.06]}>
-          <boxGeometry args={[0.26, 0.62, 0.04]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function CoachBoard() {
-  return (
-    <group position={[1.9, 0, -7.3]}>
-      <mesh position={[0, 1.05, 0]}>
-        <boxGeometry args={[1.9, 1.0, 0.08]} />
-        <meshStandardMaterial color="#eefcff" emissive="#8ee7d1" emissiveIntensity={0.15} />
-      </mesh>
-      {[0, 1, 2, 3].map((index) => (
-        <mesh key={index} position={[-0.52 + index * 0.34, 1.12, 0.07]}>
-          <sphereGeometry args={[0.055, 12, 12]} />
-          <meshStandardMaterial color={index % 2 ? "#d9475f" : "#1e7dd7"} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function ContractOfficeProps() {
-  return (
-    <group position={[-3.8, 0, -6.8]}>
-      <Desk position={[0, 0, 0]} color="#3a3420" />
-      <mesh position={[1.35, 1.05, -0.08]}>
-        <boxGeometry args={[1.2, 0.9, 0.08]} />
-        <meshStandardMaterial color="#f7e6a6" emissive="#f5c65b" emissiveIntensity={0.16} />
-      </mesh>
-      {[-0.32, 0, 0.32].map((x, index) => (
-        <mesh key={x} position={[1.35 + x, 1.12 - index * 0.12, 0]}>
-          <boxGeometry args={[0.22, 0.05, 0.05]} />
-          <meshStandardMaterial color={index === 0 ? "#ff7e8a" : "#76e3a5"} />
-        </mesh>
-      ))}
-      {[-0.45, -0.15, 0.15, 0.45].map((x) => (
-        <mesh key={x} position={[x, 0.92, 0.34]}>
-          <boxGeometry args={[0.22, 0.1, 0.32]} />
-          <meshStandardMaterial color="#d7b75c" />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function FreeAgencyProps() {
-  return (
-    <group position={[-7.6, 0, -2.55]}>
-      <Desk position={[0, 0, 0]} color="#253158" />
-      <mesh position={[1.25, 1.1, -0.08]}>
-        <boxGeometry args={[1.35, 1.0, 0.08]} />
-        <meshStandardMaterial color="#d7e8ff" emissive="#67b7ff" emissiveIntensity={0.12} />
-      </mesh>
-      {[-0.4, 0, 0.4].map((x, index) => (
-        <mesh key={x} position={[1.25 + x, 1.08 - index * 0.05, 0]}>
-          <circleGeometry args={[0.12, 18]} />
-          <meshStandardMaterial color={index === 1 ? "#ff7e8a" : "#61d6a8"} />
-        </mesh>
-      ))}
-      <mesh position={[-0.65, 0.92, 0.34]} rotation={[0, 0, 0.25]}>
-        <boxGeometry args={[0.2, 0.44, 0.08]} />
-        <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
-      </mesh>
-    </group>
-  );
-}
-
-function TradeRoomProps() {
-  return (
-    <group position={[3.8, 0, -6.75]}>
-      <Desk position={[0, 0, 0]} color="#3b2a22" />
-      <mesh position={[1.45, 1.12, -0.06]}>
-        <boxGeometry args={[1.65, 1.0, 0.08]} />
-        <meshStandardMaterial color="#263548" emissive="#ff9f6e" emissiveIntensity={0.12} />
-      </mesh>
-      {[-0.52, -0.18, 0.18, 0.52].map((x, index) => (
-        <mesh key={x} position={[1.45 + x, 1.12, 0.04]}>
-          <boxGeometry args={[0.24, 0.56, 0.04]} />
-          <meshStandardMaterial color={index % 2 ? "#61c9ff" : "#ff9f6e"} />
-        </mesh>
-      ))}
-      {[-0.45, 0.45].map((x) => (
-        <mesh key={x} position={[x, 0.94, 0.36]}>
-          <cylinderGeometry args={[0.08, 0.08, 0.26, 12]} />
-          <meshStandardMaterial color="#c8e9ff" emissive="#61c9ff" emissiveIntensity={0.18} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function StaffProps() {
-  return (
-    <group position={[7.55, 0, -2.55]}>
-      <Desk position={[0, 0, 0]} color="#1f3a2f" />
-      <mesh position={[-1.25, 1.08, -0.08]}>
-        <boxGeometry args={[1.5, 1.05, 0.08]} />
-        <meshStandardMaterial color="#e9fff5" emissive="#76e3a5" emissiveIntensity={0.12} />
-      </mesh>
-      {[-0.42, 0, 0.42].map((x) => (
-        <mesh key={x} position={[-1.25 + x, 1.15, 0]}>
-          <boxGeometry args={[0.26, 0.36, 0.04]} />
-          <meshStandardMaterial color="#76e3a5" />
-        </mesh>
-      ))}
-      <mesh position={[0.55, 0.42, 0.55]}>
-        <cylinderGeometry args={[0.42, 0.42, 0.08, 24]} />
-        <meshStandardMaterial color="#304d46" />
-      </mesh>
-    </group>
-  );
-}
-
-function PlayerMeetingProps() {
-  return (
-    <group position={[9.35, 0, -8.25]}>
-      <mesh position={[0, 0.42, 0]}>
-        <boxGeometry args={[1.75, 0.18, 1.05]} />
-        <meshStandardMaterial color="#183b3e" />
-      </mesh>
-      {[
-        [-0.65, 0, 0.62],
-        [0.65, 0, 0.62],
-        [-0.65, 0, -0.62],
-        [0.65, 0, -0.62]
-      ].map(([x, y, z]) => (
-        <mesh key={`${x}-${z}`} position={[x, 0.36, z]}>
-          <cylinderGeometry args={[0.18, 0.18, 0.18, 16]} />
-          <meshStandardMaterial color="#244f54" />
-        </mesh>
-      ))}
-      <mesh position={[0, 1.22, -0.62]}>
-        <boxGeometry args={[1.8, 1.0, 0.08]} />
-        <meshStandardMaterial color="#eefcff" emissive="#8ee7d1" emissiveIntensity={0.12} />
-      </mesh>
-      <mesh position={[0, 1.24, -0.55]}>
-        <circleGeometry args={[0.28, 24]} />
-        <meshStandardMaterial color="#8ee7d1" emissive="#8ee7d1" emissiveIntensity={0.18} />
-      </mesh>
-    </group>
-  );
-}
-
-function Lockers() {
-  return (
-    <group position={[7.4, 0, -7.2]}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <mesh key={index} position={[index * 0.52 - 1.05, 0.7, 0]}>
-          <boxGeometry args={[0.46, 1.4, 0.32]} />
-          <meshStandardMaterial color={index % 2 ? "#163b5c" : "#1e4d72"} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function MedicalTable() {
-  return (
-    <group position={[-7.4, 0, 5.9]}>
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[2.1, 0.24, 0.9]} />
-        <meshStandardMaterial color="#dcecff" />
-      </mesh>
-      <mesh position={[0, 0.22, 0]}>
-        <boxGeometry args={[1.8, 0.42, 0.62]} />
-        <meshStandardMaterial color="#28445c" />
-      </mesh>
-    </group>
-  );
-}
-
-function DevelopmentProps() {
-  return (
-    <group position={[-4.3, 0, 5.45]}>
-      <mesh position={[0, 0.22, 0]}>
-        <boxGeometry args={[2.2, 0.12, 0.9]} />
-        <meshStandardMaterial color="#203a2f" />
-      </mesh>
-      <mesh position={[0, 1.05, -0.3]}>
-        <boxGeometry args={[1.75, 0.95, 0.08]} />
-        <meshStandardMaterial color="#e9fff5" emissive="#76e3a5" emissiveIntensity={0.12} />
-      </mesh>
-      {[0.25, 0.5, 0.78].map((height, index) => (
-        <mesh key={height} position={[-0.55 + index * 0.5, 0.52 + height / 2, -0.2]}>
-          <boxGeometry args={[0.18, height, 0.08]} />
-          <meshStandardMaterial color="#76e3a5" />
-        </mesh>
-      ))}
-      {[-0.65, 0, 0.65].map((x) => (
-        <mesh key={x} position={[x, 0.18, 0.42]}>
-          <coneGeometry args={[0.16, 0.34, 16]} />
-          <meshStandardMaterial color="#f5c65b" />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function DraftStageProps() {
-  return (
-    <group position={[0, 0, 3.6]}>
-      <mesh position={[0, 0.18, 0]}>
-        <boxGeometry args={[2.8, 0.36, 1.0]} />
-        <meshStandardMaterial color="#3d3417" />
-      </mesh>
-      <mesh position={[0, 1.1, -0.3]}>
-        <boxGeometry args={[2.4, 1.0, 0.1]} />
-        <meshStandardMaterial color="#f7e6a6" emissive="#f5c65b" emissiveIntensity={0.12} />
-      </mesh>
-      <mesh position={[0, 0.65, 0.35]}>
-        <cylinderGeometry args={[0.22, 0.28, 0.9, 20]} />
-        <meshStandardMaterial color="#2b2140" />
-      </mesh>
-      {[-0.72, -0.24, 0.24, 0.72].map((x, index) => (
-        <mesh key={x} position={[x, 1.12, -0.2]}>
-          <boxGeometry args={[0.26, 0.48 + index * 0.04, 0.04]} />
-          <meshStandardMaterial color={index % 2 ? "#61c9ff" : "#f5c65b"} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function MiniRink() {
-  return (
-    <group position={[0, 0.02, 7.6]}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[5.2, 2.7]} />
-        <meshStandardMaterial color="#dff6ff" roughness={0.25} metalness={0.05} />
-      </mesh>
-      <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.45, 0.48, 48]} />
-        <meshStandardMaterial color="#d9475f" />
-      </mesh>
-    </group>
-  );
-}
-
-function ArenaTunnel() {
-  return (
-    <group position={[0, 0, 4.6]}>
-      <mesh position={[0, 0.7, 0]}>
-        <boxGeometry args={[3.4, 1.4, 0.18]} />
-        <meshStandardMaterial color="#182a3d" emissive="#61c9ff" emissiveIntensity={0.08} />
-      </mesh>
-      {[-1.5, 1.5].map((x) => (
-        <mesh key={x} position={[x, 0.78, 0.32]}>
-          <boxGeometry args={[0.18, 1.3, 1.2]} />
-          <meshStandardMaterial color="#dff6ff" />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.16, 0.66]}>
-        <boxGeometry args={[3.2, 0.08, 1.2]} />
-        <meshStandardMaterial color="#eefcff" emissive="#ffffff" emissiveIntensity={0.22} />
-      </mesh>
-    </group>
-  );
-}
-
-function ScoutingProps() {
-  return (
-    <group position={[4.35, 0, 5.45]}>
-      <mesh position={[0, 1.05, -0.25]}>
-        <boxGeometry args={[2.0, 1.05, 0.08]} />
-        <meshStandardMaterial color="#dfe9ff" emissive="#a9c6ff" emissiveIntensity={0.13} />
-      </mesh>
-      {[-0.55, 0, 0.55].map((x, index) => (
-        <mesh key={x} position={[x, 1.12, -0.17]}>
-          <sphereGeometry args={[0.08 + index * 0.015, 12, 12]} />
-          <meshStandardMaterial color={index === 1 ? "#ff7e8a" : "#61c9ff"} />
-        </mesh>
-      ))}
-      {[-0.75, -0.25, 0.25, 0.75].map((x) => (
-        <mesh key={x} position={[x, 0.48, 0.34]}>
-          <boxGeometry args={[0.34, 0.56, 0.06]} />
-          <meshStandardMaterial color="#273a58" emissive="#a9c6ff" emissiveIntensity={0.08} />
-        </mesh>
-      ))}
-    </group>
-  );
-}
-
-function TrophyCases({ reducedDetail }: { reducedDetail: boolean }) {
-  return (
-    <group position={[7.3, 0, 5.8]}>
-      {(reducedDetail ? [0] : [-0.7, 0, 0.7]).map((x) => (
-        <mesh key={x} position={[x, 0.72, 0]}>
-          <cylinderGeometry args={[0.16, 0.22, 0.7, 18]} />
-          <meshStandardMaterial color="#f5c65b" metalness={0.65} roughness={0.25} emissive="#8a5d1f" emissiveIntensity={0.15} />
-        </mesh>
-      ))}
-      <mesh position={[0, 0.65, 0]}>
-        <boxGeometry args={[2.4, 1.4, 0.18]} />
-        <meshStandardMaterial color="#bfefff" transparent opacity={0.24} />
-      </mesh>
-    </group>
-  );
-}
-
-function SaveDesk() {
-  return (
-    <group position={[0, 0, 1.2]}>
-      <mesh position={[0, 0.42, 0]}>
-        <boxGeometry args={[1.8, 0.84, 0.7]} />
-        <meshStandardMaterial color="#2b2140" />
-      </mesh>
-      <mesh position={[0, 0.92, 0]}>
-        <boxGeometry args={[1.1, 0.08, 0.42]} />
-        <meshStandardMaterial color="#b58cff" emissive="#b58cff" emissiveIntensity={0.35} />
-      </mesh>
-    </group>
-  );
-}
-
-function FeedbackDesk() {
-  return (
-    <group position={[2.6, 0, 1.05]}>
-      <mesh position={[0, 0.38, 0]}>
-        <boxGeometry args={[1.65, 0.76, 0.72]} />
-        <meshStandardMaterial color="#163b3d" />
-      </mesh>
-      <mesh position={[0, 0.92, -0.12]} rotation={[-0.08, 0, 0]}>
-        <boxGeometry args={[1.15, 0.68, 0.08]} />
-        <meshStandardMaterial color="#dffff8" emissive="#8ee7d1" emissiveIntensity={0.24} />
-      </mesh>
-      {[-0.34, 0, 0.34].map((x, index) => (
-        <mesh key={x} position={[x, 0.94, -0.04]}>
-          <boxGeometry args={[0.18, 0.42 + index * 0.08, 0.04]} />
-          <meshStandardMaterial color={index === 1 ? "#f5c65b" : "#8ee7d1"} />
-        </mesh>
-      ))}
-      <mesh position={[-0.58, 0.82, 0.34]}>
-        <boxGeometry args={[0.28, 0.08, 0.42]} />
-        <meshStandardMaterial color="#d7e8ff" emissive="#8ee7d1" emissiveIntensity={0.16} />
-      </mesh>
+      {blueprint.mainCorridorNodes.map((nodeId, index) => {
+        const node = blueprint.pathNodes.find((candidate) => candidate.id === nodeId);
+        if (!node) return null;
+        return (
+          <mesh key={node.id} position={[node.position.x, 0.045, node.position.z]}>
+            <boxGeometry args={[0.56, 0.05, 0.18]} />
+            <meshStandardMaterial color={index % 2 ? accent : brand.primaryColor} emissive={brand.primaryColor} emissiveIntensity={0.18} />
+          </mesh>
+        );
+      })}
     </group>
   );
 }

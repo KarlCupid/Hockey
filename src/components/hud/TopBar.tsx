@@ -9,6 +9,9 @@ import { getUrgentActionCount } from "../../game/systems/actionQueue";
 import { getDifficultyLabel, getGameModeLabel } from "../../game/systems/difficulty";
 import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
 import { getReleaseLabel } from "../../game/systems/version";
+import { DEFAULT_FACILITY_BLUEPRINT } from "../../game/facility/facilityBlueprint";
+import { getDistrictForRoom } from "../../game/facility/facilityNavigation";
+import { getCurrentDistrictFromPosition, getNearestRoomLabel } from "../../game/facility/facilityWayfinding";
 import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
@@ -19,6 +22,7 @@ export function TopBar() {
   const saves = useFranchiseStore((state) => state.saves);
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
   const activeRoom = useUiStore((state) => state.activeRoom);
+  const facilityPosition = useUiStore((state) => state.facilityPosition);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
   const playCue = useAudioStore((state) => state.playCue);
@@ -46,6 +50,12 @@ export function TopBar() {
   const roster = validateRosterForGame(team);
   const rosterHealth = roster.healthyGoalieCount < 2 ? "Needs goalie" : roster.activeCount > team.activeRosterLimit ? "Too many active" : roster.errors.length ? "Invalid lineup" : "Ready";
   const urgentActions = getUrgentActionCount(franchise);
+  const currentDistrict = activeRoom
+    ? getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, activeRoom)
+    : nearbyRoom
+      ? getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, nearbyRoom)
+      : getCurrentDistrictFromPosition(DEFAULT_FACILITY_BLUEPRINT, facilityPosition);
+  const nearestRoomLabel = nearbyRoom ? roomLabel(nearbyRoom) : getNearestRoomLabel(DEFAULT_FACILITY_BLUEPRINT, facilityPosition);
   const assistantAlerts = franchise.assistantGmReports
     .filter((report) => !report.dismissed)
     .reduce((sum, report) => sum + report.recommendations.filter((recommendation) => recommendation.priority === "urgent" || recommendation.priority === "high").length, 0);
@@ -84,7 +94,8 @@ export function TopBar() {
         <span>Urgent: {urgentActions}</span>
         <span>AGM: {assistantAlerts}</span>
         <span>{getReleaseLabel()}</span>
-        <strong>{activeRoom ? roomLabel(activeRoom) : nearbyRoom ? roomLabel(nearbyRoom) : "Facility Hub"}</strong>
+        <span>District: {currentDistrict?.label ?? "Facility Hub"}</span>
+        <strong>{activeRoom ? roomLabel(activeRoom) : nearestRoomLabel}</strong>
         <div className="top-bar__actions">
           <button type="button" onClick={() => setHelpOpen(true)} aria-label="Open help">?</button>
           <button type="button" onClick={() => setActiveRoom("feedback")}>Feedback</button>

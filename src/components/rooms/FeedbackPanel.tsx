@@ -4,6 +4,8 @@ import { getPhaseLabel } from "../../game/systems/phaseGuidance";
 import { useFeedbackStore } from "../../store/feedbackStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
+import { DEFAULT_FACILITY_BLUEPRINT } from "../../game/facility/facilityBlueprint";
+import { getDistrictForRoom } from "../../game/facility/facilityNavigation";
 import { Button } from "../ui/Button";
 import { FormField } from "../ui/FormField";
 import { SectionHeader } from "../ui/SectionHeader";
@@ -33,6 +35,7 @@ export function FeedbackPanel() {
   const [exportText, setExportText] = useState("");
   const [issues, setIssues] = useState<string[]>([]);
   const autofillRoom = (activeRoom === "feedback" ? nearbyRoom : activeRoom) ?? "feedback";
+  const autofillDistrict = getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, autofillRoom);
   const summary = useMemo(() => summarizeFeedback(feedbackState.entries), [feedbackState.entries]);
 
   if (!franchise) return null;
@@ -51,12 +54,12 @@ export function FeedbackPanel() {
         tags: tags.split(",")
       },
       franchise,
-      { roomId: autofillRoom, phase: franchise.seasonPhase }
+      { roomId: autofillRoom, districtId: autofillDistrict.id, districtLabel: autofillDistrict.label, phase: franchise.seasonPhase }
     );
     const nextIssues = validateFeedbackEntry(entry);
     setIssues(nextIssues);
     if (nextIssues.length) return;
-    recordTelemetryEvent("feedbackSubmitted", entry.headline, { category, severity, roomId: autofillRoom });
+    recordTelemetryEvent("feedbackSubmitted", entry.headline, { category, severity, roomId: autofillRoom, district: autofillDistrict.label });
     setHeadline("");
     setNotes("");
     setTags("");
@@ -89,6 +92,9 @@ export function FeedbackPanel() {
             <select value={autofillRoom} disabled>
               <option value={autofillRoom}>{labelize(autofillRoom)}</option>
             </select>
+          </FormField>
+          <FormField label="Current district">
+            <input value={autofillDistrict.label} readOnly />
           </FormField>
           <FormField label="Current phase">
             <input value={getPhaseLabel(franchise.seasonPhase)} readOnly />
@@ -137,7 +143,7 @@ export function FeedbackPanel() {
                 <strong>{entry.headline}</strong>
                 <StatusPill tone={getSeverityTone(entry.severity)} label={labelize(entry.severity)} />
               </div>
-              <span>{labelize(entry.category)} | {entry.roomId ? labelize(entry.roomId) : "No room"} | {entry.phase ? getPhaseLabel(entry.phase) : "No phase"} | {new Date(entry.createdAt).toLocaleString()}</span>
+              <span>{labelize(entry.category)} | {entry.roomId ? labelize(entry.roomId) : "No room"} | {entry.districtLabel ?? "No district"} | {entry.phase ? getPhaseLabel(entry.phase) : "No phase"} | {new Date(entry.createdAt).toLocaleString()}</span>
               {entry.notes && <p>{entry.notes}</p>}
               {!!entry.tags.length && <small className="muted">{entry.tags.join(", ")}</small>}
               <div className="button-row">

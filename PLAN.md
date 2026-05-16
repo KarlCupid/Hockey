@@ -156,3 +156,14 @@
 - Add closed-beta balance dashboard v2 covering scoring, shots, injuries, fatigue, trades, contracts, free agency, draft quality, development, owner goals, story cadence, sentiment, roster repairs, custom rule health, and achievement unlock rates.
 - Create closed-beta release checklist and known-issues docs, update beta testing/release notes/playtest reports, and add Phase 12 tests plus smoke coverage.
 - Keep Phase 12 focused on polish, clarity, presentation, feedback quality, and QA without backend/cloud/online services, network telemetry, real licensed content, or new hockey rules complexity.
+
+## Milestone 19: Phase 13 Facility Masterplan, Spatial Layout Template, Wayfinding, and Room Districts
+
+- Add a typed facility blueprint that owns all room positions, sizes, districts, map positions, related rooms, signage, prop themes, and path nodes.
+- Organize the hub into Central Concourse, Front Office, Hockey Ops, Team Wing, Arena, Media, Development, Customization, and Utility districts.
+- Refactor the 3D facility to render district floors, corridors, landmarks, room shells, room zones, signage, and primitive prop sets from blueprint data.
+- Upgrade Operations Map into a district floorplan with filters, current district, "You are here," route hints, room badges, search, and direct room fallback navigation.
+- Add pure wayfinding helpers for current district, nearest landmark, room breadcrumbs, entrance prompts, and route summaries.
+- Thread district context into tutorial flow, guide content, Assistant GM recommendations, feedback entries, bug reports, and Dev Tools validation/export.
+- Add Phase 13 facility tests for room coverage, duplicates, overlaps, reachable core routes, related-room validity, map helpers, wayfinding, tutorial route, Assistant GM districts, and blueprint serialization.
+- Keep Phase 13 focused on spatial clarity and navigation polish without backend/cloud/online services, real licensed content, new hockey rules complexity, or playable on-ice hockey.

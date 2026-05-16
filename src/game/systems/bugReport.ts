@@ -7,6 +7,8 @@ import { summarizeTelemetry } from "./localTelemetry";
 import { createRuntimeHealthBugReportSection, type RuntimeHealthState } from "./runtimeHealth";
 import { getVersionSummary } from "./version";
 import { detectUxFriction, summarizeUxFriction } from "./uxFriction";
+import { DEFAULT_FACILITY_BLUEPRINT } from "../facility/facilityBlueprint";
+import { getDistrictForRoom } from "../facility/facilityNavigation";
 
 export interface BugReportOptions {
   appVersion?: string;
@@ -15,6 +17,8 @@ export interface BugReportOptions {
   consoleNotes?: string[];
   runtimeHealth?: RuntimeHealthState;
   includeFullSave?: boolean;
+  lastDistrictId?: string;
+  lastDistrictLabel?: string;
 }
 
 export function createBugReport(franchise: FranchiseState, options: BugReportOptions = {}): BugReport {
@@ -23,6 +27,7 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
   const friction = summarizeUxFriction(detectUxFriction(franchise));
   const createdAt = new Date().toISOString();
   const version = getVersionSummary();
+  const roomDistrict = options.lastRoom ? getDistrictForRoom(DEFAULT_FACILITY_BLUEPRINT, options.lastRoom) : undefined;
   return {
     id: `bug-report-${franchise.franchiseId}-${createdAt}`,
     createdAt,
@@ -36,6 +41,8 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
     ruleSetSummary: getRuleSetDescription(normalizeLeagueRuleSet(franchise.league.ruleSet)),
     dataPackMetadata: franchise.dataPackMetadata,
     lastRoom: options.lastRoom,
+    lastDistrictId: options.lastDistrictId ?? roomDistrict?.id,
+    lastDistrictLabel: options.lastDistrictLabel ?? roomDistrict?.label,
     recentTelemetry: (franchise.localTelemetry ?? []).slice(0, 40),
     runtimeHealthSummary: options.runtimeHealth ? createRuntimeHealthBugReportSection(options.runtimeHealth) : undefined,
     runtimeHealthEvents: options.runtimeHealth?.events.slice(0, 20),
@@ -81,6 +88,7 @@ export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: Ro
     `Rules: ${report.ruleSetSummary ?? "standard fictional rules"}`,
     `Data pack: ${report.dataPackMetadata?.dataPackName ?? "none"}`,
     `Last room: ${report.lastRoom ?? "unknown"}`,
+    `Last district: ${report.lastDistrictLabel ?? "unknown"}`,
     `Runtime health: ${report.runtimeHealthSummary ?? "not attached"}`,
     `Integrity: ${report.saveIntegritySummary}`,
     `Invariants: ${report.invariantSummary}`,

@@ -18,12 +18,14 @@ export type FirstDayChecklistId =
 interface UiStore {
   activeRoom?: RoomId;
   nearbyRoom?: RoomId;
+  facilityPosition: { x: number; z: number };
   operationsMapOpen: boolean;
   checklistCollapsed: boolean;
   checklistDismissed: boolean;
   checklistCompleted: Record<FirstDayChecklistId, boolean>;
   setActiveRoom: (room?: RoomId) => void;
   setNearbyRoom: (room?: RoomId) => void;
+  setFacilityPosition: (position: { x: number; z: number }) => void;
   toggleOperationsMap: () => void;
   setOperationsMapOpen: (open: boolean) => void;
   markChecklistItem: (id: FirstDayChecklistId) => void;
@@ -58,6 +60,7 @@ const roomChecklistMap: Partial<Record<RoomId, FirstDayChecklistId>> = {
 export const useUiStore = create<UiStore>((set) => ({
   activeRoom: undefined,
   nearbyRoom: undefined,
+  facilityPosition: { x: 0, z: 0 },
   operationsMapOpen: false,
   checklistCollapsed: false,
   checklistDismissed: false,
@@ -71,6 +74,7 @@ export const useUiStore = create<UiStore>((set) => ({
       };
     }),
   setNearbyRoom: (room) => set({ nearbyRoom: room }),
+  setFacilityPosition: (position) => set({ facilityPosition: position }),
   toggleOperationsMap: () => set((state) => ({ operationsMapOpen: !state.operationsMapOpen })),
   setOperationsMapOpen: (open) => set({ operationsMapOpen: open }),
   markChecklistItem: (id) => set((state) => ({ checklistCompleted: { ...state.checklistCompleted, [id]: true } })),

@@ -18,6 +18,7 @@
 
 - Start a demo franchise.
 - Open GM Office, Roster Office, Coach Office, Arena, Save Desk, Feedback Desk, and Settings.
+- Use Operations Map district filters and walk from Central Concourse through Front Office, Hockey Ops, Team Wing, Arena, Media, Development, Utility, and Customization landmarks.
 - Sim one game in instant mode.
 - Confirm Game Result Center shows post-game summary, three stars, consequences, next recommendation, and local autosave.
 - Export a bug report and a feedback bundle.
@@ -56,6 +57,14 @@
 - Confirm audio cues no-op safely when audio is disabled.
 - Preview generated audio cues from Settings after a user gesture.
 
+## Facility clarity test
+
+- Confirm every room appears in the Operations Map floorplan.
+- Confirm current district and nearest room are readable in TopBar or prompt.
+- Confirm "Go to room" direct navigation remains available as an accessibility fallback.
+- Confirm reduced 3D detail keeps corridors, room markers, signage, and interactions intact.
+- Confirm the layout no longer reads as one giant square with unrelated rooms around the edge.
+
 ## Bug report export test
 
 - Add a playtester note.
@@ -79,3 +88,4 @@
 - Network telemetry, backend, cloud sync, online sharing, or real licensed content is introduced.
 - Data-pack validation accepts obvious restricted hockey branding terms without warning.
 - Game Result Center cannot show the next recommended action after a played game.
+- Facility blueprint validation reports missing rooms, duplicate rooms, severe overlaps, or disconnected core rooms.

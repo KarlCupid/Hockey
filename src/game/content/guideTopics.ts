@@ -42,6 +42,16 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     relatedActions: ["moveFacility", "openMap", "keyboardShortcuts"]
   },
   {
+    id: "basics-facility-districts",
+    title: "Facility districts",
+    category: "basics",
+    summary: "Rooms are grouped by hockey-operations purpose instead of scattered around one big square.",
+    body:
+      "The Central Concourse is your orientation point. Front Office holds GM, cap, owner, staff, and agent work. Hockey Ops groups roster, coaching, trades, and free agency. Team Wing leads through meetings, locker, medical, and the Arena Bowl. Media sits near the arena concourse. Development Wing groups scouting, development, and the draft stage. Utility and Customization keep settings, feedback, saves, data packs, and dev tools off the main hockey path.",
+    relatedRoomIds: ["saves", "gm", "roster", "coach", "arena", "press", "scouting", "settings", "feedback", "devTools"],
+    relatedActions: ["moveFacility", "openMap", "wayfinding"]
+  },
+  {
     id: "basics-saving-loading",
     title: "Saving and loading",
     category: "basics",

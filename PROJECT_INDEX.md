@@ -75,6 +75,11 @@ npm run check
 - `src/game/systems/uxFriction.ts`: Phase 12 local UX friction signal detection, summaries, and Assistant GM recommendations
 - `src/game/systems/onboarding.ts`: Phase 12 first-hour, post-game, offseason, and custom-league onboarding checklists
 - `src/game/systems/postGameSummary.ts`: Phase 12 post-game summary cards, fallout, and next-action presentation helper
+- `src/game/facility/facilityTypes.ts`: Phase 13 typed facility blueprint, district, room, path node, and validation report contracts
+- `src/game/facility/facilityBlueprint.ts`: Phase 13 default district-based room placement source of truth
+- `src/game/facility/facilityValidation.ts`: Phase 13 blueprint coverage, duplicate, overlap, reachability, and relationship validation
+- `src/game/facility/facilityNavigation.ts`: Phase 13 room lookup, district lookup, route, map filter, summary, and blueprint export helpers
+- `src/game/facility/facilityWayfinding.ts`: Phase 13 current district, landmark, breadcrumb, prompt, and wayfinding label helpers
 - `src/game/systems/tuning.ts`: Phase 4 target ranges and helper checks for simulation, economy, dynasty, draft, and development tuning
 - `src/game/systems/rosterRules.ts`: Phase 5 active/scratch/affiliate/IR/prospect/retired roster rules, lineup eligibility, organization depth, and validation reports
 - `src/game/systems/rosterManagement.ts`: roster move actions, cap-impact logging, depth charts, initial roster classification, and lineup repair after moves
@@ -150,7 +155,7 @@ npm run check
 - `src/components/hud/TopBar.tsx`: team, record, date, next opponent, difficulty/story compact, urgent/Assistant GM counts, room/action status
 - `src/components/hud/RoomPrompt.tsx`: interactable room prompt
 - `src/components/hud/FirstDayChecklist.tsx`: first-session GM/head coach guidance checklist
-- `src/components/hud/OperationsMap.tsx`: facility map, room-directory fallback navigation, and Phase 7 room badges
+- `src/components/hud/OperationsMap.tsx`: Phase 13 district floorplan, room-directory fallback navigation, route hints, and room badges
 - `src/components/hud/ModalShell.tsx`: modal shell for facility room panels
 - `src/components/hud/HelpOverlay.tsx`: keyboard controls, room guide, phase guide, sim modes, front-office basics, and save/load help
 - `src/components/hud/GuideOverlay.tsx`: searchable Learn the Game guide/codex surface
@@ -204,7 +209,13 @@ npm run check
 
 ## 3D And Visualization
 
-- `src/components/three/FacilityScene.tsx`: operations hub, primitive room props, Assistant GM terminal, setup plaque, markers, lighting
+- `src/components/three/FacilityScene.tsx`: Phase 13 blueprint-driven operations hub, primitive room props, district floors, corridors, markers, lighting
+- `src/components/three/FacilityDistrict.tsx`: primitive district floor plates, curbs, and district signage
+- `src/components/three/FacilityCorridor.tsx`: blueprint path-node corridor renderer
+- `src/components/three/FacilityLandmark.tsx`: primitive landmark markers and labels
+- `src/components/three/FacilityRoomShell.tsx`: room footprints, low walls, entrances, and room signage from blueprint data
+- `src/components/three/FacilitySignage.tsx`: local HTML signage labels for rooms, districts, and landmarks
+- `src/components/three/FacilityPropSet.tsx`: primitive room dressing sets keyed by blueprint `propTheme`
 - `src/components/three/ThirdPersonController.tsx`: WASD movement, follow/orbit camera, nearby room detection
 - `src/components/three/Avatar.tsx`: simple GM/coach avatar
 - `src/components/three/RoomZone.tsx`: labeled glowing interactable room marker
@@ -227,6 +238,8 @@ npm run check
 - `src/tests/phase9Customization.test.ts`: Phase 9 coverage for data-pack validation/repair, real-world term flags, custom league generation, scenario modifiers, editor helpers, local data-pack store, save/bug-report metadata, content safety, and a two-season custom mini playtest
 - `src/tests/phase10LeagueRules.test.ts`: Phase 10 coverage for league-rule presets, generalized schedules, playoff formats, draft sizing/traded picks, custom franchise generation, data-pack repair, schema 7 hydration, bug-report rule summaries, Rules tab helpers, and custom two-season dry runs
 - `src/tests/phase11PublicBeta.test.ts`: Phase 11 coverage for version/PWA metadata, performance budgets, runtime health, save snapshots/recovery, demo mode, display modes, beta checklists, release smoke, custom 16-team dry runs, tutorial, and achievements
+- `src/tests/phase12ClosedBetaPolish.test.ts`: Phase 12 coverage for local feedback, UX friction, onboarding, audio previews, post-game summaries, balance dashboard v2, docs, and smoke
+- `src/tests/phase13FacilityLayout.test.ts`: Phase 13 coverage for blueprint validation, room coverage, route graph, wayfinding, Operations Map helpers, Assistant GM districts, feedback/bug-report district context, and blueprint serialization
 
 ## Styles
 
@@ -271,7 +284,8 @@ npm run check
 
 ## Useful Change Targets
 
-- Add a new room: update `RoomId` in `src/game/types.ts`, add a marker in `FacilityScene.tsx`, add modal routing in `AppShell.tsx`, then create a panel under `src/components/rooms`.
+- Add a new room: update `RoomId` in `src/game/types.ts`, create a panel under `src/components/rooms`, add modal routing in `AppShell.tsx`, add a room definition in `src/game/facility/facilityBlueprint.ts`, let Operations Map read it from the blueprint, add a guide topic if user-facing, and update tests.
+- Facility layout changes: start in `src/game/facility/facilityBlueprint.ts`, then run `src/tests/phase13FacilityLayout.test.ts`; do not scatter room coordinates directly inside `FacilityScene.tsx` or `OperationsMap.tsx`.
 - Tune simulation: start with `src/game/constants.ts`, `src/game/simulation/simulatePeriod.ts`, and `src/game/simulation/simulateGame.ts`.
 - Add player or team fields: update `src/game/types.ts`, then generation, save validation, and affected UI tables/cards.
 - Add front-office behavior: start with a pure helper in `src/game/systems`, then wire it through `src/store/franchiseStore.ts` and room panels.
@@ -300,5 +314,7 @@ npm run check
 - Phase 10 includes generalized fictional league rules, supported 8/10/12/16 team custom starts, custom schedule/playoff/draft formats, cap/roster rule presets, Data Pack v2 validation/repair, and custom multi-season dry runs.
 - Phase 11 includes PWA/static packaging, release metadata, local runtime health logs, save snapshot/recovery, performance budgets, compatibility notes, demo/sample franchise starts, beta playtest checklists, and release polish.
 - Phase 11 must stay local-only: no network telemetry, backend, cloud sync, online sharing, or real licensed content.
+- Phase 13 includes facility blueprinting, spatial districts, room adjacency, wayfinding, signage, minimap/floorplan improvements, primitive 3D room dressing, and navigation polish.
+- Facility room placement must be driven by typed blueprint/config, not hardcoded scattered coordinates.
 - Unsupported custom rule combinations must be clearly rejected or documented with user-facing repair guidance.
 - Waivers, buyouts, retained salary, contract clauses, arbitration, offer sheets, online play, backend/cloud saves, real branding, and playable on-ice hockey remain out of scope.

@@ -34,6 +34,7 @@ export function getStarterGuideTopicIds(): string[] {
     "basics-what-is-franchise-ice",
     "basics-your-role",
     "basics-moving-around",
+    "basics-facility-districts",
     "basics-assistant-gm-action-queue",
     "room-gm-office",
     "system-game-simulation",

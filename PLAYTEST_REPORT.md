@@ -416,3 +416,32 @@ npm run check
 - The real-world content filter remains a basic obvious-term scan and not a legal guarantee.
 - Small screens are not the primary target.
 - Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, professional audio, and playable on-ice hockey remain out of scope.
+
+## Phase 13 Scope
+
+- Build: Facility Masterplan, Spatial Layout Template, Wayfinding, and Room Districts.
+- Harness: `src/tests/phase13FacilityLayout.test.ts` plus the full verification command set.
+- Primary target: make the 3D hub feel like a coherent hockey operations complex by replacing scattered room coordinates with a typed district blueprint.
+
+## Phase 13 Facility Layout Notes
+
+- The facility is now organized around a Central Concourse, Front Office Wing, Hockey Ops Wing, Team Wing, Arena Bowl, Media Wing, Development Wing, Customization Lab, and Utility Kiosks.
+- GM, cap, owner, staff, and agents are clustered in Front Office; roster, coach, trades, and free agency are clustered in Hockey Ops; locker, medical, meetings, and arena access form the Team Wing and tunnel.
+- Operations Map now uses blueprint map positions, district filters, current district, route hints, room badges, and direct room fallback navigation.
+- Room prompts, TopBar status, Assistant GM recommendations, feedback entries, bug reports, Dev Tools, and guide topics now include district-aware context.
+
+## Phase 13 Verification Results
+
+- `cmd /c npm run typecheck`: passed.
+- `cmd /c npm test`: passed with 16 test files and 252 tests.
+- `cmd /c npm run test:smoke`: passed with 6 smoke files and 106 tests.
+- `cmd /c npm run build`: passed. The only remaining build warning is the documented large `three-r3f` chunk.
+- `cmd /c npm run check`: passed end to end.
+- In-app Browser QA at `http://127.0.0.1:5173/`: demo franchise entered the hub, district signage and room labels rendered, TopBar reported Central Concourse, RoomPrompt showed `Enter Save Desk`, Operations Map district filters/route hints rendered, and console warning/error capture was clean.
+- Desktop/mobile render checks: WebGL canvas filled 1280x720 and 390x844 viewports; screenshot sampling found nonblank varied pixels at both sizes.
+
+## Phase 13 Known Limitations
+
+- Facility art remains primitive/generated rather than final professional 3D art.
+- The layout is a stylized hockey operations complex, not a realistic architectural simulation.
+- Multi-floor concepts are represented through room floor labels, owner-suite placement, districts, and signage rather than full vertical traversal.

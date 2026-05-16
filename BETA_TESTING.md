@@ -13,6 +13,7 @@ Phase 12 is about closed-beta quality: clarity, first-hour flow, presentation, r
 5. Review the result, standings, achievements, and any decision/event fallout.
 6. Submit one Feedback Desk entry, then export a diagnostic summary or bug report from Save Desk.
 7. Export a feedback bundle and confirm full save JSON is not included by default.
+8. Open Operations Map, filter by district, and walk from Central Concourse to GM Office, Roster Office, Coach's Office, Arena Bowl, Press Room, Scouting Department, Settings, Feedback Desk, and Dev Tools if in development.
 
 ## Suggested First-Season Playtest
 
@@ -42,6 +43,14 @@ Feedback is local-only. It can include diagnostics and save summaries, but full 
 3. Validate or repair the pack before starting.
 4. Start the custom league, save it, simulate a first game, and export a bug report plus feedback bundle.
 5. Try a deliberately unsupported rule combination and confirm the warning is clear.
+
+## Facility Navigation Test
+
+1. Start in the Central Concourse and confirm the TopBar and prompt name the current district or nearest landmark.
+2. Use the Operations Map filters for Core, Front Office, Hockey Ops, Team Wing, Arena, Media, Development, Customization, and Utility.
+3. Select a destination and confirm the route hint reads like a physical walk through corridors or landmarks.
+4. Walk the route manually and confirm room prompts say `Enter` for rooms and `Open` for utility/support surfaces.
+5. Toggle reduced 3D detail and confirm districts, corridors, room markers, signage, and interaction prompts remain intact.
 
 ## Accessibility And Audio Test
 
@@ -74,6 +83,7 @@ Bug reports include release version, schema version, compatibility summary, runt
 - Best tested viewport sizes: 1366x768, 1440x900, and larger desktop/laptop screens.
 - Very small screens are not the main target and show a desktop recommended message.
 - The 3D facility can be heavy on low-end GPUs; use the low-spec preset if movement or rendering feels sluggish.
+- Phase 13 uses primitive room shells and signage, so focus feedback on clarity of districts and navigation purpose rather than final art fidelity.
 
 ## Privacy And Local-Only Notes
 

@@ -3,6 +3,7 @@
 `Franchise Ice` is a browser-based vertical-slice prototype for a fictional third-person 3D hockey management game. You are both general manager and head coach: walk through a hockey operations facility, manage the roster, set lines and tactics, simulate games, read the fallout, check the standings, and save locally.
 
 For a full map of the repository, see [PROJECT_INDEX.md](PROJECT_INDEX.md).
+Closed beta release prep lives in [CLOSED_BETA_CHECKLIST.md](CLOSED_BETA_CHECKLIST.md), with accepted limitations in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
 ## Run
 
@@ -40,6 +41,7 @@ npm run check
 - Phase 9 replayability tools with Custom League Lab, local fictional data packs, scenario starts, team creator, roster/player editor helpers, draft class editor helpers, data-pack validation/repair, and JSON import/export
 - Phase 10 custom rules support with generalized league sizes, schedule generation, playoff formats, draft rounds/class sizing, Data Pack v2 validation, and multi-season custom dry runs
 - Phase 11 public beta readiness with PWA install metadata, static/offline-friendly shell caching, release/version labels, runtime health logs, save snapshots/recovery, beta checklists, demo mode, compatibility notes, and release scripts
+- Phase 12 closed beta candidate polish with local-only feedback bundles, UX friction reports, first-hour onboarding checklists, post-game summary cards, audio previews, richer narrative content, facility atmosphere props, and balance dashboard v2
 - GM Office, Press Room, Owner Suite, Agent Desk, Player Meeting Room, Roster Office, Coach's Office, Locker Room, Medical Room, Arena Bowl, Standings/Trophy Hall, and Save/Load panels
 - Lineup editor with auto-fill, validation, injuries, duplicate prevention, role warnings, and chemistry notes
 - Tactics sliders that affect simulation

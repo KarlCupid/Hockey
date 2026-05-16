@@ -2549,3 +2549,187 @@ textarea {
     padding-top: 5rem;
   }
 }
+
+.ui-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.7rem;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid rgba(215, 232, 255, 0.22);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.ui-status--neutral {
+  color: #d7e8ff;
+  background: rgba(215, 232, 255, 0.08);
+}
+
+.ui-status--info {
+  color: #9ee7ff;
+  background: rgba(97, 201, 255, 0.12);
+}
+
+.ui-status--success {
+  color: #9ff0bf;
+  background: rgba(118, 227, 165, 0.12);
+}
+
+.ui-status--warning {
+  color: #ffe3a1;
+  background: rgba(245, 198, 91, 0.14);
+}
+
+.ui-status--danger {
+  color: #ffb7bf;
+  background: rgba(255, 126, 138, 0.14);
+}
+
+.form-field {
+  gap: 0.35rem;
+}
+
+.ui-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-tooltip:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.4rem);
+  z-index: 20;
+  min-width: 12rem;
+  max-width: 18rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(215, 232, 255, 0.2);
+  border-radius: 0.45rem;
+  color: #eef7ff;
+  background: rgba(9, 18, 32, 0.96);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+}
+
+.ui-timeline,
+.ui-stepper {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-timeline li,
+.ui-stepper li {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem;
+  border: 1px solid rgba(215, 232, 255, 0.12);
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ui-stepper li {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.ui-stepper li span {
+  min-width: 3rem;
+  color: #9ee7ff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ui-stepper li.is-complete span {
+  color: #9ff0bf;
+}
+
+.ui-split-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(260px, 0.8fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.ui-toast-stack {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 35;
+  display: grid;
+  gap: 0.5rem;
+  width: min(24rem, calc(100vw - 2rem));
+}
+
+.ui-toast-stack article {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(142, 231, 209, 0.24);
+  border-radius: 0.5rem;
+  background: rgba(8, 21, 33, 0.94);
+}
+
+.feedback-room textarea,
+.feedback-room input,
+.feedback-room select {
+  min-height: 2.4rem;
+}
+
+.feedback-entry__head,
+.post-game-summary__head {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.post-game-summary {
+  border-color: rgba(142, 231, 209, 0.28);
+  background: linear-gradient(180deg, rgba(142, 231, 209, 0.08), rgba(255, 255, 255, 0.035));
+}
+
+.result-card-list--summary {
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.post-game-card {
+  border-left: 0.24rem solid rgba(215, 232, 255, 0.18);
+}
+
+.post-game-card--positive {
+  border-left-color: #76e3a5;
+}
+
+.post-game-card--warning {
+  border-left-color: #f5c65b;
+}
+
+.post-game-card--danger {
+  border-left-color: #ff7e8a;
+}
+
+.audio-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+}
+
+.panel-section--guidance {
+  border-color: rgba(142, 231, 209, 0.22);
+}
+
+@media (max-width: 1040px) {
+  .ui-split-pane,
+  .post-game-summary__head,
+  .feedback-entry__head {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+}

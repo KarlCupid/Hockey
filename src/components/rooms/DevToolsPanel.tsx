@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { generateBalanceReport, type BalanceReport } from "../../game/systems/balanceReport";
+import { generateBalanceReport, generateClosedBetaBalanceReport, type BalanceReport, type ClosedBetaBalanceReport } from "../../game/systems/balanceReport";
 import { createDefaultDataPack, createDataPackFromCurrentLeague, createDataPackSummary, createLeagueRulesPreset, repairDataPack, validateDataPack } from "../../game/systems/dataPacks";
 import { createCustomFranchiseFromDataPack } from "../../game/generators/generateCustomLeague";
 import { getBuiltInScenarios, createScenarioDataPack, validateBuiltInScenarios } from "../../game/systems/scenarios";
@@ -18,6 +18,7 @@ import { createRuleSetForTeamCount, getRuleSetDescription } from "../../game/sys
 import { checkBundleBudgetFromManifest, summarizeRuntimePerformanceSettings } from "../../game/systems/performanceBudget";
 import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
 import { getVersionSummary } from "../../game/systems/version";
+import { createFrictionRecommendation, detectUxFriction, summarizeUxFriction } from "../../game/systems/uxFriction";
 import {
   createDecisionEventFromTemplate,
   getTemplateContextFromFranchise,
@@ -41,6 +42,7 @@ export function DevToolsPanel() {
   const clearRuntimeEvents = useRuntimeHealthStore((state) => state.clearRuntimeEvents);
   const [playtest, setPlaytest] = useState<PlaytestReport | undefined>();
   const [balance, setBalance] = useState<BalanceReport | undefined>();
+  const [closedBetaBalance, setClosedBetaBalance] = useState<ClosedBetaBalanceReport | undefined>();
   const [reSigning, setReSigning] = useState<ReSigningBalanceSample[] | undefined>();
   const [ownerBalance, setOwnerBalance] = useState<OwnerGoalBalanceSample | undefined>();
   const [dataPackReport, setDataPackReport] = useState<string>("");
@@ -69,6 +71,8 @@ export function DevToolsPanel() {
       }),
     []
   );
+  const frictionSignals = useMemo(() => (franchise ? detectUxFriction(franchise, franchise.localTelemetry, settings) : []), [franchise, settings]);
+  const frictionSummary = useMemo(() => summarizeUxFriction(frictionSignals), [frictionSignals]);
 
   if (!franchise) return null;
 
@@ -101,6 +105,7 @@ export function DevToolsPanel() {
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-five-season-story", 5, franchise.selectedTeamId))}>Run 5-season story stress</Button>
         <Button onClick={() => setPlaytest(runDynastyPlaytest("dev-hardcore-dramatic", 5, franchise.selectedTeamId, { difficulty: "hardcore", storyFrequency: "dramatic", gameMode: "pressureCooker" }))}>Hardcore dramatic sample</Button>
         <Button onClick={() => setBalance(generateBalanceReport(["dev-a", "dev-b"], 1))}>Run balance report</Button>
+        <Button onClick={() => setClosedBetaBalance(generateClosedBetaBalanceReport(["dev-cb-a"]))}>Closed beta balance v2</Button>
         <Button onClick={() => setReSigning(runReSigningBalanceSample(["dev-rs-a", "dev-rs-b"]))}>Re-signing sample</Button>
         <Button onClick={() => setOwnerBalance(runOwnerGoalBalanceSample(["dev-o-a", "dev-o-b", "dev-o-c"]))}>Owner sample</Button>
         <Button onClick={clearRuntimeEvents}>Clear runtime log</Button>
@@ -150,6 +155,28 @@ export function DevToolsPanel() {
           {bundleReport.knownExceptions.map((item) => <li key={item}>{item}</li>)}
           {performanceSummary.recommendedLowSpecSettings.map((item) => <li key={item}>{item}</li>)}
         </ul>
+      </section>
+
+      <section className="panel-section">
+        <h3>Phase 12 UX Friction Report</h3>
+        <div className="season-pulse">
+          <span>Signals <strong>{frictionSummary.total}</strong></span>
+          <span>High/Critical <strong>{frictionSummary.highSeverityCount}</strong></span>
+          <span>Critical <strong>{frictionSummary.criticalCount}</strong></span>
+          <span>Rooms <strong>{Object.keys(frictionSummary.byRoom).length}</strong></span>
+        </div>
+        <div className="asset-list asset-list--compact">
+          {frictionSignals.length ? frictionSignals.slice(0, 6).map((signal) => {
+            const recommendation = createFrictionRecommendation(signal);
+            return (
+              <article key={signal.id}>
+                <strong>{signal.message}</strong>
+                <span>{signal.type} | {signal.severity} | {signal.roomId ?? "global"} | count {signal.count}</span>
+                <p>{recommendation.actionLabel}</p>
+              </article>
+            );
+          }) : <p className="empty-state">No local UX friction signals detected in this save.</p>}
+        </div>
       </section>
 
       {invariant && !invariant.valid && (
@@ -299,6 +326,42 @@ export function DevToolsPanel() {
               <li key={note}>{note}</li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {closedBetaBalance && (
+        <section className="panel-section">
+          <h3>Closed Beta Balance Dashboard V2</h3>
+          <div className="season-pulse">
+            <span>Status <strong>{closedBetaBalance.status}</strong></span>
+            <span>Fatal errors <strong>{closedBetaBalance.fatalErrors}</strong></span>
+            <span>Goals/game <strong>{closedBetaBalance.scoring.averageGoalsPerGame}</strong></span>
+            <span>Story cadence <strong>{closedBetaBalance.storyCadence.eventsPerSeason}</strong></span>
+            <span>Emergency replacements <strong>{closedBetaBalance.rosterRepairs.emergencyReplacementCount}</strong></span>
+            <span>Achievement rates <strong>{Object.keys(closedBetaBalance.achievementUnlockRates).length}</strong></span>
+          </div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Sample</th><th>Rules</th><th>Errors</th><th>Warnings</th><th>Story</th><th>Emergency</th></tr></thead>
+              <tbody>
+                {closedBetaBalance.sampleRuns.map((run) => (
+                  <tr key={run.label}>
+                    <td>{run.label}</td>
+                    <td>{run.ruleLabel}</td>
+                    <td>{run.fatalErrors}</td>
+                    <td>{run.warnings}</td>
+                    <td>{run.storyEvents}</td>
+                    <td>{run.emergencyReplacements}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {!!closedBetaBalance.needsTuning.length && (
+            <ul className="compact-list">
+              {closedBetaBalance.needsTuning.map((note) => <li key={note}>{note}</li>)}
+            </ul>
+          )}
         </section>
       )}
 

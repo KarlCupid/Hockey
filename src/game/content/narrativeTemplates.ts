@@ -1,6 +1,6 @@
 import type { DecisionOptionTemplate, NarrativeTemplate } from "../types";
 
-export const NARRATIVE_TEMPLATE_VERSION = 1;
+export const NARRATIVE_TEMPLATE_VERSION = 2;
 
 const CALM_OPTION: DecisionOptionTemplate = {
   tone: "transparent",
@@ -54,6 +54,14 @@ function buildTemplates(category: NarrativeTemplate["category"], seeds: Template
     optionTemplates: seed.options ?? DEFAULT_OPTIONS,
     cooldownDays: cooldownDays + (index % 4),
     weight: 8 + (index % 5)
+  }));
+}
+
+function buildPrefixedTemplates(prefix: string, category: NarrativeTemplate["category"], seeds: TemplateSeed[], cooldownDays = 6): NarrativeTemplate[] {
+  return buildTemplates(category, seeds, cooldownDays).map((template, index) => ({
+    ...template,
+    id: `${category}-${prefix}-${String(index + 1).padStart(2, "0")}`,
+    weight: template.weight + 1
   }));
 }
 
@@ -247,6 +255,52 @@ const affiliate = buildTemplates("affiliate", [
   { headline: "A defensive prospect steadies the report", body: "{prospect} has fewer loud moments but more reliable habits than last month.", tags: ["affiliate", "defense"] }
 ], 10);
 
+const closedBetaPolish = [
+  ...buildPrefixedTemplates("closed-beta", "press", [
+    { headline: "A postgame detail becomes the question", body: "The room is less interested in the score than the sequence that tilted the bench after {opponent}.", tags: ["press", "postgame"] },
+    { headline: "The next answer needs fewer slogans", body: "Reporters are asking for one practical change, not a broad promise about compete level.", tags: ["press", "clarity"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "owner", [
+    { headline: "The owner wants a playable plan", body: "The suite asks for a plan the hockey staff can actually execute this week, not a season-long speech.", tags: ["owner", "clarity"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "agent", [
+    { headline: "{agent} asks for a cleaner signal", body: "The camp can live with patience, but mixed usage and quiet phones are starting to feel like a message.", tags: ["agent", "clarity"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "player", [
+    { headline: "{player} wants the why", body: "The player is not challenging the decision, but needs the reasoning before the next practice.", tags: ["player", "clarity"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "team", [
+    { headline: "The room needs one next step", body: "The group has heard enough big-picture language. The next meeting needs one clear action.", tags: ["team", "guidance"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "media", [
+    { headline: "The local read turns practical", body: "The coverage has moved from outrage to a simple question: what changes before the next puck drop?", tags: ["media", "practical"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "fan", [
+    { headline: "Fans respond to a visible adjustment", body: "The crowd may not agree with every move, but it notices when the club explains the hockey reason.", tags: ["fan", "clarity"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "rivalry", [
+    { headline: "The rivalry asks for discipline first", body: "The room wants edge, but the staff knows the first mistake could hand {rival} the story.", tags: ["rivalry", "discipline"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "playoff", [
+    { headline: "A playoff note becomes the clipboard", body: "The staff has one adjustment it trusts, and the room needs to hear it before the noise fills in.", tags: ["playoff", "adjustment"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "draft", [
+    { headline: "The draft table checks the risk", body: "The scouts like the upside, but the room wants to know which flaw it is actually accepting.", tags: ["draft", "risk"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "freeAgency", [
+    { headline: "The market rewards a clean fit", body: "The best pitch is not the loudest offer; it is the role that makes sense the moment camp opens.", tags: ["freeAgency", "fit"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "trade", [
+    { headline: "The offer needs one more check", body: "The board likes the hockey fit, but the staff wants the cap and role ripple reviewed first.", tags: ["trade", "review"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "development", [
+    { headline: "The development plan asks for fewer targets", body: "{prospect} has enough notes. The next block needs one priority and a clear check-in.", tags: ["development", "focus"] }
+  ]),
+  ...buildPrefixedTemplates("closed-beta", "affiliate", [
+    { headline: "The affiliate report gets specific", body: "The staff does not ask for a call-up yet; it asks for one skill to be tested harder.", tags: ["affiliate", "focus"] }
+  ])
+];
+
 export const NARRATIVE_TEMPLATES: NarrativeTemplate[] = [
   ...press,
   ...owner,
@@ -261,5 +315,6 @@ export const NARRATIVE_TEMPLATES: NarrativeTemplate[] = [
   ...freeAgency,
   ...trade,
   ...development,
-  ...affiliate
+  ...affiliate,
+  ...closedBetaPolish
 ];

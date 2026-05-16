@@ -638,7 +638,7 @@ function hydratePlayerContract(player: Player, franchiseId: string): Player {
     waiverEligible: player.waiverEligible ?? false,
     affiliateSeasons: player.affiliateSeasons ?? 0,
     careerStage: player.careerStage ?? inferCareerStage(player),
-    developmentPath: player.developmentPath ?? defaultDevelopmentPath(player)
+    developmentPath: normalizeDevelopmentPath(player.developmentPath) ?? defaultDevelopmentPath(player)
   };
 }
 
@@ -896,11 +896,19 @@ function validGmAvatarStyle(value: unknown): value is GMAvatarStyle {
 function defaultDevelopmentPath(player: Player): PlayerDevelopmentPath {
   const upside = Math.max(0, player.potential - player.overall);
   return {
-    track: player.position === "G" && upside >= 6 ? "Goalie Project" : player.age <= 23 || upside >= 8 ? "Prospect Pipeline" : player.overall >= 73 ? "NHL Regular" : "Veteran Depth",
+    track: player.position === "G" && upside >= 6 ? "Goalie Project" : player.age <= 23 || upside >= 8 ? "Prospect Pipeline" : player.overall >= 73 ? "Major Club Regular" : "Veteran Depth",
     confidence: Math.max(35, Math.min(92, 52 + upside + (player.overall >= 75 ? 8 : 0))),
     lastReport: "Hydrated into the Phase 5 player pathway model.",
     projectedRole: player.roleExpectation,
     eta: player.overall >= 73 ? "Now" : player.age <= 24 ? "Next Season" : "Long Term"
+  };
+}
+
+function normalizeDevelopmentPath(path?: PlayerDevelopmentPath): PlayerDevelopmentPath | undefined {
+  if (!path) return undefined;
+  return {
+    ...path,
+    track: String(path.track) === "NHL Regular" ? "Major Club Regular" : path.track
   };
 }
 

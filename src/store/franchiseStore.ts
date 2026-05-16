@@ -92,7 +92,7 @@ import {
 import { tickScouting, toggleWatchlist, moveProspectOnBoard, updateScoutingAssignment } from "../game/systems/scouting";
 import { fireStaff as fireStaffPure, hireStaff as hireStaffPure, replaceStaff as replaceStaffPure } from "../game/systems/staff";
 import { applyTrade, evaluateTrade, generateTradeBlock, generateUntouchables, inferTeamNeeds } from "../game/systems/trades";
-import { completeTutorialStep as completeTutorialStepPure, dismissTutorialStep as dismissTutorialStepPure, resetTutorial as resetTutorialPure } from "../game/systems/tutorial";
+import { completeTutorialStep as completeTutorialStepPure, dismissTutorialStep as dismissTutorialStepPure, resetTutorial as resetTutorialPure, skipTutorial as skipTutorialPure } from "../game/systems/tutorial";
 import { assembleGameResult, nextGameForTeam, simulateGame } from "../game/simulation/simulateGame";
 import { useSettingsStore } from "./settingsStore";
 import { useUiStore } from "./uiStore";
@@ -141,6 +141,7 @@ interface FranchiseStore {
   completeTutorialStep: (stepId: string) => void;
   dismissTutorialStep: (stepId: string) => void;
   resetTutorial: () => void;
+  skipTutorial: () => void;
   recordTelemetryEvent: (type: FranchiseState["localTelemetry"][number]["type"], label: string, details?: FranchiseState["localTelemetry"][number]["details"]) => void;
   exportBugReport: (userNote?: string, includeFullSave?: boolean) => string | undefined;
   copyDiagnosticSummary: () => string | undefined;
@@ -283,6 +284,11 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
     const franchise = get().franchise;
     if (!franchise) return;
     set({ franchise: resetTutorialPure(franchise, useSettingsStore.getState().settings.tutorialMode) });
+  },
+  skipTutorial: () => {
+    const franchise = get().franchise;
+    if (!franchise) return;
+    set({ franchise: recordTelemetryIfEnabled(skipTutorialPure(franchise), "tutorialSkipped", "Tutorial skipped") });
   },
   recordTelemetryEvent: (type, label, details) => {
     const franchise = get().franchise;

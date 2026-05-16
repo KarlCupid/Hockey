@@ -109,7 +109,7 @@ export function createAffiliateReport(team: Team, player: Player, progress: numb
     headline,
     body:
       progress >= 75
-        ? `${team.affiliate?.fullName ?? "Affiliate"} staff believe the ${player.position} is close to NHL help.`
+        ? `${team.affiliate?.fullName ?? "Affiliate"} staff believe the ${player.position} is close to major-club help.`
         : progress >= 55
           ? "The development staff likes the workload and role clarity."
           : "The report asks for patience before considering a promotion.",

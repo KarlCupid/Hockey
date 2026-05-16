@@ -200,7 +200,7 @@ function createDefaultDevelopmentPath(
       : prospect
         ? "Prospect Pipeline"
         : overall >= 73
-          ? "NHL Regular"
+          ? "Major Club Regular"
           : age >= 30
             ? "Veteran Depth"
             : "Affiliate Development";

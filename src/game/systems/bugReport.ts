@@ -6,6 +6,7 @@ import { getRuleSetDescription, normalizeLeagueRuleSet } from "./leagueRules";
 import { summarizeTelemetry } from "./localTelemetry";
 import { createRuntimeHealthBugReportSection, type RuntimeHealthState } from "./runtimeHealth";
 import { getVersionSummary } from "./version";
+import { detectUxFriction, summarizeUxFriction } from "./uxFriction";
 
 export interface BugReportOptions {
   appVersion?: string;
@@ -19,6 +20,7 @@ export interface BugReportOptions {
 export function createBugReport(franchise: FranchiseState, options: BugReportOptions = {}): BugReport {
   const integrity = validateSaveIntegrity(franchise);
   const invariants = validateDynastyInvariants(franchise);
+  const friction = summarizeUxFriction(detectUxFriction(franchise));
   const createdAt = new Date().toISOString();
   const version = getVersionSummary();
   return {
@@ -48,6 +50,12 @@ export function createBugReport(franchise: FranchiseState, options: BugReportOpt
       `errors=${invariants.errors.length}`,
       `telemetry=${summarizeTelemetry(franchise.localTelemetry ?? []).join(", ") || "none"}`
     ].join("; "),
+    uxFrictionSummary: [
+      `signals=${friction.total}`,
+      `high=${friction.highSeverityCount}`,
+      `critical=${friction.criticalCount}`,
+      `top=${friction.topRecommendations.slice(0, 2).join(" | ") || "none"}`
+    ].join("; "),
     consoleNotes: options.consoleNotes?.slice(0, 20),
     userNote: options.userNote,
     includeFullSave: Boolean(options.includeFullSave),
@@ -75,6 +83,7 @@ export function createDiagnosticSummary(franchise: FranchiseState, lastRoom?: Ro
     `Last room: ${report.lastRoom ?? "unknown"}`,
     `Runtime health: ${report.runtimeHealthSummary ?? "not attached"}`,
     `Integrity: ${report.saveIntegritySummary}`,
-    `Invariants: ${report.invariantSummary}`
+    `Invariants: ${report.invariantSummary}`,
+    `UX friction: ${report.uxFrictionSummary ?? "none"}`
   ].join("\n");
 }

@@ -507,7 +507,7 @@ function defaultDevelopmentPath(
   const upside = potential - overall;
   const prospect = age <= 22 || upside >= 8;
   return {
-    track: position === "G" && prospect ? "Goalie Project" : prospect ? "Prospect Pipeline" : overall >= 73 ? "NHL Regular" : "Affiliate Development",
+    track: position === "G" && prospect ? "Goalie Project" : prospect ? "Prospect Pipeline" : overall >= 73 ? "Major Club Regular" : "Affiliate Development",
     confidence: clamp(52 + upside + (overall >= 76 ? 8 : 0), 35, 92),
     lastReport: "Custom League Lab generated this player pathway.",
     projectedRole,

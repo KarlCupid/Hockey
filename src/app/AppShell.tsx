@@ -39,6 +39,7 @@ const StandingsPanel = lazy(() => import("../components/rooms/StandingsPanel").t
 const TradeWarRoomPanel = lazy(() => import("../components/rooms/TradeWarRoomPanel").then((module) => ({ default: module.TradeWarRoomPanel })));
 const SettingsPanel = lazy(() => import("../components/rooms/SettingsPanel").then((module) => ({ default: module.SettingsPanel })));
 const DevToolsPanel = lazy(() => import("../components/rooms/DevToolsPanel").then((module) => ({ default: module.DevToolsPanel })));
+const FeedbackPanel = lazy(() => import("../components/rooms/FeedbackPanel").then((module) => ({ default: module.FeedbackPanel })));
 
 export function AppShell() {
   const activeRoom = useUiStore((state) => state.activeRoom);
@@ -178,6 +179,8 @@ function panelFor(room: RoomId) {
       return <SettingsPanel />;
     case "devTools":
       return import.meta.env.DEV ? <DevToolsPanel /> : <GMOfficePanel />;
+    case "feedback":
+      return <FeedbackPanel />;
   }
 }
 
@@ -203,7 +206,8 @@ function subtitleFor(room: RoomId): string {
     staff: "Hire and replace staff whose ratings slightly shape hockey operations.",
     draft: "Draft stage, owned picks, available prospects, and pipeline rights.",
     settings: "Accessibility, presentation, controls, and guide reset.",
-    devTools: "Development-only invariant, playtest, and balance reports."
+    devTools: "Development-only invariant, playtest, and balance reports.",
+    feedback: "Closed-beta feedback, diagnostics summary, and local export bundle."
   };
   return subtitles[room];
 }

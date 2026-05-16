@@ -36,7 +36,7 @@ export function validateLineup(team: Team, lineup: Lineup = team.lines): LineupV
     }
     const status = getPlayerRosterStatus(player);
     if (status === "affiliate" || status === "injuredReserve" || status === "retired" || status === "prospectRights") {
-      errors.push(`${player.displayName} is ${getRosterStatusLabel(status)} and cannot be assigned to the NHL lineup.`);
+      errors.push(`${player.displayName} is ${getRosterStatusLabel(status)} and cannot be assigned to the major-club lineup.`);
     }
     if (status === "scratched") {
       warnings.push(`${player.displayName} is scratched; activating him before puck drop is recommended.`);

@@ -1,8 +1,8 @@
-# Franchise Ice Public Beta Testing Guide
+# Franchise Ice Closed Beta Testing Guide
 
 ## Goal
 
-Phase 11 is about installability, recovery, diagnostics, compatibility, and release confidence. Please test whether the existing franchise game is understandable, stable, recoverable, and easy to report on.
+Phase 12 is about closed-beta quality: clarity, first-hour flow, presentation, recovery, feedback quality, diagnostics, and balance sampling. Please test whether the existing franchise game is understandable, stable, recoverable, polished enough to play, and easy to report on.
 
 ## Suggested 30-Minute Playtest
 
@@ -11,7 +11,8 @@ Phase 11 is about installability, recovery, diagnostics, compatibility, and rele
 3. Visit Roster Office, Coach's Office, Arena Bowl, Save Desk, Settings, and Help.
 4. Simulate one game through broadcast mode or instant sim.
 5. Review the result, standings, achievements, and any decision/event fallout.
-6. Export a diagnostic summary or bug report from Save Desk.
+6. Submit one Feedback Desk entry, then export a diagnostic summary or bug report from Save Desk.
+7. Export a feedback bundle and confirm full save JSON is not included by default.
 
 ## Suggested First-Season Playtest
 
@@ -22,12 +23,24 @@ Phase 11 is about installability, recovery, diagnostics, compatibility, and rele
 5. Finish the regular season, resolve playoffs, and advance into the offseason.
 6. Record whether the GM Office made the next useful action clear.
 
+## Closed Beta Feedback Export
+
+1. Open `Feedback` from the TopBar or Operations Map.
+2. Choose category and severity.
+3. Confirm current room and phase are filled.
+4. Add a short headline and notes.
+5. Toggle diagnostics summary and save summary only when helpful.
+6. Submit the local entry.
+7. Export the feedback bundle JSON.
+
+Feedback is local-only. It can include diagnostics and save summaries, but full save JSON is excluded from the feedback bundle by default.
+
 ## Suggested Custom League Playtest
 
 1. Open `Custom League Lab`.
 2. Pick an 8-, 10-, 12-, or 16-team fictional setup.
 3. Validate or repair the pack before starting.
-4. Start the custom league, save it, simulate a first game, and export a bug report.
+4. Start the custom league, save it, simulate a first game, and export a bug report plus feedback bundle.
 5. Try a deliberately unsupported rule combination and confirm the warning is clear.
 
 ## Accessibility And Audio Test
@@ -35,6 +48,7 @@ Phase 11 is about installability, recovery, diagnostics, compatibility, and rele
 - Try high contrast, larger text, reduce motion, reduce flashes, compact table density, and keyboard shortcuts.
 - Try the low-spec preset in Settings and confirm the app remains readable.
 - Enable and disable local/generated audio. Audio should no-op safely if the browser blocks AudioContext.
+- Use Settings audio preview buttons and `Test all cues` after a user gesture.
 - Use `H`, `M`, `Escape`, and optional room shortcuts if keyboard shortcuts are enabled.
 
 ## Save Recovery Test
@@ -52,7 +66,7 @@ Phase 11 is about installability, recovery, diagnostics, compatibility, and rele
 3. Export a bug report JSON when behavior looks broken.
 4. Include what you were doing, browser name/version, approximate viewport size, and whether low-spec or accessibility settings were enabled.
 
-Bug reports include release version, schema version, compatibility summary, settings, runtime health, and local telemetry if enabled. Full save data is excluded unless explicitly included.
+Bug reports include release version, schema version, compatibility summary, runtime health, UX friction summary, and local telemetry if enabled. Full save data is excluded unless explicitly included.
 
 ## Browser Support Notes
 
@@ -64,7 +78,7 @@ Bug reports include release version, schema version, compatibility summary, sett
 ## Privacy And Local-Only Notes
 
 - No backend, authentication, cloud save, online sharing, remote analytics, or network telemetry is included.
-- Saves, snapshots, imported data packs, telemetry, runtime health logs, and bug reports remain local to the browser profile.
+- Saves, snapshots, imported data packs, telemetry, runtime health logs, feedback entries, feedback bundles, and bug reports remain local to the browser profile.
 - The service worker caches only static app-shell/assets. It does not cache user saves or data packs.
 
 ## Known Limitations

@@ -4,6 +4,7 @@ import { getPhaseLabel } from "../../game/systems/phaseGuidance";
 import { validateSaveIntegrity } from "../../game/systems/saves";
 import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
 import { useFranchiseStore } from "../../store/franchiseStore";
+import { useFeedbackStore } from "../../store/feedbackStore";
 import { useRuntimeHealthStore } from "../../store/runtimeHealthStore";
 import { useUiStore } from "../../store/uiStore";
 import { Button } from "../ui/Button";
@@ -34,6 +35,7 @@ export function SaveLoadPanel() {
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
   const runtimeHealth = useRuntimeHealthStore((state) => state.runtimeHealth);
   const clearRuntimeEvents = useRuntimeHealthStore((state) => state.clearRuntimeEvents);
+  const exportFeedbackBundle = useFeedbackStore((state) => state.exportBundle);
   const [importText, setImportText] = useState("");
   const [exportText, setExportText] = useState("");
   const [bugReportText, setBugReportText] = useState("");
@@ -206,6 +208,7 @@ export function SaveLoadPanel() {
         <div className="button-row">
           <Button onClick={() => setBugReportText(copyDiagnosticSummary() ?? "")}>Copy diagnostic summary</Button>
           <Button onClick={() => setBugReportText(exportBugReport(bugReportNote, includeFullSave) ?? "")}>Export bug report JSON</Button>
+          <Button onClick={() => setBugReportText(exportFeedbackBundle(franchise ?? undefined))}>Export feedback bundle</Button>
           <Button onClick={clearRuntimeEvents}>Clear runtime log</Button>
         </div>
         <label className="select-field">

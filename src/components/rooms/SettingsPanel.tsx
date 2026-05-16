@@ -8,8 +8,10 @@ import { summarizeRuntimePerformanceSettings } from "../../game/systems/performa
 import { getInstallGuideText } from "../../game/systems/pwa";
 import { summarizeRuntimeHealth } from "../../game/systems/runtimeHealth";
 import { getCompatibilitySummary, getVersionSummary } from "../../game/systems/version";
+import { getAudioCuePreviewItems } from "../../game/audio/audioCues";
 import type { GameDifficulty, StoryFrequency } from "../../game/types";
 import { useRuntimeHealthStore } from "../../store/runtimeHealthStore";
+import { useAudioStore } from "../../store/audioStore";
 import { Button } from "../ui/Button";
 import { SectionHeader } from "../ui/SectionHeader";
 
@@ -25,6 +27,7 @@ export function SettingsPanel() {
   const resetLivingOpsState = useFranchiseStore((state) => state.resetLivingOpsState);
   const updateDifficultySettings = useFranchiseStore((state) => state.updateDifficultySettings);
   const resetTutorial = useFranchiseStore((state) => state.resetTutorial);
+  const playCue = useAudioStore((state) => state.playCue);
 
   const resetAllGuides = () => {
     resetGuides();
@@ -119,6 +122,18 @@ export function SettingsPanel() {
               <option value="normal">Normal</option>
             </select>
           </label>
+        </div>
+        <div className="settings-subpanel">
+          <h3>Generated Audio Preview</h3>
+          <p className="muted">Audio is generated placeholder Web Audio. It stays local, respects unlock gestures, and no-ops safely if the browser blocks it.</p>
+          <div className="audio-preview-grid">
+            {getAudioCuePreviewItems().map((cue) => (
+              <Button key={cue.id} onClick={() => playCue(cue.id)}>{cue.label}</Button>
+            ))}
+          </div>
+          <Button onClick={() => getAudioCuePreviewItems().forEach((cue, index) => window.setTimeout(() => playCue(cue.id), index * 140))}>
+            Test all cues
+          </Button>
         </div>
         <div className="settings-subpanel">
           <h3>Version And Install</h3>

@@ -37,6 +37,7 @@ npm run check
 - `src/store/settingsStore.ts`: local UI/presentation settings, reduced motion/detail, autosave, confirmations, guide reset token, Phase 6 story-event preferences, Phase 7 Assistant GM/badge/cadence settings, and Phase 8/11 audio/accessibility/tutorial/telemetry/playtest-checklist settings
 - `src/store/audioStore.ts`: generated Web Audio engine wrapper and safe cue playback state
 - `src/store/runtimeHealthStore.ts`: capped local runtime health log persisted outside franchise saves
+- `src/store/feedbackStore.ts`: Phase 12 local-only closed beta feedback entries and export bundle state
 
 ## Core Game Systems
 
@@ -58,18 +59,22 @@ npm run check
 - `src/game/systems/seasonSummary.ts`: selected-team season pulse and season-complete summary helper
 - `src/game/systems/injuries.ts`: injury and fatigue risk selectors
 - `src/game/systems/news.ts`: inbox/news generation from game state
-- `src/game/systems/version.ts`: Phase 11 app version, release phase/channel, schema, compatibility, and release-label helpers
+- `src/game/systems/version.ts`: Phase 12 app version, release phase/channel, schema, compatibility, and release-label helpers
 - `src/game/systems/pwa.ts`: install metadata and safe service-worker registration helpers
 - `src/game/systems/performanceBudget.ts`: static bundle budgets, `three-r3f` known exception, build-manifest report helper, and runtime settings impact summary
 - `src/game/systems/runtimeHealth.ts`: serializable runtime event log, status, cap, summary, clear, and bug-report section helpers
 - `src/game/systems/displayModes.ts`: desktop/laptop viewport recommendations and low-spec settings preset
 - `src/game/systems/demoMode.ts`: deterministic fictional demo franchise/data-pack entry point for public beta playtests
-- `src/game/content/playtestChecklists.ts`: Phase 11 beta playtest checklist content
+- `src/game/content/playtestChecklists.ts`: Phase 11/12 beta playtest checklist content
 - `src/game/systems/playtestChecklist.ts`: checklist validation and serializable progress helpers
 - `src/game/systems/saves.ts`: localForage save serialization, metadata, load/delete helpers, capped snapshots, snapshot import/export, overwrite backup, and last-good recovery
 - `src/game/systems/dynastyInvariants.ts`: full-franchise invariant checks for rosters, picks, prospects, phases, schedules, contracts, ratings, and JSON serializability
 - `src/game/systems/dynastyPlaytest.ts`: deterministic multi-season dry-run harness with phase reports, champion history, cap health, roster health, and owner-security trend
 - `src/game/systems/balanceReport.ts`: seeded balance report for scoring, economy, free agency, trades, draft/scouting, development, and owner gameplay
+- `src/game/systems/betaFeedback.ts`: Phase 12 local-only feedback entry validation, summaries, and export bundles
+- `src/game/systems/uxFriction.ts`: Phase 12 local UX friction signal detection, summaries, and Assistant GM recommendations
+- `src/game/systems/onboarding.ts`: Phase 12 first-hour, post-game, offseason, and custom-league onboarding checklists
+- `src/game/systems/postGameSummary.ts`: Phase 12 post-game summary cards, fallout, and next-action presentation helper
 - `src/game/systems/tuning.ts`: Phase 4 target ranges and helper checks for simulation, economy, dynasty, draft, and development tuning
 - `src/game/systems/rosterRules.ts`: Phase 5 active/scratch/affiliate/IR/prospect/retired roster rules, lineup eligibility, organization depth, and validation reports
 - `src/game/systems/rosterManagement.ts`: roster move actions, cap-impact logging, depth charts, initial roster classification, and lineup repair after moves
@@ -177,8 +182,9 @@ npm run check
 - `src/components/rooms/OwnerSuitePanel.tsx`: Phase 6 owner trust, goals, meetings, demand level, expectations, and response options
 - `src/components/rooms/AgentDeskPanel.tsx`: Phase 6 agent list, client pressure, active agent calls, and negotiation impact notes
 - `src/components/rooms/PlayerMeetingPanel.tsx`: Phase 6 players needing attention, team dynamics, player meetings, and team meetings
-- `src/components/rooms/SettingsPanel.tsx`: version/install/compatibility info, reduced motion/detail, low-spec preset, runtime health clear, reduce flashes, high contrast, larger text, keyboard hints, audio volumes, tutorial mode/reset, telemetry, autosave, confirmation, difficulty/story display, Assistant GM, room badges, consequence preview, density, scale, and guide reset settings
-- `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, narrative template, Assistant GM, action queue, cadence, performance budget, runtime health, version, and dry-run reporting tools
+- `src/components/rooms/SettingsPanel.tsx`: version/install/compatibility info, reduced motion/detail, low-spec preset, runtime health clear, reduce flashes, high contrast, larger text, keyboard hints, audio volumes/previews, tutorial mode/reset, telemetry, autosave, confirmation, difficulty/story display, Assistant GM, room badges, consequence preview, density, scale, and guide reset settings
+- `src/components/rooms/FeedbackPanel.tsx`: Phase 12 closed-beta feedback form, local entries, diagnostics/save-summary toggles, and export bundle output
+- `src/components/rooms/DevToolsPanel.tsx`: development-only invariant, playtest, balance, narrative template, Assistant GM, action queue, cadence, performance budget, runtime health, UX friction, version, and dry-run reporting tools
 - `src/components/rooms/ArenaPanel.tsx`: matchup preview, instant sim, period sim, broadcast sim, result panel
 - `src/components/rooms/GameResultCenter.tsx`: resolved post-game report with summaries, broadcast beats, turning point, fan/media reaction, consequences, and filtered event feed
 - `src/components/rooms/StandingsPanel.tsx`: league standings, recent results, season summary, achievements, and franchise milestones

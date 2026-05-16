@@ -294,3 +294,17 @@
 - Phase 11 runtime health, telemetry, diagnostics, bug reports, and save snapshots remain local/export-only; there is no network telemetry, backend, cloud sync, or online sharing.
 - Phase 11 responsive polish targets desktop/laptop browsers. Very small screens receive a desktop recommended message rather than a dedicated mobile layout.
 - Phase 11 bundle reporting documents the large `three-r3f` chunk as a known 3D dependency exception; `three-surfaces` remains a review target for future optimization.
+
+## Phase 12 Closed Beta Candidate Notes
+
+- Added `betaFeedback` and `feedbackStore` for local-only closed beta feedback entries, validation, capped storage, summaries, and export bundles that exclude full save JSON by default.
+- Added `uxFriction` detection for blocked roster sims, blocking action loops, custom-league validation loops, tutorial skips, unread result runs, save-load loops, and Assistant GM backlog, with Dev Tools reporting and bug-report summaries.
+- Added first-hour onboarding helpers, after-first-game checklist, tutorial skip confirmation, guide availability after skip, and GM Office "Need a Hand?" guidance.
+- Added Feedback Desk routing from TopBar, Operations Map, and facility zone; Save Desk can export feedback bundles alongside diagnostics.
+- Added post-game summary cards with record movement, standings context, morale/fatigue, story fallout, achievement fallout, and next recommended action.
+- Added generated audio preview labels, Settings preview/test buttons, deterministic team goal horn variants, and quieter placeholder cue tuning.
+- Expanded fictional narrative templates for closed beta clarity and bumped narrative template version to 2.
+- Added primitive-only facility atmosphere props, feedback desk, extra room lighting accents, and reduced-detail suppression for atmosphere extras.
+- Added balance dashboard v2 with custom rule labels, emergency replacement counts, story cadence, fan/media sentiment, and achievement unlock rates.
+- Added `phase12ClosedBetaPolish.test.ts` and included it in `npm run test:smoke`.
+- Verified final Phase 12 state with `cmd /c npm run typecheck` and `cmd /c npm run check`; the check reran typecheck, full tests, smoke tests, and production build. Full suite: 15 files / 227 tests. Smoke suite: 5 files / 81 tests. Build passed with the documented large `three-r3f` chunk warning.

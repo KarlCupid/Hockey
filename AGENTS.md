@@ -19,4 +19,6 @@
 - Phase 10 rule combinations must be validated before use and unsupported combinations should be rejected or warned with clear user-facing reasons.
 - Phase 11 explicitly allows PWA/static packaging, release metadata, local runtime health logs, save backup/recovery, performance budgets, compatibility notes, demo/sample saves, beta playtest checklists, and release polish.
 - Phase 11 must not add network telemetry, backend, cloud sync, online sharing, or real licensed content.
+- Phase 12 explicitly allows local-only closed beta feedback forms, UX friction logging, presentation polish, content expansion, room-flow improvements, audio polish, beta QA scripts, and playtest-report dashboards.
+- Phase 12 feedback, diagnostics, telemetry, and friction reports must stay local/export-only and must not add network telemetry.
 - Keep waivers, buyouts, retained salary, no-trade/no-move clauses, arbitration, offer sheets, multi-team trades, backend/cloud systems, online play, real branding, and playable on-ice hockey out of scope unless a later phase explicitly asks for them.

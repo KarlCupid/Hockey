@@ -28,8 +28,13 @@ const ZONES: RoomZoneConfig[] = [
   { id: "draft", label: "DRAFT STAGE", position: [0, 0, 3.2], color: "#f5c65b" },
   { id: "scouting", label: "SCOUTING", position: [4.2, 0, 4.1], color: "#a9c6ff" },
   { id: "standings", label: "TROPHY HALL", position: [7.2, 0, 4.2], color: "#f5c65b" },
-  { id: "saves", label: "SAVE DESK", position: [0, 0, 0], color: "#b58cff" }
+  { id: "saves", label: "SAVE DESK", position: [0, 0, 0], color: "#b58cff" },
+  { id: "feedback", label: "FEEDBACK DESK", position: [2.6, 0, 0], color: "#8ee7d1" }
 ];
+
+export function shouldRenderFacilityAtmosphere(reducedDetail: boolean): boolean {
+  return !reducedDetail;
+}
 
 export function FacilityScene() {
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
@@ -114,6 +119,35 @@ function FacilityGeometry({ selectedTeamId, reducedDetail }: { selectedTeamId: s
       <ScoutingProps />
       <TrophyCases reducedDetail={reducedDetail} />
       <SaveDesk />
+      <FeedbackDesk />
+      {shouldRenderFacilityAtmosphere(reducedDetail) && <AtmosphereProps selectedTeamId={selectedTeamId} />}
+    </group>
+  );
+}
+
+function AtmosphereProps({ selectedTeamId }: { selectedTeamId: string }) {
+  const brand = getTeamBranding(selectedTeamId);
+  const accent = brand.accentColor ?? "#f5c65b";
+  return (
+    <group>
+      {[[-9, -8.9], [-2, -8.9], [9, -8.9], [-7, 6.7], [7, 6.7]].map(([x, z], index) => (
+        <pointLight key={`${x}-${z}`} position={[x, 2.4, z]} intensity={0.32 + index * 0.03} color={index % 2 ? accent : "#d7e8ff"} />
+      ))}
+      {[-4.8, -2.4, 2.4, 4.8].map((x, index) => (
+        <mesh key={x} position={[x, 0.035, -8.25]}>
+          <boxGeometry args={[1.45, 0.04, 0.26]} />
+          <meshStandardMaterial color={index % 2 ? accent : brand.primaryColor} emissive={brand.primaryColor} emissiveIntensity={0.18} />
+        </mesh>
+      ))}
+      {[-8.2, -7.7, -7.2].map((x, index) => (
+        <mesh key={x} position={[x, 1.72, 8.92]}>
+          <boxGeometry args={[0.28, 0.88 - index * 0.1, 0.06]} />
+          <meshStandardMaterial color={index === 1 ? "#f5c65b" : brand.primaryColor} emissive={index === 1 ? "#f5c65b" : brand.primaryColor} emissiveIntensity={0.12} />
+        </mesh>
+      ))}
+      {[[-2.65, -8.88], [-1.35, -8.88]].map(([x, z]) => (
+        <pointLight key={`${x}-${z}`} position={[x, 1.72, z]} intensity={0.55} color="#ffffff" />
+      ))}
     </group>
   );
 }
@@ -606,6 +640,31 @@ function SaveDesk() {
       <mesh position={[0, 0.92, 0]}>
         <boxGeometry args={[1.1, 0.08, 0.42]} />
         <meshStandardMaterial color="#b58cff" emissive="#b58cff" emissiveIntensity={0.35} />
+      </mesh>
+    </group>
+  );
+}
+
+function FeedbackDesk() {
+  return (
+    <group position={[2.6, 0, 1.05]}>
+      <mesh position={[0, 0.38, 0]}>
+        <boxGeometry args={[1.65, 0.76, 0.72]} />
+        <meshStandardMaterial color="#163b3d" />
+      </mesh>
+      <mesh position={[0, 0.92, -0.12]} rotation={[-0.08, 0, 0]}>
+        <boxGeometry args={[1.15, 0.68, 0.08]} />
+        <meshStandardMaterial color="#dffff8" emissive="#8ee7d1" emissiveIntensity={0.24} />
+      </mesh>
+      {[-0.34, 0, 0.34].map((x, index) => (
+        <mesh key={x} position={[x, 0.94, -0.04]}>
+          <boxGeometry args={[0.18, 0.42 + index * 0.08, 0.04]} />
+          <meshStandardMaterial color={index === 1 ? "#f5c65b" : "#8ee7d1"} />
+        </mesh>
+      ))}
+      <mesh position={[-0.58, 0.82, 0.34]}>
+        <boxGeometry args={[0.28, 0.08, 0.42]} />
+        <meshStandardMaterial color="#d7e8ff" emissive="#8ee7d1" emissiveIntensity={0.16} />
       </mesh>
     </group>
   );

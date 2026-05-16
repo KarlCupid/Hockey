@@ -144,3 +144,15 @@
 - Add beta playtest checklist content, first-run links, GM Office checklist visibility, and documentation for first 30 minutes, first season, custom league, accessibility/audio, and bug-report tests.
 - Add release scripts for `typecheck`, `test:phase11`, `test:release`, `build:report`, and `check`.
 - Keep Phase 11 focused on shipping, testing, installability, compatibility, diagnostics, and release polish without backend/cloud/online services, network telemetry, real licensed content, or new hockey rules complexity.
+
+## Milestone 18: Phase 12 Closed Beta Polish, Feedback, Presentation, Content Depth, and QA
+
+- Add local-only closed beta feedback entries, validation, summaries, Feedback Desk UI, Save Desk export, and feedback bundle JSON that excludes full save data by default.
+- Add UX friction signal detection for blocked sims, stale blocking actions, custom-league validation loops, skipped tutorial, unread results, save-load loops, and Assistant GM backlog.
+- Improve first-hour onboarding with checklists for first hour, after first game, before offseason, and custom-league first start, plus clearer tutorial skip/completion messaging.
+- Polish high-impact surfaces with better guidance, audio preview controls, post-game summary cards, next recommended action, achievement fallout, and clearer empty/warning states.
+- Improve 3D facility atmosphere using primitives only, with feedback desk, room lighting accents, branded panels, and reduced-detail suppression for extra props.
+- Expand fictional narrative content and keep validation against obvious restricted real-world hockey terms and unresolved template tokens.
+- Add closed-beta balance dashboard v2 covering scoring, shots, injuries, fatigue, trades, contracts, free agency, draft quality, development, owner goals, story cadence, sentiment, roster repairs, custom rule health, and achievement unlock rates.
+- Create closed-beta release checklist and known-issues docs, update beta testing/release notes/playtest reports, and add Phase 12 tests plus smoke coverage.
+- Keep Phase 12 focused on polish, clarity, presentation, feedback quality, and QA without backend/cloud/online services, network telemetry, real licensed content, or new hockey rules complexity.

@@ -14,6 +14,17 @@ export interface PlaytestChecklist {
 
 export const PLAYTEST_CHECKLISTS: PlaytestChecklist[] = [
   {
+    id: "closed-beta-feedback-flow",
+    title: "Closed Beta Feedback Flow",
+    description: "Verify feedback, friction guidance, post-game clarity, and export-only diagnostics.",
+    steps: [
+      { id: "submit-feedback", label: "Submit a confusing-moment feedback entry", expectedResult: "Entry appears locally with room, phase, category, and severity.", diagnosticsRelevant: true },
+      { id: "export-feedback", label: "Export the feedback bundle", expectedResult: "Bundle includes feedback and optional diagnostics, but not a full save.", diagnosticsRelevant: true },
+      { id: "friction-report", label: "Open Dev Tools UX friction report", expectedResult: "Signals summarize confusing flow without network telemetry.", diagnosticsRelevant: true },
+      { id: "post-game-summary", label: "Review the post-game summary card", expectedResult: "Next recommendation, fatigue, morale, story, and achievement fallout are readable." }
+    ]
+  },
+  {
     id: "first-30-minutes",
     title: "First 30 Minutes",
     description: "Verify that a new beta player can start, understand the loop, simulate, and save.",

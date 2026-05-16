@@ -1,4 +1,4 @@
-# Phase 4 Through Phase 11 Playtest Report
+# Phase 4 Through Phase 12 Playtest Report
 
 ## Scope
 
@@ -373,4 +373,46 @@ npm run check
 - Data packs remain local JSON and the obvious-term real-world content filter is not a legal guarantee.
 - Audio remains generated/local placeholder sound.
 - Small screens receive a desktop recommended message instead of a dedicated mobile experience.
+- Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, professional audio, and playable on-ice hockey remain out of scope.
+
+## Phase 12 Scope
+
+- Build: closed beta polish, local-only feedback, UX friction review, first-hour onboarding, visual hierarchy, presentation, content depth, audio previews, post-game clarity, balance dashboard v2, and release QA docs.
+- Harness: `src/tests/phase12ClosedBetaPolish.test.ts` plus the release smoke suite.
+- Primary target: make the existing public-beta-ready systems feel better to play, easier to understand, richer to read, and easier to evaluate through local/export-only closed beta feedback.
+
+## Phase 12 Closed Beta Smoke Checklist
+
+- Feedback entries validate, cap locally, summarize, serialize, and export without full save JSON by default.
+- Feedback bundles can include diagnostics and save summaries on request.
+- UX friction signals detect invalid roster sim blocks, unresolved blocking actions, custom-league validation loops, tutorial skips, unread result runs, save-load loops, and Assistant GM backlog.
+- GM Office surfaces one helpful "Need a Hand?" recommendation without exposing noisy internal diagnostics.
+- First-hour and after-first-game checklists validate and remain available even after tutorial skip.
+- Narrative templates render without unresolved tokens and continue to reject obvious restricted hockey branding terms.
+- Audio cues all have preview labels, deterministic team horn variants, clamped volumes, and safe no-op behavior.
+- Game Result Center creates post-game summary cards with no raw IDs and includes next recommended action plus achievement fallout.
+- Balance dashboard v2 reports finite scoring, injuries, fatigue, economy, draft, development, owner, story, sentiment, roster repair, custom rule health, and achievement unlock metrics.
+
+## Phase 12 Balance Dashboard V2 Notes
+
+- Sample set includes default 12-team standard, pressure cooker dramatic, 8-team custom, 16-team custom, rebuild scenario, and demo mode labels.
+- Custom rule health includes 8-, 10-, 12-, and 16-team rule labels.
+- Emergency replacement count, achievement unlock rates, and story cadence are explicit closed-beta watch metrics.
+- User-facing known issues are repeated in the report so playtest notes can distinguish blockers from accepted limitations.
+
+## Phase 12 Verification Results
+
+- `cmd /c npm run typecheck`: passed.
+- `cmd /c npm test`: passed during the final `npm run check` gate with 15 test files and 227 tests.
+- `cmd /c npm run test:smoke`: passed during the final `npm run check` gate with 5 smoke files and 81 tests.
+- `cmd /c npm run build`: passed during the final `npm run check` gate. The only remaining build warning is the documented large `three-r3f` chunk.
+- `cmd /c npm run check`: passed end to end.
+
+## Phase 12 Known Limitations
+
+- Feedback, telemetry, diagnostics, friction reports, saves, snapshots, and data packs remain local/export-only.
+- Audio remains generated placeholder sound.
+- Art remains primitive/generated/CSS/SVG-style presentation, not professional final art.
+- The real-world content filter remains a basic obvious-term scan and not a legal guarantee.
+- Small screens are not the primary target.
 - Waivers, buyouts, retained salary, clauses, arbitration, offer sheets, multi-team trades, backend/cloud/online play, real branding, professional audio, and playable on-ice hockey remain out of scope.

@@ -24,7 +24,8 @@ const ROOMS: Array<{ id: RoomId; x: number; y: number; note: string }> = [
   { id: "draft", x: 50, y: 68, note: "Draft stage" },
   { id: "scouting", x: 65, y: 72, note: "Draft board" },
   { id: "standings", x: 82, y: 76, note: "League table" },
-  { id: "saves", x: 50, y: 50, note: "Local saves" }
+  { id: "saves", x: 50, y: 50, note: "Local saves" },
+  { id: "feedback", x: 60, y: 50, note: "Closed beta notes" }
 ];
 
 export function OperationsMap() {

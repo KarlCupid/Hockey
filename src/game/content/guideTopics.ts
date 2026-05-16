@@ -283,6 +283,16 @@ export const GUIDE_TOPICS: GuideTopic[] = [
       "Supported custom rule sets are intentionally bounded so the dynasty loop remains stable. Choose 8, 10, 12, or 16 teams, then select a supported schedule length, playoff format, playoff series length, draft rounds, draft class size, cap ceiling/floor, active roster limits, and affiliate setting. Validation explains unsupported formats before a franchise can start.",
     relatedRoomIds: ["saves", "standings", "scouting"],
     relatedActions: ["customLeague", "dataPack", "advancePhase"]
+  },
+  {
+    id: "system-closed-beta-feedback",
+    title: "Closed beta feedback",
+    category: "settings",
+    summary: "Feedback, diagnostics, and UX friction reports are local-only and export-only.",
+    body:
+      "Use the Feedback desk when something feels confusing, broken, slow, too noisy, too quiet, or surprisingly good. Feedback can include diagnostics and a save summary, but the full save stays out unless you export it separately from Save Desk.",
+    relatedRoomIds: ["feedback", "saves", "devTools"],
+    relatedActions: ["feedbackSubmitted", "bugReport", "diagnosticExport"]
   }
 ];
 

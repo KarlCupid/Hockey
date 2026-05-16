@@ -62,9 +62,9 @@ export function validateRosterForSeason(team: Team): RosterValidationReport {
   const report = baseRosterReport(team);
   if (report.activeCount < activeMinimum(team)) report.warnings.push(`${team.fullName} are below the ${activeMinimum(team)}-player active roster minimum.`);
   if (report.activeCount > activeLimit(team)) report.errors.push(`${team.fullName} are carrying too many active/scratched players.`);
-  if (report.forwardCount < 12) report.errors.push(`${team.fullName} are short NHL-ready forwards.`);
-  if (report.defenseCount < 6) report.errors.push(`${team.fullName} are short NHL-ready defensemen.`);
-  if (report.goalieCount < 2) report.errors.push(`${team.fullName} are short NHL-ready goalies.`);
+  if (report.forwardCount < 12) report.errors.push(`${team.fullName} are short major-club-ready forwards.`);
+  if (report.defenseCount < 6) report.errors.push(`${team.fullName} are short major-club-ready defensemen.`);
+  if (report.goalieCount < 2) report.errors.push(`${team.fullName} are short major-club-ready goalies.`);
   if (report.healthyGoalieCount < 2) report.warnings.push(`${team.fullName} goalie health is a risk.`);
   if (report.capSpace < 0) report.warnings.push(`${team.fullName} are over the active cap by ${formatMoney(Math.abs(report.capSpace))}.`);
   return withRecommendations(report);
@@ -127,7 +127,7 @@ export function getRosterStatusLabel(status: RosterStatus): string {
 
 export function getRosterStatusDescription(status: RosterStatus): string {
   const descriptions: Record<RosterStatus, string> = {
-    active: "Available for NHL lineup and counts against the active roster and cap.",
+    active: "Available for major-club lineup and counts against the active roster and cap.",
     scratched: "Reserve on the active roster; counts against the active roster and cap.",
     affiliate: "Developing with the simplified affiliate and exempt from active cap in Phase 5.",
     injuredReserve: "Unavailable due to injury; outside the active roster limit but still counts against cap.",

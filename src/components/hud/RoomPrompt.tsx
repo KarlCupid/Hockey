@@ -21,7 +21,8 @@ const ROOM_LABELS: Record<RoomId, string> = {
   staff: "Staff Office",
   draft: "Draft Stage",
   settings: "Settings",
-  devTools: "Dev Tools"
+  devTools: "Dev Tools",
+  feedback: "Feedback Desk"
 };
 
 export function roomLabel(room?: RoomId): string {

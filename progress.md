@@ -38,3 +38,9 @@ TODO/suggestions:
 - Wired Phase 8 UI through AppShell, Help, GM Office, Trophy Hall/Standings, Save Desk, Settings, TopBar, Game Result Center, and Arena Visualization.
 - Added `src/tests/phase8ReleaseCandidate.test.ts` and `npm run test:smoke`; final smoke and full test suites passed.
 - Updated README, PROJECT_INDEX, PLAN, AGENTS, IMPLEMENTATION_LOG, PLAYTEST_REPORT, and RELEASE_NOTES for Phase 8.
+
+## Phase 12 Closed Beta Polish
+
+- Added local-only closed beta feedback systems, Feedback Desk UI, feedback export from Save Desk, UX friction detection, and bug-report friction summaries.
+- Added first-hour and post-game onboarding helpers, tutorial skip reassurance, GM Office "Need a Hand?" guidance, post-game summary cards, audio previews, and balance dashboard v2.
+- Added primitive-only facility atmosphere/feedback desk, expanded narrative templates, Phase 12 tests, closed beta checklist, known issues, and updated release/testing docs.

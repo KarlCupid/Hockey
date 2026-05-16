@@ -46,7 +46,7 @@ export function createTrainingCampBattles(team: Team): TrainingCampBattle[] {
       getPlayerRosterStatus(player) === "affiliate"
         ? "Keep developing unless roster repair needs a call-up."
         : player.overall >= 73
-          ? "Keep with the NHL group."
+          ? "Keep with the major-club group."
           : "Bubble depth; affiliate assignment is sensible."
   }));
 }

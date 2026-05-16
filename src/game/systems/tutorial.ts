@@ -93,7 +93,7 @@ export const TUTORIAL_STEP_DEFINITIONS: Omit<TutorialStep, "completed">[] = [
   {
     id: "review-result-center",
     title: "Review the Game Result Center",
-    body: "After a game, check three stars, turning points, injuries, morale, fatigue, news, and the event feed.",
+    body: "After a game, check three stars, the turning point, injuries, morale, fatigue, news, and the next recommended action.",
     roomId: "arena",
     targetAction: "resultReviewed",
     optional: false,
@@ -111,7 +111,7 @@ export const TUTORIAL_STEP_DEFINITIONS: Omit<TutorialStep, "completed">[] = [
   {
     id: "open-save-desk",
     title: "Open the Save Desk",
-    body: "Saves are local-only. Use a manual slot before experiments or long offseason jumps.",
+    body: "Saves, snapshots, bug reports, and feedback exports are local-only. Use a manual slot before experiments or long offseason jumps.",
     roomId: "saves",
     targetAction: "openRoom",
     optional: false,
@@ -216,6 +216,28 @@ export function resetTutorial(franchise: FranchiseState, mode: TutorialState["mo
   };
 }
 
+export function skipTutorial(franchise: FranchiseState): FranchiseState {
+  return {
+    ...franchise,
+    tutorialState: {
+      ...normalizeTutorialState(franchise.tutorialState),
+      active: false,
+      mode: "off",
+      currentStepId: undefined,
+      dismissedStepIds: TUTORIAL_STEP_DEFINITIONS.map((step) => step.id),
+      lastHintAt: new Date().toISOString()
+    },
+    updatedAt: new Date().toISOString()
+  };
+}
+
+export function getTutorialCompletionMessage(franchise: FranchiseState): string {
+  const steps = getTutorialSteps(franchise);
+  const completed = steps.filter((step) => step.completed).length;
+  if (completed >= steps.length) return "First tour complete. Help, Guide, and the first-hour checklist stay available whenever the room gets noisy.";
+  return `${completed}/${steps.length} tutorial steps complete. The Guide remains available from Help even if the tutorial is skipped.`;
+}
+
 export function getContextualHint(franchise: FranchiseState, roomId: RoomId): string | undefined {
   const state = normalizeTutorialState(franchise.tutorialState);
   if (!state.active || state.mode === "off") return undefined;
@@ -258,7 +280,8 @@ const ROOM_HINTS: Partial<Record<RoomId, string>> = {
   coach: "Auto-fill lines first, then tune one tactic if you want a clearer identity.",
   arena: "Choose a sim mode here. Broadcast mode is slower but easier to read.",
   saves: "Manual saves are local-only and useful before phase jumps.",
-  standings: "Standings and Trophy Hall help you understand the long arc of the save."
+  standings: "Standings and Trophy Hall help you understand the long arc of the save.",
+  feedback: "Feedback exports stay local and help closed-beta testers explain confusion, bugs, balance, and good moments."
 };
 
 function addUnique(values: string[], value: string): string[] {

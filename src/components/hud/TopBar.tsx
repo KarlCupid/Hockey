@@ -87,6 +87,7 @@ export function TopBar() {
         <strong>{activeRoom ? roomLabel(activeRoom) : nearbyRoom ? roomLabel(nearbyRoom) : "Facility Hub"}</strong>
         <div className="top-bar__actions">
           <button type="button" onClick={() => setHelpOpen(true)} aria-label="Open help">?</button>
+          <button type="button" onClick={() => setActiveRoom("feedback")}>Feedback</button>
           <button type="button" onClick={() => setActiveRoom("settings")}>Settings</button>
           {import.meta.env.DEV && <button type="button" onClick={() => setActiveRoom("devTools")}>Dev</button>}
         </div>

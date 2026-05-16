@@ -52,7 +52,7 @@ export function movePlayerRosterStatus(
             affiliateSeasons: toStatus === "affiliate" ? candidate.affiliateSeasons ?? 0 : candidate.affiliateSeasons,
             developmentPath: {
               ...(candidate.developmentPath ?? {
-                track: "NHL Regular",
+                track: "Major Club Regular",
                 confidence: 50,
                 lastReport: "",
                 projectedRole: candidate.roleExpectation,
@@ -107,7 +107,7 @@ export function activatePlayer(franchise: FranchiseState, teamId: string, player
   const team = franchise.league.teams.find((candidate) => candidate.id === teamId);
   const player = team?.roster.find((candidate) => candidate.id === playerId);
   if (!team || !player || canActivatePlayer(team, player).length) return franchise;
-  return movePlayerRosterStatus(franchise, teamId, playerId, "active", "Activated for NHL roster duty.", true);
+  return movePlayerRosterStatus(franchise, teamId, playerId, "active", "Activated for major-club roster duty.", true);
 }
 
 export function placePlayerOnIR(franchise: FranchiseState, teamId: string, playerId: string): FranchiseState {
@@ -275,14 +275,14 @@ function pathwayTrackForStatus(player: Player, status: RosterStatus): PlayerDeve
   if (status === "affiliate") return player.position === "G" ? "Goalie Project" : player.age <= 24 ? "Affiliate Development" : "Veteran Depth";
   if (status === "prospectRights") return "Prospect Pipeline";
   if (player.age >= 31 && player.overall < 75) return "Veteran Depth";
-  return "NHL Regular";
+  return "Major Club Regular";
 }
 
 function rosterMovePathReport(player: Player, status: RosterStatus): string {
-  if (status === "affiliate") return `${player.displayName} will get simplified affiliate reps without NHL stat accumulation.`;
+  if (status === "affiliate") return `${player.displayName} will get simplified affiliate reps without major-club stat accumulation.`;
   if (status === "injuredReserve") return `${player.displayName} is unavailable until the medical room clears him.`;
-  if (status === "scratched") return `${player.displayName} remains with the NHL group as reserve depth.`;
-  return `${player.displayName} is available for the NHL lineup.`;
+  if (status === "scratched") return `${player.displayName} remains with the major-club group as reserve depth.`;
+  return `${player.displayName} is available for the major-club lineup.`;
 }
 
 function lineupPriority(player: Player, assigned: Set<string | undefined>): number {

@@ -177,7 +177,8 @@ function emptyBadgeRecord(): Record<RoomId, RoomBadge[]> {
     staff: [],
     draft: [],
     settings: [],
-    devTools: []
+    devTools: [],
+    feedback: []
   };
 }
 

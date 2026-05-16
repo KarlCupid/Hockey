@@ -13,9 +13,11 @@ import {
   findTurningPoint
 } from "../../game/systems/broadcastStory";
 import type { GameResult, Team } from "../../game/types";
+import { createPostGameSummary } from "../../game/systems/postGameSummary";
 import { useAudioStore } from "../../store/audioStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useSettingsStore } from "../../store/settingsStore";
+import { useUiStore } from "../../store/uiStore";
 import { BroadcastScorebug } from "../branding/BroadcastPackage";
 
 const FILTERS: Array<{ id: ResultEventFilter; label: string }> = [
@@ -30,7 +32,9 @@ const FILTERS: Array<{ id: ResultEventFilter; label: string }> = [
 export function GameResultCenter({ result, teams }: { result: GameResult; teams: Team[] }) {
   const [filter, setFilter] = useState<ResultEventFilter>("all");
   const franchise = useFranchiseStore((state) => state.franchise);
+  const recordTelemetryEvent = useFranchiseStore((state) => state.recordTelemetryEvent);
   const settings = useSettingsStore((state) => state.settings);
+  const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const playCue = useAudioStore((state) => state.playCue);
   const presentation = useMemo(() => createGameResultPresentation(result, teams), [result, teams]);
   const narrativeBeats = useMemo(() => createGameNarrativeBeats(result, teams, settings.reduceMotion), [result, settings.reduceMotion, teams]);
@@ -42,11 +46,16 @@ export function GameResultCenter({ result, teams }: { result: GameResult; teams:
   const broadcastIntro = franchise ? createBroadcastIntro(franchise, result) : undefined;
   const fanReaction = franchise ? createFanReactionFromResult(franchise, result) : undefined;
   const mediaPrompt = franchise ? createMediaPromptFromResult(franchise, result) : undefined;
+  const postGameSummary = useMemo(
+    () => (franchise ? createPostGameSummary(franchise, result, teams, { reducedMotion: settings.reduceMotion }) : undefined),
+    [franchise, result, settings.reduceMotion, teams]
+  );
 
   useEffect(() => {
     playCue("final-horn");
     if (result.goals.some((goal) => goal.teamId === franchise?.selectedTeamId)) playCue("goal-horn");
-  }, [franchise?.selectedTeamId, playCue, result.goals]);
+    recordTelemetryEvent("resultViewed", "Opened Game Result Center", { gameId: result.gameId });
+  }, [franchise?.selectedTeamId, playCue, recordTelemetryEvent, result.gameId, result.goals]);
 
   return (
     <div className="result-center">
@@ -84,6 +93,30 @@ export function GameResultCenter({ result, teams }: { result: GameResult; teams:
             <small>{presentation.scoreboard.homeTeam}</small>
             <strong>{presentation.scoreboard.homeScore} {presentation.scoreboard.homeAbbreviation}</strong>
           </div>
+        </section>
+      )}
+
+      {postGameSummary && (
+        <section className="result-section post-game-summary">
+          <div className="post-game-summary__head">
+            <div>
+              <small>{postGameSummary.subhead}</small>
+              <h4>{postGameSummary.headline}</h4>
+            </div>
+            <button type="button" onClick={() => setActiveRoom(postGameSummary.nextRecommendation.roomId)}>
+              {postGameSummary.nextRecommendation.label}
+            </button>
+          </div>
+          <div className="result-card-list result-card-list--summary">
+            {postGameSummary.cards.map((card) => (
+              <article key={card.id} className={`post-game-card post-game-card--${card.tone}`}>
+                <strong>{card.title}</strong>
+                <p>{card.body}</p>
+                {card.roomId && <button type="button" onClick={() => setActiveRoom(card.roomId)}>Open room</button>}
+              </article>
+            ))}
+          </div>
+          <p className="muted">Next recommendation: {postGameSummary.nextRecommendation.body}</p>
         </section>
       )}
 

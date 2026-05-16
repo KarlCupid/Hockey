@@ -117,7 +117,8 @@ export type RoomId =
   | "staff"
   | "draft"
   | "settings"
-  | "devTools";
+  | "devTools"
+  | "feedback";
 
 export interface TutorialStep {
   id: string;
@@ -217,6 +218,8 @@ export interface FranchiseMilestone {
 
 export interface AudioCue {
   id: string;
+  previewLabel: string;
+  description?: string;
   type:
     | "ui"
     | "notification"
@@ -243,10 +246,15 @@ export interface LocalTelemetryEvent {
     | "saveLoaded"
     | "saveRepaired"
     | "tutorialStepCompleted"
+    | "tutorialSkipped"
     | "achievementUnlocked"
     | "errorBoundary"
     | "decisionResolved"
-    | "rosterMove";
+    | "rosterMove"
+    | "simBlocked"
+    | "validationError"
+    | "feedbackSubmitted"
+    | "resultViewed";
   label: string;
   details?: Record<string, string | number | boolean>;
 }
@@ -278,6 +286,7 @@ export interface BugReport {
   }>;
   saveIntegritySummary: string;
   invariantSummary: string;
+  uxFrictionSummary?: string;
   consoleNotes?: string[];
   userNote?: string;
   includeFullSave?: boolean;
@@ -607,7 +616,7 @@ export interface Contract {
 }
 
 export interface PlayerDevelopmentPath {
-  track: "NHL Regular" | "Affiliate Development" | "Prospect Pipeline" | "Veteran Depth" | "Goalie Project";
+  track: "Major Club Regular" | "Affiliate Development" | "Prospect Pipeline" | "Veteran Depth" | "Goalie Project";
   confidence: number;
   lastReport: string;
   projectedRole: RoleExpectation;

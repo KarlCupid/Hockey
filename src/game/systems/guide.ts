@@ -37,6 +37,7 @@ export function getStarterGuideTopicIds(): string[] {
     "basics-assistant-gm-action-queue",
     "room-gm-office",
     "system-game-simulation",
-    "system-achievements-milestones"
+    "system-achievements-milestones",
+    "system-closed-beta-feedback"
   ];
 }

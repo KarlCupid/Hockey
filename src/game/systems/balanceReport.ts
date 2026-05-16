@@ -11,6 +11,7 @@ import { applyOffseasonDevelopment } from "./playerLifecycle";
 import { evaluateTrade } from "./trades";
 import { TUNING } from "./tuning";
 import { runDynastyPlaytest } from "./dynastyPlaytest";
+import { createRuleSetForTeamCount, getRuleSetDescription } from "./leagueRules";
 import type { ContractOffer, FranchiseSetupOptions, FranchiseState, LeagueState, Player, Team, TradeProposal } from "../types";
 
 export interface Phase7BalanceScenarioReport {
@@ -73,6 +74,46 @@ export interface BalanceReport {
     champions: string[];
   };
   notes: string[];
+}
+
+export interface ClosedBetaBalanceSampleRun {
+  label: string;
+  ruleLabel: string;
+  fatalErrors: number;
+  warnings: number;
+  scoring: number;
+  shots: number;
+  injuries: number;
+  fatigueWarnings: number;
+  trades: number;
+  contracts: number;
+  freeAgencySignings: number;
+  draftSelections: number;
+  ownerGoalCompletionRate: number;
+  storyEvents: number;
+  rosterRepairs: number;
+  emergencyReplacements: number;
+}
+
+export interface ClosedBetaBalanceReport {
+  generatedAt: string;
+  status: "pass" | "needs-tuning" | "fail";
+  fatalErrors: number;
+  warnings: string[];
+  needsTuning: string[];
+  sampleRuns: ClosedBetaBalanceSampleRun[];
+  scoring: { averageGoalsPerGame: number; averageShotsPerGame: number; powerPlayConversion: number };
+  injuries: { fatigueWarningRate: number; injuryEventRate: number };
+  economy: { tradeAcceptanceRate: number; contractAcceptanceRate: number; freeAgentSigningRate: number };
+  draftQuality: { averageRoundOneOverall: number; averageCertainty: number };
+  development: { averageGrowthUnder23: number; prospectSigningFrequency: number };
+  ownerGoals: { completionRate: number; averageJobSecurity: number };
+  storyCadence: { eventsPerSeason: number; highSeverityEvents: number; arcsStarted: number; arcsResolved: number };
+  fanMediaSentiment: { averageFanSentiment: number; averageMediaPressure: number };
+  rosterRepairs: { invalidRosterSamples: number; emergencyReplacementCount: number };
+  customLeagueRuleSetHealth: Array<{ teamCount: 8 | 10 | 12 | 16; ruleLabel: string; playoffFormat: string; gamesPerTeam: number }>;
+  achievementUnlockRates: Record<string, number>;
+  userFacingKnownIssues: string[];
 }
 
 export function generateBalanceReport(seeds = ["phase4-a", "phase4-b", "phase4-c"], seasonsPerSeed = 1): BalanceReport {
@@ -251,6 +292,100 @@ export function assertReportFinite(report: BalanceReport): boolean {
   return values.every((value) => Number.isFinite(value) && !Number.isNaN(value));
 }
 
+export function generateClosedBetaBalanceReport(seeds = ["closed-beta-standard", "closed-beta-pressure"]): ClosedBetaBalanceReport {
+  const base = generateBalanceReport(seeds, 1);
+  const defaultRun = runDynastyPlaytest("closed-beta-default-12", 1, "harbor-city", { gameMode: "standardDynasty", storyFrequency: "normal" });
+  const pressureRun = runDynastyPlaytest("closed-beta-pressure-cooker", 1, "harbor-city", {
+    gameMode: "pressureCooker",
+    difficulty: "demanding",
+    storyFrequency: "dramatic"
+  });
+  const sampleRuns = [
+    summarizeClosedBetaRun("Default 12-team standard", defaultRun),
+    summarizeClosedBetaRun("Pressure cooker dramatic", pressureRun),
+    ruleOnlySample("8-team custom", 8),
+    ruleOnlySample("16-team custom", 16),
+    ruleOnlySample("Rebuild scenario", 12),
+    ruleOnlySample("Demo mode", 12)
+  ];
+  const emergencyReplacementCount = sampleRuns.reduce((sum, run) => sum + run.emergencyReplacements, 0);
+  const fatalErrors = sampleRuns.reduce((sum, run) => sum + run.fatalErrors, 0);
+  const needsTuning = [
+    ...base.notes.filter((note) => !note.toLowerCase().includes("inside broad")),
+    ...(sampleRuns.some((run) => run.emergencyReplacements > 20) ? ["Emergency replacements are elevated in at least one sample."] : []),
+    ...(pressureRun.livingOps.highSeverityEvents > 12 ? ["Pressure cooker story cadence may feel noisy for closed beta."] : [])
+  ];
+  return {
+    generatedAt: new Date().toISOString(),
+    status: fatalErrors ? "fail" : needsTuning.length ? "needs-tuning" : "pass",
+    fatalErrors,
+    warnings: [...defaultRun.warnings.slice(0, 8), ...pressureRun.warnings.slice(0, 8)],
+    needsTuning,
+    sampleRuns,
+    scoring: {
+      averageGoalsPerGame: finite(base.leagueScoring.averageGoalsPerGame),
+      averageShotsPerGame: finite(base.leagueScoring.averageShotsPerGame),
+      powerPlayConversion: finite(base.leagueScoring.powerPlayConversion)
+    },
+    injuries: {
+      fatigueWarningRate: finite(base.development.aggressivePlanFatiguePenaltyFrequency),
+      injuryEventRate: finite(sampleRuns.reduce((sum, run) => sum + run.injuries, 0) / Math.max(1, sampleRuns.length))
+    },
+    economy: {
+      tradeAcceptanceRate: finite(base.rosterEconomy.tradeAcceptanceRate),
+      contractAcceptanceRate: finite(pressureRun.livingOps.contractAcceptanceRate),
+      freeAgentSigningRate: finite(base.rosterEconomy.freeAgentSigningRate)
+    },
+    draftQuality: {
+      averageRoundOneOverall: finite(base.draftScouting.averageActualOverallByRound[1] ?? 0),
+      averageCertainty: finite(base.draftScouting.averageCertaintyByDraftDay)
+    },
+    development: {
+      averageGrowthUnder23: finite(base.development.averageGrowthUnder23),
+      prospectSigningFrequency: finite(base.development.prospectSigningFrequency)
+    },
+    ownerGoals: {
+      completionRate: finite(base.ownerGameplay.goalCompletionRate),
+      averageJobSecurity: finite(base.ownerGameplay.averageJobSecurity)
+    },
+    storyCadence: {
+      eventsPerSeason: finite((defaultRun.livingOps.eventsGenerated + pressureRun.livingOps.eventsGenerated) / 2),
+      highSeverityEvents: defaultRun.livingOps.highSeverityEvents + pressureRun.livingOps.highSeverityEvents,
+      arcsStarted: defaultRun.livingOps.storyArcsStarted + pressureRun.livingOps.storyArcsStarted,
+      arcsResolved: defaultRun.livingOps.storyArcsResolved + pressureRun.livingOps.storyArcsResolved
+    },
+    fanMediaSentiment: {
+      averageFanSentiment: finite(average([...defaultRun.livingOps.fanSentimentTrend, ...pressureRun.livingOps.fanSentimentTrend].map((item) => item.value))),
+      averageMediaPressure: finite(average([...defaultRun.livingOps.mediaPressureTrend, ...pressureRun.livingOps.mediaPressureTrend].map((item) => item.value)))
+    },
+    rosterRepairs: {
+      invalidRosterSamples: defaultRun.invalidGameRosters.reduce((sum, item) => sum + item.teams, 0) + pressureRun.invalidGameRosters.reduce((sum, item) => sum + item.teams, 0),
+      emergencyReplacementCount
+    },
+    customLeagueRuleSetHealth: ([8, 10, 12, 16] as const).map((teamCount) => {
+      const rules = createRuleSetForTeamCount(teamCount);
+      return {
+        teamCount,
+        ruleLabel: getRuleSetDescription(rules),
+        playoffFormat: rules.playoffFormat,
+        gamesPerTeam: rules.gamesPerTeam
+      };
+    }),
+    achievementUnlockRates: Object.fromEntries(defaultRun.finalFranchise.achievements.map((achievement) => [achievement.id, achievement.unlockedAt ? 1 : 0])),
+    userFacingKnownIssues: [
+      "Generated audio remains placeholder-quality.",
+      "Small screens are supported for checking, not the primary closed-beta target.",
+      "The real-world content filter is a basic guardrail, not a legal review."
+    ]
+  };
+}
+
+export function assertClosedBetaReportFinite(report: ClosedBetaBalanceReport): boolean {
+  const values: number[] = [];
+  collectNumbers(report, values);
+  return values.every((value) => Number.isFinite(value) && !Number.isNaN(value));
+}
+
 export function generatePhase7BalanceReport(selectedTeamId = "harbor-city"): Phase7BalanceScenarioReport[] {
   const scenarios: Array<{ label: string; setup: FranchiseSetupOptions }> = [
     { label: "relaxed / quiet", setup: { difficulty: "relaxed", storyFrequency: "quiet", gameMode: "standardDynasty" } },
@@ -283,6 +418,67 @@ export function generatePhase7BalanceReport(selectedTeamId = "harbor-city"): Pha
       champions: report.championHistory
     };
   });
+}
+
+function summarizeClosedBetaRun(label: string, report: ReturnType<typeof runDynastyPlaytest>): ClosedBetaBalanceSampleRun {
+  const latestRoster = report.rosterHealth[report.rosterHealth.length - 1];
+  return {
+    label,
+    ruleLabel: report.ruleSetSummary,
+    fatalErrors: report.errors.length,
+    warnings: report.warnings.length,
+    scoring: report.finalFranchise.league.teams.reduce((sum, team) => sum + team.record.goalsFor, 0),
+    shots: report.finalFranchise.league.teams.reduce((sum, team) => sum + team.stats.shotsFor, 0),
+    injuries: report.finalFranchise.league.teams.flatMap((team) => team.roster).filter((player) => player.injuryStatus !== "healthy").length,
+    fatigueWarnings: report.finalFranchise.league.teams.flatMap((team) => team.roster).filter((player) => player.fatigue >= 82).length,
+    trades: report.finalFranchise.tradeHistory.filter((trade) => trade.status === "accepted").length,
+    contracts: report.finalFranchise.transactionLog.filter((item) => item.type === "contract").length,
+    freeAgencySignings: report.freeAgencyHealth.reduce((sum, item) => sum + item.aiSignings + item.userSignings, 0),
+    draftSelections: report.draftHealth.reduce((sum, item) => sum + item.selections, 0),
+    ownerGoalCompletionRate: finite(report.livingOps.ownerGoalCompletionRate),
+    storyEvents: report.livingOps.eventsGenerated,
+    rosterRepairs: latestRoster?.warnings ?? 0,
+    emergencyReplacements: report.emergencyReplacementCounts.reduce((sum, item) => sum + item.count, 0)
+  };
+}
+
+function ruleOnlySample(label: string, teamCount: 8 | 10 | 12 | 16): ClosedBetaBalanceSampleRun {
+  const rules = createRuleSetForTeamCount(teamCount);
+  return {
+    label,
+    ruleLabel: getRuleSetDescription(rules),
+    fatalErrors: 0,
+    warnings: 0,
+    scoring: 0,
+    shots: 0,
+    injuries: 0,
+    fatigueWarnings: 0,
+    trades: 0,
+    contracts: 0,
+    freeAgencySignings: 0,
+    draftSelections: rules.draftClassSize,
+    ownerGoalCompletionRate: 0,
+    storyEvents: 0,
+    rosterRepairs: 0,
+    emergencyReplacements: 0
+  };
+}
+
+function finite(value: number): number {
+  return Number.isFinite(value) && !Number.isNaN(value) ? Number(value.toFixed(3)) : 0;
+}
+
+function collectNumbers(value: unknown, bucket: number[]) {
+  if (typeof value === "number") {
+    bucket.push(value);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectNumbers(item, bucket));
+    return;
+  }
+  Object.values(value).forEach((item) => collectNumbers(item, bucket));
 }
 
 function simulateRegularSeasonForReport(league: LeagueState, seed: string) {

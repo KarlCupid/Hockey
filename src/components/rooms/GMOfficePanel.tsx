@@ -25,6 +25,8 @@ import { normalizeLeagueRuleSet } from "../../game/systems/leagueRules";
 import { getRecentMilestones } from "../../game/systems/milestones";
 import { getCurrentTutorialStep, getTutorialSteps } from "../../game/systems/tutorial";
 import { getPlaytestChecklists, validatePlaytestChecklists } from "../../game/systems/playtestChecklist";
+import { getAfterFirstGameChecklist, getFirstHourChecklist } from "../../game/systems/onboarding";
+import { createFrictionRecommendation, detectUxFriction } from "../../game/systems/uxFriction";
 import type { FranchiseState } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
@@ -52,8 +54,9 @@ export function GMOfficePanel() {
   const completeFreeAgency = useFranchiseStore((state) => state.completeFreeAgency);
   const resolveDecisionEvent = useFranchiseStore((state) => state.resolveDecisionEvent);
   const dismissAssistantGmReport = useFranchiseStore((state) => state.dismissAssistantGmReport);
-  const confirmPhaseAdvances = useSettingsStore((state) => state.settings.confirmPhaseAdvances);
-  const showPlaytestChecklist = useSettingsStore((state) => state.settings.showPlaytestChecklist);
+  const settings = useSettingsStore((state) => state.settings);
+  const confirmPhaseAdvances = settings.confirmPhaseAdvances;
+  const showPlaytestChecklist = settings.showPlaytestChecklist;
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const markChecklistItem = useUiStore((state) => state.markChecklistItem);
   useEffect(() => {
@@ -89,6 +92,10 @@ export function GMOfficePanel() {
   const recentMilestones = getRecentMilestones(franchise, 3);
   const playtestIssues = validatePlaytestChecklists();
   const playtestChecklists = getPlaytestChecklists();
+  const firstHourChecklist = getFirstHourChecklist(franchise);
+  const afterFirstGameChecklist = getAfterFirstGameChecklist(franchise);
+  const frictionSignals = detectUxFriction(franchise, franchise.localTelemetry, settings);
+  const handoffRecommendation = frictionSignals[0] ? createFrictionRecommendation(frictionSignals[0]) : undefined;
   const confirmAndRun = (action: string, run: () => void) => {
     if (!confirmPhaseAdvances) {
       run();
@@ -165,7 +172,33 @@ export function GMOfficePanel() {
           ) : (
             <p className="empty-state">Tutorial complete. Reset it from Settings any time.</p>
           )}
+          <div className="dynasty-checklist dynasty-checklist--inline">
+            {firstHourChecklist.steps.slice(0, 5).map((item) => (
+              <span className={item.completed ? "is-complete" : ""} key={item.id}>
+                <b aria-hidden="true">{item.completed ? "OK" : ""}</b>
+                {item.label}
+              </span>
+            ))}
+          </div>
+          {afterFirstGameChecklist.available && (
+            <p className="muted">After first game: {afterFirstGameChecklist.steps.map((item) => item.label).join(" | ")}</p>
+          )}
         </section>
+        {handoffRecommendation && (
+          <section className="panel-section panel-section--guidance">
+            <SectionHeader title="Need a Hand?" eyebrow="UX guidance" />
+            <article className="profile-card">
+              <strong>{handoffRecommendation.title}</strong>
+              <span>{handoffRecommendation.body}</span>
+              <small>{handoffRecommendation.actionLabel}</small>
+            </article>
+            <div className="button-row">
+              <button type="button" onClick={() => handoffRecommendation.targetRoomId && setActiveRoom(handoffRecommendation.targetRoomId)}>
+                Open suggested room
+              </button>
+            </div>
+          </section>
+        )}
         <section className="panel-section">
           <SectionHeader title="Franchise Moments" eyebrow="Release Candidate" />
           <div className="season-pulse">

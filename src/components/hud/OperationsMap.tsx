@@ -3,6 +3,8 @@ import type { RoomId } from "../../game/types";
 import { createDefaultFacilityBlueprint } from "../../game/facility/facilityBlueprint";
 import {
   getDistrictForRoom,
+  getOperationsMapGoToRoomLabel,
+  getOperationsMapPinLabel,
   getNearestRoomFromPosition,
   getOperationsMapRooms,
   getRoomMapBadgePosition,
@@ -94,11 +96,14 @@ export function OperationsMap() {
         </span>
         {rooms.map((room) => {
           const roomBadges = badges?.[room.roomId] ?? [];
+          const isCurrentRoom = room.roomId === currentRoom;
           return (
             <button
-              className={room.roomId === currentRoom ? "ops-map__pin is-nearby" : selectedRoom === room.roomId ? "ops-map__pin is-selected" : "ops-map__pin"}
+              className={isCurrentRoom ? "ops-map__pin is-nearby" : selectedRoom === room.roomId ? "ops-map__pin is-selected" : "ops-map__pin"}
               key={room.roomId}
               type="button"
+              aria-label={getOperationsMapPinLabel(blueprint, room, roomBadges, isCurrentRoom)}
+              title={getOperationsMapPinLabel(blueprint, room, roomBadges, isCurrentRoom)}
               style={{ left: `${room.mapPosition.x}%`, top: `${room.mapPosition.y}%`, borderColor: room.colorToken }}
               onClick={() => setSelectedRoom(room.roomId)}
               onDoubleClick={() => {
@@ -107,7 +112,11 @@ export function OperationsMap() {
               }}
             >
               {room.shortLabel}
-              {roomBadges.length > 0 && <span className={`ops-map__badge ops-map__badge--${roomBadges[0].tone}`}>{roomBadges[0].count ?? roomBadges.length}</span>}
+              {roomBadges.length > 0 && (
+                <span className={`ops-map__badge ops-map__badge--${roomBadges[0].tone}`} aria-hidden="true">
+                  {roomBadges[0].count ?? roomBadges.length}
+                </span>
+              )}
             </button>
           );
         })}
@@ -131,6 +140,11 @@ export function OperationsMap() {
           return (
             <section key={district.id}>
               <h4>{district.label}</h4>
+              {district.id === "customization" && (
+                <small className="ops-map__district-note">
+                  Custom League Lab starts from the title screen; use Save Desk for the local data-pack library inside a franchise.
+                </small>
+              )}
               {districtRooms.map((room) => {
                 const roomBadges = badges?.[room.roomId] ?? [];
                 return (
@@ -138,7 +152,7 @@ export function OperationsMap() {
                     key={room.roomId}
                     className={selectedRoom === room.roomId ? "is-active" : ""}
                   >
-                    <button type="button" onClick={() => setSelectedRoom(room.roomId)}>
+                    <button type="button" aria-label={`Select ${room.label} in ${district.label}`} onClick={() => setSelectedRoom(room.roomId)}>
                       <strong>{room.label}</strong>
                     </button>
                     <span>{room.description}</span>
@@ -153,6 +167,8 @@ export function OperationsMap() {
                     <button
                       type="button"
                       className="ops-map__go"
+                      aria-label={getOperationsMapGoToRoomLabel(blueprint, room, roomBadges)}
+                      title={getOperationsMapGoToRoomLabel(blueprint, room, roomBadges)}
                       onClick={(event) => {
                         event.stopPropagation();
                         setActiveRoom(room.roomId);

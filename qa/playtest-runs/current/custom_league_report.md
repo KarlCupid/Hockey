@@ -27,7 +27,9 @@ Areas inspected:
 Browser coverage:
 
 - Start-screen `Custom League Lab` entry was visible.
-- Complete custom league creation was not manually performed in browser during this pass.
+- Rerun opened `Custom League Lab` from the start screen.
+- Rerun confirmed the lab shows Working Pack, Library, Rules, Teams, Rosters, Draft Class, Scenarios, Import / Export, and `Start Franchise`.
+- Complete custom league franchise creation was not manually performed in browser during this pass.
 
 ## Finding QA-004: Custom League Lab is not clearly discoverable as a facility destination after franchise entry
 
@@ -47,7 +49,7 @@ Custom league starts are test-covered and visible on the start screen, but in-fa
 User Impact:
 Closed-beta testers may think custom league functionality is not integrated with the new Phase 13 facility, even though the underlying systems pass.
 Evidence:
-Source review of `src/game/facility/facilityBlueprint.ts`, `FACILITY_BLUEPRINT.md`, `src/game/systems/leagueRules.ts`, Phase 9 and Phase 10 tests; browser start-screen/map review.
+Source review of `src/game/facility/facilityBlueprint.ts`, `FACILITY_BLUEPRINT.md`, `src/game/systems/leagueRules.ts`, Phase 9 and Phase 10 tests; browser start-screen/map review; rerun screenshot `qa/playtest-runs/current/phase13-custom-league-rerun.png`.
 Likely Files:
 `src/game/facility/facilityBlueprint.ts`, `src/components/hud/OperationsMap.tsx`, `FACILITY_BLUEPRINT.md`, `src/components/rooms/SaveLoadPanel.tsx`
 Suggested Fix Direction:

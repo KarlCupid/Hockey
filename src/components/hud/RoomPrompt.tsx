@@ -24,7 +24,7 @@ export function RoomPrompt({ room }: { room?: RoomId }) {
   return (
     <div className="room-prompt">
       <span className="room-prompt__key">E</span>
-      <div>
+      <div className="room-prompt__body">
         <strong>{getRoomEntrancePrompt(roomDefinition)}</strong>
         <span>{getBreadcrumbForRoom(DEFAULT_FACILITY_BLUEPRINT, roomDefinition.roomId).join(" -> ")}</span>
       </div>

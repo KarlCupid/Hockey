@@ -1,4 +1,4 @@
-import type { RoomId } from "../types";
+import type { RoomBadge, RoomId } from "../types";
 import type { FacilityBlueprint, FacilityDistrictId, FacilityPathNode, FacilityRoomDefinition } from "./facilityTypes";
 import { validateFacilityBlueprint } from "./facilityValidation";
 
@@ -103,6 +103,24 @@ export function getOperationsMapRooms(
     .sort((a, b) => a.mapPosition.y - b.mapPosition.y || a.mapPosition.x - b.mapPosition.x);
 }
 
+export function getOperationsMapPinLabel(blueprint: FacilityBlueprint, room: FacilityRoomDefinition, badges: RoomBadge[] = [], isCurrentRoom = false): string {
+  const district = getDistrictForRoom(blueprint, room.roomId);
+  return compactLabel([
+    `${isCurrentRoom ? "Current room, " : "Select "}${room.label}`,
+    district.label,
+    formatRoomBadgeLabel(badges)
+  ]);
+}
+
+export function getOperationsMapGoToRoomLabel(blueprint: FacilityBlueprint, room: FacilityRoomDefinition, badges: RoomBadge[] = []): string {
+  const district = getDistrictForRoom(blueprint, room.roomId);
+  return compactLabel([
+    `Go to ${room.label}`,
+    district.label,
+    formatRoomBadgeLabel(badges)
+  ]);
+}
+
 export function getCurrentDistrictLabel(blueprint: FacilityBlueprint, roomId?: RoomId): string {
   return roomId ? getDistrictForRoom(blueprint, roomId).label : "Central Concourse";
 }
@@ -159,4 +177,14 @@ function shortestNodePath(blueprint: FacilityBlueprint, fromNodeId: string, toNo
 
 function pointDistance(a: { x: number; z: number }, b: { x: number; z: number }): number {
   return Math.hypot(a.x - b.x, a.z - b.z);
+}
+
+function formatRoomBadgeLabel(badges: RoomBadge[]): string {
+  if (!badges.length) return "";
+  const labels = badges.slice(0, 2).map((badge) => `${badge.label}${badge.count ? ` ${badge.count}` : ""}`);
+  return `Status: ${labels.join(", ")}`;
+}
+
+function compactLabel(parts: string[]): string {
+  return parts.filter(Boolean).join(". ");
 }

@@ -11,7 +11,7 @@ Phase 13 makes the 3D hub layout data-driven. Room placement, map pins, district
 - `arena`: the Arena Bowl as the larger game-day destination.
 - `media`: Press Room near the public/arena concourse.
 - `development`: scouting, development, and draft execution.
-- `customization`: developer/data-lab branch for local tools and future Custom League Lab expansion.
+- `customization`: developer/data-lab branch for local tools, with copy that points player-facing custom-league work back to the title-screen Custom League Lab and Save Desk data-pack library.
 - `utility`: Settings and Feedback kiosks close to spawn.
 
 ## Room List
@@ -25,7 +25,7 @@ Every `RoomId` must have exactly one `FacilityRoomDefinition`:
 - Scouting Department, Development Office, Draft Stage.
 - Save Desk, Standings/Trophy Hall, Settings, Feedback Desk, Dev Tools.
 
-Custom League Lab and Data Pack Library currently live inside Save Desk/start flow; the Customization district reserves the physical data-lab branch for that future room split.
+Custom League Lab currently lives on the title screen before a franchise is started. Once inside a franchise, the Save Desk is the local data-pack library and recovery hub; the Customization district reserves the physical data-lab branch for a future room split.
 
 ## Adjacency Rules
 

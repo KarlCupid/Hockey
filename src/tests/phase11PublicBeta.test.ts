@@ -204,6 +204,7 @@ describe("Phase 11 save snapshots, demo mode, checklists, and release smoke", ()
     expect(validateDynastyInvariants(franchise).errors).toEqual([]);
     expect(nextGameForTeam(franchise.selectedTeamId, franchise.league.schedule, franchise.league.currentDayIndex)).toBeTruthy();
     expect(franchise.assistantGmReports[0].recommendations.length).toBeGreaterThan(0);
+    expect(new Set(franchise.assistantGmReports.map((report) => `${report.date}:${report.type}:${report.headline}`)).size).toBe(franchise.assistantGmReports.length);
     expect(franchise.decisionEvents.length).toBeGreaterThan(0);
     expect(franchise.scouting.watchlist.length).toBeGreaterThan(0);
 

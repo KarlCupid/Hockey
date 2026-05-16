@@ -9,11 +9,11 @@ Report File: qa/playtest-runs/current/release_verification_report.md
 
 Release verifier command requirements:
 
-- `npm run typecheck`: passed.
+- `npm run typecheck`: passed on rerun.
 - `npm test`: passed after sandbox config-access rerun; 16 files / 252 tests.
 - `npm run test:smoke`: passed after sandbox config-access rerun; 6 files / 106 tests.
 - `npm run build`: passed after sandbox config-access rerun; 820 modules transformed.
-- `npm run check`: passed end to end, including typecheck, full tests, smoke tests, and build.
+- `npm run check`: passed after sandbox config-access rerun, including typecheck, full tests, smoke tests, and build.
 
 Sandbox note:
 
@@ -30,16 +30,18 @@ Production preview:
 
 - URL: `http://127.0.0.1:4173/`
 - Start screen loaded.
+- Custom League Lab opened from the start screen.
 - Demo franchise loaded.
 - Facility HUD loaded.
 - Operations Map opened.
-- Direct navigation to GM Office worked.
+- Direct map navigation still works generally, but rerun automation hit an ambiguous repeated `Go to room` control while targeting GM Office. Keep `QA-001` open.
 - Browser console warning/error log was empty.
 - Screenshot saved at `qa/playtest-runs/current/phase13-hub.png`.
+- Rerun screenshots saved at `qa/playtest-runs/current/phase13-start-rerun.png`, `qa/playtest-runs/current/phase13-custom-league-rerun.png`, `qa/playtest-runs/current/phase13-hub-rerun.png`, `qa/playtest-runs/current/phase13-map-rerun.png`, and `qa/playtest-runs/current/phase13-gm-office-rerun.png`.
 
 Browser limitations:
 
-- Full first-hour, custom league creation, save export, feedback export, and reduced-motion/settings toggles were not completed manually.
+- Full first-hour, custom league franchise creation, save export, feedback export, and reduced-motion/settings toggles were not completed manually.
 
 ## Finding QA-001: Operations Map controls lack destination-specific accessible names
 
@@ -58,7 +60,7 @@ Pins lack explicit descriptive labels and repeated `Go to room` buttons do not i
 User Impact:
 Assistive-tech users may struggle with the primary Phase 13 map navigation surface.
 Evidence:
-Browser DOM inspection; source review of `src/components/hud/OperationsMap.tsx`.
+Browser DOM inspection; rerun screenshot `qa/playtest-runs/current/phase13-map-rerun.png`; source review of `src/components/hud/OperationsMap.tsx`.
 Likely Files:
 `src/components/hud/OperationsMap.tsx`
 Suggested Fix Direction:
@@ -82,7 +84,7 @@ The text appears concatenated.
 User Impact:
 First facility impression feels less polished.
 Evidence:
-Screenshot `qa/playtest-runs/current/phase13-hub.png`; source review.
+Screenshots `qa/playtest-runs/current/phase13-hub.png` and `qa/playtest-runs/current/phase13-hub-rerun.png`; source review.
 Likely Files:
 `src/components/hud/RoomPrompt.tsx`, `src/styles/global.css`
 Suggested Fix Direction:
@@ -108,7 +110,7 @@ Two urgent Assistant GM report headlines repeat.
 User Impact:
 First-hour guidance feels noisy.
 Evidence:
-Browser DOM inspection; source review of `src/game/systems/demoMode.ts`.
+Browser DOM inspection from the original pass; source review of `src/game/systems/demoMode.ts`. The rerun did not clear this because ambiguous repeated map controls caused the automated GM navigation to land on the wrong destination.
 Likely Files:
 `src/game/systems/demoMode.ts`, `src/components/rooms/GMOfficePanel.tsx`
 Suggested Fix Direction:
@@ -134,7 +136,7 @@ The Customization district does not clearly connect to the start-screen Custom L
 User Impact:
 Closed-beta testers may report custom league access as missing from the new facility.
 Evidence:
-Source/doc review and browser map inspection.
+Source/doc review, browser map inspection, and rerun Custom League Lab screenshot `qa/playtest-runs/current/phase13-custom-league-rerun.png`.
 Likely Files:
 `src/components/hud/OperationsMap.tsx`, `src/game/facility/facilityBlueprint.ts`, `FACILITY_BLUEPRINT.md`
 Suggested Fix Direction:

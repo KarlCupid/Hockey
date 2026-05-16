@@ -6,7 +6,7 @@ import { mergeDecisionEvents } from "./decisionEvents";
 import { updateAchievementProgress } from "./achievements";
 import { generateAssistantGmReport } from "./assistantGm";
 import { createFranchise } from "../generators/generateLeague";
-import type { DataPack, FranchiseState } from "../types";
+import type { AssistantGmReport, DataPack, FranchiseState } from "../types";
 
 export function createDemoFranchise(): FranchiseState {
   const base = createFranchise("harbor-city", {
@@ -46,10 +46,10 @@ export function createDemoFranchise(): FranchiseState {
   const withAchievementProgress = updateAchievementProgress(withScouting, "dynasty-builder", 2);
   const withAssistantReport = {
     ...withAchievementProgress,
-    assistantGmReports: [
+    assistantGmReports: dedupeDemoAssistantReports([
       generateAssistantGmReport(withAchievementProgress, { type: "daily", date: withAchievementProgress.league.currentDate }),
       ...withAchievementProgress.assistantGmReports
-    ].slice(0, 20),
+    ]).slice(0, 20),
     saveStatus: "idle" as const,
     updatedAt: withAchievementProgress.createdAt
   };
@@ -77,4 +77,14 @@ export function resetDemoFranchise(): FranchiseState {
 
 export function validateDemoFranchise(franchise = createDemoFranchise()) {
   return validateDynastyInvariants(franchise);
+}
+
+function dedupeDemoAssistantReports(reports: AssistantGmReport[]): AssistantGmReport[] {
+  const seen = new Set<string>();
+  return reports.filter((report) => {
+    const key = `${report.date}:${report.type}:${report.headline}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }

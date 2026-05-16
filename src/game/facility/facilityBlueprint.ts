@@ -129,7 +129,7 @@ const districts: FacilityDistrict[] = [
   {
     id: "customization",
     label: "Customization Lab",
-    description: "Local data-pack, rule-review, and developer inspection tools sit off the concourse rather than in the daily hockey path.",
+    description: "Local data-pack and rule-review wayfinding points back to Save Desk while developer inspection tools sit off the daily hockey path.",
     floor: "main",
     colorToken: "#b58cff",
     bounds: { x: -5.8, z: 4.8, width: 5, depth: 4.6 },
@@ -407,7 +407,7 @@ const rooms: FacilityRoomDefinition[] = [
     priority: "core",
     relatedRoomIds: ["gm", "settings", "feedback", "devTools"],
     tutorialWeight: 1,
-    description: "Local saves, snapshots, diagnostics, bug reports, and the data-pack library are anchored at spawn.",
+    description: "Local saves, snapshots, diagnostics, bug reports, and the in-franchise data-pack library are anchored at spawn.",
     signage: "SAVE DESK",
     propTheme: "save"
   }),
@@ -457,7 +457,7 @@ const rooms: FacilityRoomDefinition[] = [
     priority: "utility",
     relatedRoomIds: ["saves", "settings", "feedback", "scouting"],
     tutorialWeight: 0.2,
-    description: "Developer-only QA, validation, layout export, and future data-lab review tools.",
+    description: "Developer-only QA, validation, layout export, and future data-lab review tools. Player-facing Custom League Lab remains a title-screen setup flow.",
     signage: "DEV TOOLS",
     propTheme: "devTools",
     entranceFacing: "east"
@@ -510,7 +510,7 @@ const defaultBlueprint: FacilityBlueprint = {
     "Add new rooms here first.",
     "Room placement, Operations Map badges, 3D markers, and wayfinding all read from this typed blueprint.",
     "The layout is a stylized hockey operations complex, not a realistic architectural simulation.",
-    "Custom League Lab is currently surfaced through Save Desk and the start screen; the customization district reserves a physical lab branch for future room expansion."
+    "Custom League Lab is currently surfaced through the start screen; Save Desk hosts the in-franchise data-pack library, and the customization district reserves a physical lab branch for future room expansion."
   ]
 };
 

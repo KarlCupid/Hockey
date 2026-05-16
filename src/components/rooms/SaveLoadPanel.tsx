@@ -216,6 +216,7 @@ export function SaveLoadPanel() {
           <textarea readOnly value={bugReportText} placeholder="Generate a diagnostic summary or bug report." />
         </label>
         <h3>Data Packs</h3>
+        <p className="muted">Custom League Lab starts from the title screen. Inside a franchise, this desk is the local data-pack library and recovery hub.</p>
         <DataPackLibrary currentFranchise={franchise} onStartPack={(pack, selectedTeamId) => useFranchiseStore.getState().startFranchiseFromDataPack(pack, selectedTeamId)} />
       </section>
     </div>

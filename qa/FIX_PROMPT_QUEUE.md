@@ -2,7 +2,11 @@
 
 Priority order: medium accessibility first, then first-hour polish/discoverability.
 
+Implementation status: all four prompts were implemented and verified on 2026-05-16. Keep this queue as the historical source prompt set for the Phase 13 closed-beta rerun.
+
 ## Prompt 1: Improve Operations Map Accessible Labels
+
+Status: implemented 2026-05-16
 
 Objective: Make Operations Map pins and direct navigation buttons destination-specific for keyboard and screen-reader users.
 
@@ -41,6 +45,8 @@ npm run build
 
 ## Prompt 2: Fix RoomPrompt Text Layout
 
+Status: implemented 2026-05-16
+
 Objective: Separate RoomPrompt action text from breadcrumb text in the facility HUD.
 
 Findings Addressed: `QA-002`
@@ -74,6 +80,8 @@ npm run build
 ```
 
 ## Prompt 3: Dedupe Demo Assistant GM Startup Reports
+
+Status: implemented 2026-05-16
 
 Objective: Prevent a fresh demo franchise from showing duplicate Assistant GM report headlines in GM Office.
 
@@ -111,6 +119,8 @@ npm run build
 
 ## Prompt 4: Clarify Custom League/Data-Pack Facility Wayfinding
 
+Status: implemented 2026-05-16
+
 Objective: Make it clear where Custom League Lab and Data Pack Library tools live once a player is inside the facility.
 
 Findings Addressed: `QA-004`
@@ -146,4 +156,3 @@ npm run typecheck
 npm run test:smoke
 npm run build
 ```
-

@@ -7,6 +7,8 @@ import {
   exportFacilityBlueprintJson,
   getCurrentDistrictLabel,
   getDistrictForRoom,
+  getOperationsMapGoToRoomLabel,
+  getOperationsMapPinLabel,
   getOperationsMapRooms,
   getRoomDefinition,
   getRoomMapBadgePosition,
@@ -148,6 +150,20 @@ describe("Phase 13 Operations Map helpers", () => {
 
   it("returns current district labels", () => {
     expect(getCurrentDistrictLabel(blueprint, "coach")).toBe("Hockey Ops Wing");
+  });
+
+  it("labels map controls with destination-specific accessible names", () => {
+    const gm = getRoomDefinition(blueprint, "gm");
+    const badges = [{ id: "news", label: "News", tone: "info" as const, count: 4 }];
+    expect(getOperationsMapPinLabel(blueprint, gm, badges)).toBe("Select GM Office. Front Office Wing. Status: News 4");
+    expect(getOperationsMapGoToRoomLabel(blueprint, gm, badges)).toBe("Go to GM Office. Front Office Wing. Status: News 4");
+  });
+
+  it("keeps Custom League Lab discoverable without adding a facility room", () => {
+    const customization = blueprint.districts.find((district) => district.id === "customization");
+    expect(customization?.roomIds).toEqual(["devTools"]);
+    expect(blueprint.notes.join(" ")).toContain("Custom League Lab");
+    expect(getRoomDefinition(blueprint, "saves").description).toContain("data-pack library");
   });
 });
 

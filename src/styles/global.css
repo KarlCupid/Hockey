@@ -188,10 +188,29 @@ tr.is-selected {
   gap: 0.8rem;
   align-items: center;
   padding: 0.9rem 1rem;
+  max-width: min(620px, calc(100vw - 2rem));
 }
 
 .room-prompt--quiet {
   color: var(--muted);
+}
+
+.room-prompt__body {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.room-prompt__body strong,
+.room-prompt__body span {
+  display: block;
+}
+
+.room-prompt__body span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .control-hint {
@@ -2864,6 +2883,14 @@ textarea {
   color: #d9edf8;
   font-size: 0.72rem;
   text-transform: uppercase;
+}
+
+.ops-map__district-note {
+  border: 1px solid rgba(181, 140, 255, 0.32);
+  border-radius: 6px;
+  background: rgba(181, 140, 255, 0.08);
+  padding: 0.45rem 0.5rem;
+  line-height: 1.35;
 }
 
 .ops-map__directory--districts article {

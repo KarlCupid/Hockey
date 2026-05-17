@@ -49,6 +49,7 @@ export function AppShell() {
   const operationsMapOpen = useUiStore((state) => state.operationsMapOpen);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const toggleOperationsMap = useUiStore((state) => state.toggleOperationsMap);
+  const tutorialActive = useFranchiseStore((state) => Boolean(state.franchise?.tutorialState.active));
   const settings = useSettingsStore((state) => state.settings);
   const helpOpen = useSettingsStore((state) => state.helpOpen);
   const setHelpOpen = useSettingsStore((state) => state.setHelpOpen);
@@ -90,7 +91,8 @@ export function AppShell() {
   }, []);
 
   const displayMode = getRecommendedDisplayMode(viewport.width, viewport.height);
-  const suppressPassiveHud = Boolean(activeRoom || operationsMapOpen);
+  const guidedStartFocus = tutorialActive && !activeRoom && !operationsMapOpen;
+  const suppressPassiveHud = Boolean(activeRoom || operationsMapOpen || guidedStartFocus);
 
   return (
     <main
@@ -106,12 +108,12 @@ export function AppShell() {
       </ErrorBoundary>
       <TopBar />
       <OperationsMap />
-      <FirstDayChecklist />
+      {!tutorialActive && <FirstDayChecklist />}
       <TutorialOverlay />
-      {!suppressPassiveHud && <ContextualHint roomId={nearbyRoom} />}
+      {!tutorialActive && !suppressPassiveHud && <ContextualHint roomId={nearbyRoom} />}
       <HelpOverlay />
       {!suppressPassiveHud && <RoomPrompt room={nearbyRoom} />}
-      {settings.keyboardHints && !suppressPassiveHud && <div className="control-hint">WASD move | mouse orbit | E enter | G GM | R roster | C coach | A arena | S saves | M map | H help | Esc close</div>}
+      {settings.keyboardHints && !suppressPassiveHud && !tutorialActive && <div className="control-hint">WASD move | mouse orbit | E enter | G GM | R roster | C coach | A arena | S saves | M map | H help | Esc close</div>}
       {activeRoom && (
         <ModalShell title={roomLabel(activeRoom)} subtitle={subtitleFor(activeRoom)} onClose={() => setActiveRoom(undefined)}>
           <ErrorBoundary>

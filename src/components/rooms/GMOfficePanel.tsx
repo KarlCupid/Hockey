@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useUiStore } from "../../store/uiStore";
 import { upcomingOpponent, recordLabel, selectedTeam } from "../../store/franchiseStore";
 import { useFranchiseStore } from "../../store/franchiseStore";
@@ -27,7 +27,7 @@ import { getCurrentTutorialStep, getTutorialSteps } from "../../game/systems/tut
 import { getPlaytestChecklists, validatePlaytestChecklists } from "../../game/systems/playtestChecklist";
 import { getAfterFirstGameChecklist, getFirstHourChecklist } from "../../game/systems/onboarding";
 import { createFrictionRecommendation, detectUxFriction } from "../../game/systems/uxFriction";
-import type { FranchiseState } from "../../game/types";
+import type { FranchiseState, RoomId } from "../../game/types";
 import { useSettingsStore } from "../../store/settingsStore";
 import { JerseySwatch } from "../branding/JerseySwatch";
 import { TeamCrest } from "../branding/TeamCrest";
@@ -54,6 +54,7 @@ export function GMOfficePanel() {
   const completeFreeAgency = useFranchiseStore((state) => state.completeFreeAgency);
   const resolveDecisionEvent = useFranchiseStore((state) => state.resolveDecisionEvent);
   const dismissAssistantGmReport = useFranchiseStore((state) => state.dismissAssistantGmReport);
+  const completeTutorialStep = useFranchiseStore((state) => state.completeTutorialStep);
   const settings = useSettingsStore((state) => state.settings);
   const confirmPhaseAdvances = settings.confirmPhaseAdvances;
   const showPlaytestChecklist = settings.showPlaytestChecklist;
@@ -87,6 +88,7 @@ export function GMOfficePanel() {
   const assistantReports = franchise.assistantGmReports.filter((report) => !report.dismissed).slice(0, 3);
   const tutorialSteps = getTutorialSteps(franchise);
   const tutorialCurrent = getCurrentTutorialStep(franchise);
+  const tutorialTargetIsCurrentRoom = tutorialCurrent?.roomId === "gm";
   const tutorialComplete = tutorialSteps.filter((step) => step.completed).length;
   const achievementSummary = getAchievementSummary(franchise);
   const recentMilestones = getRecentMilestones(franchise, 3);
@@ -154,6 +156,18 @@ export function GMOfficePanel() {
           {playoffGame ? "Instant Sim Playoff Game" : "Instant Sim Next Game"}
         </button>
       </section>
+      <GmComputerHub
+        franchise={franchise}
+        actionQueue={actionQueue}
+        activeDecisions={activeDecisions}
+        rosterReport={rosterReport}
+        opponentReady={Boolean(opponent || playoffGame)}
+        onOpenRoom={setActiveRoom}
+        onInstantSim={() => {
+          markChecklistItem("simulateGame");
+          void simulateInstantNextGame();
+        }}
+      />
       <div className="room-grid room-grid--two">
         <section className="panel-section">
           <SectionHeader title="Guided Start" eyebrow="Tutorial" />
@@ -166,7 +180,8 @@ export function GMOfficePanel() {
               </div>
               <ProgressBar value={tutorialComplete} max={tutorialSteps.length} label={`${tutorialComplete}/${tutorialSteps.length} steps`} />
               <div className="button-row">
-                {tutorialCurrent.roomId && <button type="button" onClick={() => setActiveRoom(tutorialCurrent.roomId)}>Open target room</button>}
+                {tutorialCurrent.roomId && !tutorialTargetIsCurrentRoom && <button type="button" onClick={() => setActiveRoom(tutorialCurrent.roomId)}>Open target room</button>}
+                {tutorialTargetIsCurrentRoom && <button type="button" onClick={() => completeTutorialStep(tutorialCurrent.id)}>Mark read</button>}
               </div>
             </>
           ) : (
@@ -480,16 +495,7 @@ export function GMOfficePanel() {
             <p className="empty-state">No results yet. The room is quiet before puck drop.</p>
           )}
           <h4>Front Office Expansion</h4>
-          <p className="muted">Contracts, trades, scouting, development, free agency, staff, and dynasty history now feed the same inbox and local save.</p>
-          <div className="button-row">
-            <button type="button" onClick={() => setActiveRoom("contracts")}>Cap Office</button>
-            <button type="button" onClick={() => setActiveRoom("roster")}>Roster Office</button>
-            <button type="button" onClick={() => setActiveRoom("trades")}>Trade Room</button>
-            <button type="button" onClick={() => setActiveRoom("scouting")}>Scouting</button>
-            <button type="button" onClick={() => setActiveRoom("development")}>Development</button>
-            <button type="button" onClick={() => setActiveRoom("freeAgency")}>Free Agency</button>
-            <button type="button" onClick={() => setActiveRoom("staff")}>Staff</button>
-          </div>
+          <p className="muted">Contracts, trades, scouting, development, free agency, staff, and dynasty history feed the GM Computer and the same local save.</p>
           <h4>Transaction Log</h4>
           {franchise.transactionLog.length ? (
             <div className="asset-list asset-list--compact">
@@ -512,4 +518,162 @@ export function GMOfficePanel() {
       </div>
     </div>
   );
+}
+
+type GmComputerTone = "neutral" | "good" | "warning" | "danger";
+
+interface GmComputerApp {
+  roomId: RoomId;
+  label: string;
+  summary: string;
+}
+
+interface GmComputerSection {
+  title: string;
+  apps: GmComputerApp[];
+}
+
+const GM_COMPUTER_SECTIONS: GmComputerSection[] = [
+  {
+    title: "Hockey Ops",
+    apps: [
+      { roomId: "roster", label: "Roster", summary: "Active club, scratches, affiliate depth, injured reserve." },
+      { roomId: "coach", label: "Lines & Tactics", summary: "Lineup, goalies, tactical identity." },
+      { roomId: "locker", label: "Room Pulse", summary: "Morale, form, fatigue, relationships." },
+      { roomId: "medical", label: "Medical", summary: "Injury list and workload risk." }
+    ]
+  },
+  {
+    title: "Front Office",
+    apps: [
+      { roomId: "contracts", label: "Cap & Contracts", summary: "Cap room, expiries, promises, pick inventory." },
+      { roomId: "trades", label: "Trade Board", summary: "Packages, team needs, market fit." },
+      { roomId: "freeAgency", label: "Free Agency", summary: "Offers, rumors, market days." },
+      { roomId: "staff", label: "Staff", summary: "Hiring chairs and department ratings." },
+      { roomId: "ownerSuite", label: "Owner", summary: "Goals, trust, job security." },
+      { roomId: "agents", label: "Agents", summary: "Agent calls, clients, public pressure." }
+    ]
+  },
+  {
+    title: "Pipeline & Public",
+    apps: [
+      { roomId: "scouting", label: "Scouting", summary: "Draft board, assignments, watchlist." },
+      { roomId: "development", label: "Development", summary: "Player plans and growth notes." },
+      { roomId: "draft", label: "Draft Stage", summary: "Owned picks and draft execution." },
+      { roomId: "press", label: "Press", summary: "Media questions and fan pulse." },
+      { roomId: "playerMeetings", label: "Player Meetings", summary: "One-on-ones, team meetings, roles." },
+      { roomId: "standings", label: "League", summary: "Standings, history, achievements." }
+    ]
+  },
+  {
+    title: "Local Desk",
+    apps: [
+      { roomId: "saves", label: "Save Desk", summary: "Manual saves, snapshots, data-pack library." },
+      { roomId: "settings", label: "Settings", summary: "Accessibility, presentation, controls." },
+      { roomId: "feedback", label: "Feedback", summary: "Local beta notes and export bundle." },
+      { roomId: "devTools", label: "Dev Tools", summary: "QA reports, validation, layout export." }
+    ]
+  }
+];
+
+function GmComputerHub({
+  franchise,
+  actionQueue,
+  activeDecisions,
+  rosterReport,
+  opponentReady,
+  onOpenRoom,
+  onInstantSim
+}: {
+  franchise: FranchiseState;
+  actionQueue: ReturnType<typeof getMasterActionQueue>;
+  activeDecisions: ReturnType<typeof getActiveDecisionEvents>;
+  rosterReport: ReturnType<typeof validateRosterForGame>;
+  opponentReady: boolean;
+  onOpenRoom: (room: RoomId) => void;
+  onInstantSim: () => void;
+}) {
+  const queueCountByRoom = useMemo(() => countByRoom(actionQueue.map((item) => item.roomId)), [actionQueue]);
+  const decisionCountByRoom = useMemo(
+    () => countByRoom(activeDecisions.map((event) => event.locationRoom ?? "gm")),
+    [activeDecisions]
+  );
+  const sections = useMemo(
+    () =>
+      GM_COMPUTER_SECTIONS.map((section) => ({
+        ...section,
+        apps: section.apps.filter((app) => import.meta.env.DEV || app.roomId !== "devTools")
+      })),
+    []
+  );
+  const firstWarning = rosterReport.errors[0] ?? activeDecisions[0]?.headline;
+
+  return (
+    <section className="panel-section gm-computer">
+      <SectionHeader title="GM Computer" eyebrow="Desk hub" />
+      <div className="gm-computer__command">
+        <div>
+          <small>Recommended</small>
+          <strong>{getRecommendedNextAction(franchise)}</strong>
+          {firstWarning && <span>{firstWarning}</span>}
+        </div>
+        <div className="gm-computer__quick-actions">
+          <button type="button" onClick={() => onOpenRoom(rosterReport.errors.length ? "roster" : "coach")}>
+            {rosterReport.errors.length ? "Fix roster" : "Review lines"}
+          </button>
+          <button type="button" onClick={() => onOpenRoom("arena")} disabled={!opponentReady}>
+            Arena
+          </button>
+          <button type="button" onClick={onInstantSim} disabled={!opponentReady || rosterReport.errors.length > 0}>
+            Instant sim
+          </button>
+          <button type="button" onClick={() => onOpenRoom("saves")}>
+            Save
+          </button>
+        </div>
+      </div>
+      <div className="gm-computer__sections">
+        {sections.map((section) => (
+          <section className="gm-computer__section" key={section.title}>
+            <h4>{section.title}</h4>
+            <div className="gm-computer__apps">
+              {section.apps.map((app) => {
+                const status = getGmComputerAppStatus(app.roomId, queueCountByRoom, decisionCountByRoom, rosterReport, opponentReady);
+                return (
+                  <button className="gm-computer__app" type="button" key={app.roomId} onClick={() => onOpenRoom(app.roomId)}>
+                    <span>
+                      <strong>{app.label}</strong>
+                      <small>{app.summary}</small>
+                    </span>
+                    <b className={`gm-computer__status gm-computer__status--${status.tone}`}>{status.label}</b>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function countByRoom(roomIds: RoomId[]): Map<RoomId, number> {
+  return roomIds.reduce((counts, roomId) => counts.set(roomId, (counts.get(roomId) ?? 0) + 1), new Map<RoomId, number>());
+}
+
+function getGmComputerAppStatus(
+  roomId: RoomId,
+  queueCountByRoom: Map<RoomId, number>,
+  decisionCountByRoom: Map<RoomId, number>,
+  rosterReport: ReturnType<typeof validateRosterForGame>,
+  opponentReady: boolean
+): { label: string; tone: GmComputerTone } {
+  if (roomId === "roster" && rosterReport.errors.length) return { label: "Repair", tone: "danger" };
+  if (roomId === "arena") return opponentReady ? { label: "Ready", tone: "good" } : { label: "Quiet", tone: "neutral" };
+  const queueCount = queueCountByRoom.get(roomId) ?? 0;
+  if (queueCount) return { label: `${queueCount} queue`, tone: queueCount > 1 ? "warning" : "neutral" };
+  const decisionCount = decisionCountByRoom.get(roomId) ?? 0;
+  if (decisionCount) return { label: `${decisionCount} issue${decisionCount === 1 ? "" : "s"}`, tone: "warning" };
+  if (roomId === "saves" || roomId === "settings" || roomId === "feedback") return { label: "Local", tone: "neutral" };
+  return { label: "Open", tone: "neutral" };
 }

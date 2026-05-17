@@ -28,7 +28,7 @@ export function OperationsMap() {
   const setOpen = useUiStore((state) => state.setOperationsMapOpen);
   const franchise = useFranchiseStore((state) => state.franchise);
   const roomBadgesEnabled = useSettingsStore((state) => state.settings.showRoomBadges);
-  const [filter, setFilter] = useState<OperationsMapFilterId>("all");
+  const [filter, setFilter] = useState<OperationsMapFilterId>("core");
   const [query, setQuery] = useState("");
   const [selectedRoom, setSelectedRoom] = useState<RoomId | undefined>();
   const blueprint = useMemo(() => createDefaultFacilityBlueprint(), []);
@@ -43,6 +43,7 @@ export function OperationsMap() {
   const youPosition = currentRoom ? getRoomMapBadgePosition(blueprint, currentRoom) : mapWorldToFloorplan(blueprint, facilityPosition);
 
   if (!open) {
+    if (activeRoom) return null;
     return (
       <button className="ops-map-toggle" type="button" onClick={() => setOpen(true)}>
         Map
@@ -72,7 +73,14 @@ export function OperationsMap() {
       </div>
       <label className="ops-map__search">
         <span>Search rooms</span>
-        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Coach, cap, arena..." />
+        <input
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            if (event.target.value.trim()) setFilter("all");
+          }}
+          placeholder="Coach, cap, arena..."
+        />
       </label>
 
       <div className="ops-map__floorplan" aria-label="District floorplan">

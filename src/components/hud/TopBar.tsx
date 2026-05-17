@@ -16,6 +16,7 @@ import { TeamBadge } from "./TeamBadge";
 import { roomLabel } from "./RoomPrompt";
 import { useSettingsStore } from "../../store/settingsStore";
 import { useAudioStore } from "../../store/audioStore";
+import type { FranchiseState } from "../../game/types";
 
 export function TopBar() {
   const franchise = useFranchiseStore((state) => state.franchise);
@@ -46,6 +47,9 @@ export function TopBar() {
   const playoffGame = getCurrentUserPlayoffGame(franchise);
   const playoffOpponent = playoffGame ? franchise.league.teams.find((candidate) => candidate.id === (playoffGame.homeTeamId === team.id ? playoffGame.awayTeamId : playoffGame.homeTeamId)) : undefined;
   const nextGame = playoffOpponent ? `Playoffs: ${team.fullName} vs ${playoffOpponent.fullName}` : opponent ? `Next: ${team.fullName} vs ${opponent.fullName}` : `${getPhaseLabel(franchise.seasonPhase)} phase`;
+  const guidedStartActive = franchise.tutorialState.active && !activeRoom;
+  const nextHeadline = guidedStartActive ? "First shift: get oriented" : nextGame;
+  const nextAction = guidedStartActive ? "Open the GM Office, then follow roster, coach, arena, and save." : getRecommendedNextAction(franchise);
   const lastSaved = [...saves].sort((a, b) => Date.parse(b.lastSaved) - Date.parse(a.lastSaved))[0];
   const roster = validateRosterForGame(team);
   const rosterHealth = roster.healthyGoalieCount < 2 ? "Needs goalie" : roster.activeCount > team.activeRosterLimit ? "Too many active" : roster.errors.length ? "Invalid lineup" : "Ready";
@@ -60,42 +64,32 @@ export function TopBar() {
     .filter((report) => !report.dismissed)
     .reduce((sum, report) => sum + report.recommendations.filter((recommendation) => recommendation.priority === "urgent" || recommendation.priority === "high").length, 0);
   return (
-    <header className="top-bar">
+    <header className={guidedStartActive ? "top-bar top-bar--guided" : "top-bar"}>
       <TeamBadge team={team} compact />
       <div className="top-bar__meta">
         <strong>{recordLabel(team)}</strong>
         <span>{franchise.league.currentDate}</span>
         <span>{getPhaseLabel(franchise.seasonPhase)} | Game {Math.min(ruleSet.gamesPerTeam, team.stats.gamesPlayed + 1)}/{ruleSet.gamesPerTeam}</span>
-        <span>{getGameModeLabel(franchise.gmProfile.gameMode)} | {getDifficultyLabel(franchise.gmProfile.difficulty)} | {franchise.gmProfile.storyFrequency}</span>
-        {franchise.customLeagueName && <span>{franchise.customLeagueName}{franchise.dataPackMetadata?.scenarioName ? ` | ${franchise.dataPackMetadata.scenarioName}` : ""}</span>}
+        {!guidedStartActive && <span>{getGameModeLabel(franchise.gmProfile.gameMode)} | {getDifficultyLabel(franchise.gmProfile.difficulty)} | {franchise.gmProfile.storyFrequency}</span>}
+        {!guidedStartActive && franchise.customLeagueName && <span>{franchise.customLeagueName}{franchise.dataPackMetadata?.scenarioName ? ` | ${franchise.dataPackMetadata.scenarioName}` : ""}</span>}
       </div>
       <div className="top-bar__next">
-        <strong>{nextGame}</strong>
-        <span>{getRecommendedNextAction(franchise)}</span>
+        <strong>{nextHeadline}</strong>
+        <span>{nextAction}</span>
       </div>
       <div className="top-bar__status">
-        {latestAchievement && (
+        {latestAchievement && !guidedStartActive && !activeRoom && (
           <span className="achievement-toast" aria-live="polite">
             Achievement: {latestAchievement.label}
           </span>
         )}
-        <span>
-          {franchise.saveStatus === "saved"
-            ? "Autosaved"
-            : franchise.saveStatus === "saving"
-              ? "Autosaving"
-              : franchise.saveStatus === "error"
-                ? "Save issue"
-                : lastSaved
-                  ? `Last save ${new Date(lastSaved.lastSaved).toLocaleTimeString()}`
-                  : "Local"}
-        </span>
+        <span>{saveStatusLabel(franchise, lastSaved?.lastSaved, guidedStartActive)}</span>
         <span>Roster: {rosterHealth}</span>
-        <span>Urgent: {urgentActions}</span>
         <span>AGM: {assistantAlerts}</span>
-        <span>{getReleaseLabel()}</span>
-        <span>District: {currentDistrict?.label ?? "Facility Hub"}</span>
-        <strong>{activeRoom ? roomLabel(activeRoom) : nearestRoomLabel}</strong>
+        {!guidedStartActive && <span>Urgent: {urgentActions}</span>}
+        {!guidedStartActive && <span>{getReleaseLabel()}</span>}
+        {!guidedStartActive && <span>District: {currentDistrict?.label ?? "Facility Hub"}</span>}
+        {!guidedStartActive && <strong>{activeRoom ? roomLabel(activeRoom) : nearestRoomLabel}</strong>}
         <div className="top-bar__actions">
           <button type="button" onClick={() => setHelpOpen(true)} aria-label="Open help">?</button>
           <button type="button" onClick={() => setActiveRoom("feedback")}>Feedback</button>
@@ -105,4 +99,12 @@ export function TopBar() {
       </div>
     </header>
   );
+}
+
+function saveStatusLabel(franchise: FranchiseState, lastSaved?: string, compact = false): string {
+  if (franchise.saveStatus === "saved") return "Autosaved";
+  if (franchise.saveStatus === "saving") return "Autosaving";
+  if (franchise.saveStatus === "error") return "Save issue";
+  if (lastSaved && !compact) return `Last save ${new Date(lastSaved).toLocaleTimeString()}`;
+  return "Local save";
 }

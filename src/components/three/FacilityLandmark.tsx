@@ -1,5 +1,4 @@
 import type { FacilityBlueprint } from "../../game/facility/facilityTypes";
-import { FacilitySignage } from "./FacilitySignage";
 
 export function FacilityLandmark({ landmark, blueprint, reducedDetail }: { landmark: FacilityBlueprint["landmarks"][number]; blueprint: FacilityBlueprint; reducedDetail: boolean }) {
   const district = blueprint.districts.find((candidate) => candidate.id === landmark.districtId);
@@ -16,7 +15,6 @@ export function FacilityLandmark({ landmark, blueprint, reducedDetail }: { landm
           <meshStandardMaterial color="#f5fbff" emissive={color} emissiveIntensity={0.22} />
         </mesh>
       )}
-      <FacilitySignage label={landmark.label} position={[0, 1.35, 0]} color={color} tone="landmark" />
     </group>
   );
 }

@@ -735,6 +735,28 @@ meter {
   font-size: 0.78rem;
 }
 
+.start-guide-card {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid rgba(142, 231, 209, 0.32);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(142, 231, 209, 0.1), rgba(255, 255, 255, 0.04));
+  padding: 0.85rem;
+}
+
+.start-guide-card small,
+.start-guide-card span {
+  color: var(--muted);
+}
+
+.start-guide-card strong {
+  font-size: 1.05rem;
+}
+
+.start-guide-card button {
+  justify-self: start;
+}
+
 .button-row--subtle button {
   padding: 0.46rem 0.62rem;
   background: rgba(255, 255, 255, 0.04);
@@ -1056,8 +1078,107 @@ meter {
   font-size: 0.72rem;
 }
 
+.top-bar--guided {
+  grid-template-columns: auto minmax(200px, auto) minmax(280px, 1fr) auto;
+}
+
+.top-bar--guided .top-bar__status {
+  justify-content: flex-end;
+}
+
 .command-strip {
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+.gm-computer {
+  border-color: rgba(142, 231, 209, 0.28);
+  background:
+    linear-gradient(180deg, rgba(11, 31, 48, 0.86), rgba(8, 18, 31, 0.78)),
+    rgba(12, 25, 42, 0.78);
+}
+
+.gm-computer__command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid rgba(142, 231, 209, 0.22);
+  border-radius: 7px;
+  background: rgba(142, 231, 209, 0.055);
+  padding: 0.75rem;
+}
+
+.gm-computer__command small,
+.gm-computer__command span,
+.gm-computer__app small {
+  display: block;
+  color: var(--muted);
+}
+
+.gm-computer__quick-actions,
+.gm-computer__sections,
+.gm-computer__apps {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.gm-computer__quick-actions {
+  grid-template-columns: repeat(4, minmax(5.8rem, auto));
+}
+
+.gm-computer__sections {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 0.75rem;
+}
+
+.gm-computer__section h4 {
+  margin: 0 0 0.45rem;
+  color: #d9edf8;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+}
+
+.gm-computer__app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: center;
+  min-height: 4rem;
+  padding: 0.65rem;
+  background: rgba(255, 255, 255, 0.045);
+  text-align: left;
+}
+
+.gm-computer__app small {
+  margin-top: 0.18rem;
+  font-size: 0.72rem;
+  line-height: 1.28;
+}
+
+.gm-computer__status {
+  align-self: start;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.18rem 0.42rem;
+  color: #d7e8ff;
+  font-size: 0.66rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.gm-computer__status--good {
+  border-color: rgba(118, 227, 165, 0.45);
+  color: var(--good);
+}
+
+.gm-computer__status--warning {
+  border-color: rgba(245, 198, 91, 0.45);
+  color: var(--warn);
+}
+
+.gm-computer__status--danger {
+  border-color: rgba(255, 126, 138, 0.5);
+  color: var(--bad);
 }
 
 .brand-strip {
@@ -1627,6 +1748,28 @@ textarea {
 .tutorial-overlay__dock-actions button {
   padding: 0.35rem 0.55rem;
   font-size: 0.75rem;
+}
+
+.tutorial-route {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(82px, 1fr));
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tutorial-route li {
+  display: grid;
+  place-items: center;
+  min-height: 2.4rem;
+  border: 1px solid rgba(142, 231, 209, 0.3);
+  border-radius: 6px;
+  background: rgba(142, 231, 209, 0.08);
+  color: #e7fff8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .contextual-hint {
@@ -2616,7 +2759,9 @@ textarea {
   .room-grid--two,
   .room-grid--locker,
   .settings-grid,
-  .help-grid {
+  .help-grid,
+  .gm-computer__command,
+  .gm-computer__quick-actions {
     grid-template-columns: 1fr;
   }
 

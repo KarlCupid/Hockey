@@ -35,7 +35,7 @@ export function FacilityRoomShell({ room, active, reducedDetail }: { room: Facil
           <pointLight position={[0, 1.55, 0]} intensity={0.12} color={room.colorToken} />
         </>
       )}
-      <FacilitySignage label={room.signage} position={[0, shell.wallHeight + 0.54, 0]} color={room.colorToken} />
+      {(active || room.priority === "core") && <FacilitySignage label={room.signage} position={[0, shell.wallHeight + 0.54, 0]} color={room.colorToken} />}
     </group>
   );
 }

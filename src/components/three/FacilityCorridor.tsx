@@ -1,5 +1,4 @@
 import type { FacilityBlueprint, FacilityPathNode } from "../../game/facility/facilityTypes";
-import { FacilitySignage } from "./FacilitySignage";
 
 type CorridorKind = "main" | "tunnel" | "branch";
 
@@ -105,7 +104,6 @@ function ThresholdGate({
           <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.28} transparent opacity={0.54} />
         </mesh>
       )}
-      <FacilitySignage label={thresholdLabel(node)} position={[0, 1.45, 0]} color={color} tone="landmark" />
     </group>
   );
 }
@@ -157,8 +155,4 @@ function getGateAngle(blueprint: FacilityBlueprint, node: FacilityPathNode): num
     node.connectedNodeIds.map((connectedId) => blueprint.pathNodes.find((candidate) => candidate.id === connectedId)).find(Boolean);
   if (!connected) return 0;
   return Math.atan2(connected.position.x - node.position.x, connected.position.z - node.position.z);
-}
-
-function thresholdLabel(node: FacilityPathNode): string {
-  return node.label.replace("Threshold", "Gate").toUpperCase();
 }

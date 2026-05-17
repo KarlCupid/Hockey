@@ -197,10 +197,10 @@ export function App() {
       <div className="start-screen__intro">
         <span className="brand-mark">FI</span>
         <h1>Franchise Ice</h1>
-        <p>Walk the facility. Own the lineup board. Carry the press conference after the final horn.</p>
+        <p>Start with one guided first day: GM Office, roster check, lines, first game, then a local save.</p>
         <div className="button-row">
+          <button type="button" onClick={startDemoFranchise}>Start Guided Demo</button>
           <button type="button" onClick={() => setSelectingTeam(true)}>New Franchise</button>
-          <button type="button" onClick={startDemoFranchise}>Try Demo Franchise</button>
           <button type="button" disabled={!autosave} onClick={() => autosave && void loadFromSlot("autosave")}>Continue</button>
           <button type="button" onClick={() => setCustomLabOpen(true)}>Custom League Lab</button>
         </div>
@@ -266,7 +266,12 @@ export function App() {
             </article>
           ))
         ) : (
-          <p className="empty-state">No local saves yet.</p>
+          <article className="start-guide-card">
+            <small>Recommended first run</small>
+            <strong>Start with the guided demo.</strong>
+            <span>A fictional save is already set up, so the first choice is simple: read the GM Office, check the roster, set lines, sim one game, then save locally.</span>
+            <button type="button" onClick={startDemoFranchise}>Start Guided Demo</button>
+          </article>
         )}
         </>
         )}

@@ -27,6 +27,11 @@ export function TutorialOverlay() {
   if (!step) return null;
   const completed = steps.filter((item) => item.completed).length;
   const stepRoomId = step.roomId;
+  const isOpeningStep = step.id === "move-facility";
+  const title = isOpeningStep ? "Start in the GM Office" : step.title;
+  const body = isOpeningStep
+    ? "Begin with the command center. The GM Computer keeps most desk work in one place, then sends you out only for roster, lines, the game, and a save."
+    : step.body;
 
   function openStepRoom(roomId: RoomId) {
     setOperationsMapOpen(false);
@@ -43,7 +48,7 @@ export function TutorialOverlay() {
         <div className="tutorial-overlay__dock-copy">
           <small>Guided Start</small>
           <strong>{completed}/{steps.length}</strong>
-          <span>{step.title}</span>
+          <span>{title}</span>
         </div>
         <div className="button-row tutorial-overlay__dock-actions">
           <button type="button" onClick={() => setExpandedFromDock(true)}>
@@ -60,18 +65,48 @@ export function TutorialOverlay() {
   return (
     <aside className="tutorial-overlay" aria-label="Guided tutorial">
       <small>Guided Start</small>
-      <h3>{step.title}</h3>
-      <p>{step.body}</p>
+      <h3>{title}</h3>
+      <p>{body}</p>
+      {isOpeningStep && (
+        <ol className="tutorial-route" aria-label="First day route">
+          <li>GM Office</li>
+          <li>Roster Office</li>
+          <li>Coach's Office</li>
+          <li>Arena Bowl</li>
+          <li>Save Desk</li>
+        </ol>
+      )}
       <p className="muted">{getTutorialCompletionMessage(franchise)}</p>
       <ProgressBar value={completed} max={steps.length} label={`${completed}/${steps.length} steps`} />
       <div className="button-row">
+        {isOpeningStep && (
+          <button
+            type="button"
+            onClick={() => {
+              completeTutorialStep(step.id);
+              openStepRoom("gm");
+            }}
+          >
+            Open GM Office
+          </button>
+        )}
         {stepRoomId && (
           <button type="button" onClick={() => openStepRoom(stepRoomId)}>
             Open room
           </button>
         )}
-        <button type="button" onClick={() => completeTutorialStep(step.id)}>
-          Mark done
+        {!isOpeningStep && (
+          <button type="button" onClick={() => completeTutorialStep(step.id)}>
+            Mark done
+          </button>
+        )}
+        {isOpeningStep && (
+          <button type="button" onClick={() => completeTutorialStep(step.id)}>
+            Walk first
+          </button>
+        )}
+        <button type="button" onClick={() => setOperationsMapOpen(true)}>
+          Map
         </button>
         <button type="button" onClick={() => dismissTutorialStep(step.id)}>
           Dismiss

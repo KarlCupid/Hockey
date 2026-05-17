@@ -82,7 +82,7 @@ export function validateDemoFranchise(franchise = createDemoFranchise()) {
 function dedupeDemoAssistantReports(reports: AssistantGmReport[]): AssistantGmReport[] {
   const seen = new Set<string>();
   return reports.filter((report) => {
-    const key = `${report.date}:${report.type}:${report.headline}`;
+    const key = `${report.date}:${report.headline}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

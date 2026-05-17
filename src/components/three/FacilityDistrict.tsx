@@ -1,7 +1,7 @@
 import type { FacilityDistrict as FacilityDistrictDefinition } from "../../game/facility/facilityTypes";
 import { FacilitySignage } from "./FacilitySignage";
 
-export function FacilityDistrict({ district, reducedDetail }: { district: FacilityDistrictDefinition; reducedDetail: boolean }) {
+export function FacilityDistrict({ district, active, reducedDetail }: { district: FacilityDistrictDefinition; active: boolean; reducedDetail: boolean }) {
   const { x, z, width, depth } = district.bounds;
   return (
     <group>
@@ -26,12 +26,14 @@ export function FacilityDistrict({ district, reducedDetail }: { district: Facili
       {!reducedDetail && (
         <pointLight position={[district.landmarkPosition.x, 2.4, district.landmarkPosition.z]} intensity={0.18} color={district.colorToken} />
       )}
-      <FacilitySignage
-        label={district.label.toUpperCase()}
-        position={[district.landmarkPosition.x, 1.9, district.landmarkPosition.z]}
-        color={district.colorToken}
-        tone="district"
-      />
+      {active && (
+        <FacilitySignage
+          label={district.label.toUpperCase()}
+          position={[district.landmarkPosition.x, 1.9, district.landmarkPosition.z]}
+          color={district.colorToken}
+          tone="district"
+        />
+      )}
     </group>
   );
 }

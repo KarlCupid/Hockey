@@ -80,6 +80,7 @@ function FacilityGeometry({
   const floorDepth = bounds.maxZ - bounds.minZ + 1.2;
   const floorX = (bounds.minX + bounds.maxX) / 2;
   const floorZ = (bounds.minZ + bounds.maxZ) / 2;
+  const activeDistrictId = blueprint.rooms.find((room) => room.roomId === nearbyRoom)?.districtId ?? "entry";
 
   return (
     <group>
@@ -88,15 +89,17 @@ function FacilityGeometry({
         <meshStandardMaterial color="#0b1728" roughness={0.72} />
       </mesh>
       {blueprint.districts.map((district) => (
-        <FacilityDistrict key={district.id} district={district} reducedDetail={reducedDetail} />
+        <FacilityDistrict key={district.id} district={district} active={district.id === activeDistrictId} reducedDetail={reducedDetail} />
       ))}
       <FacilityCorridor blueprint={blueprint} reducedDetail={reducedDetail} />
       {blueprint.rooms.map((room) => (
         <FacilityRoomShell key={room.roomId} room={room} active={nearbyRoom === room.roomId} reducedDetail={reducedDetail} />
       ))}
-      {blueprint.rooms.map((room) => (
-        <FacilityPropSet key={`${room.roomId}-props`} room={room} reducedDetail={reducedDetail || !room.reducedDetailSafe} />
-      ))}
+      {blueprint.rooms
+        .filter((room) => shouldRenderRoomProps(room, nearbyRoom))
+        .map((room) => (
+          <FacilityPropSet key={`${room.roomId}-props`} room={room} reducedDetail={reducedDetail || room.priority !== "core" || !room.reducedDetailSafe} />
+        ))}
       {!reducedDetail &&
         blueprint.landmarks.map((landmark) => (
           <FacilityLandmark key={landmark.id} landmark={landmark} blueprint={blueprint} reducedDetail={reducedDetail} />
@@ -113,8 +116,13 @@ function createRoomZones(blueprint: FacilityBlueprint): RoomZoneConfig[] {
     label: room.signage,
     position: [room.position.x, 0, room.position.z],
     color: room.colorToken,
+    priority: room.priority,
     radius: Math.max(0.95, Math.min(1.45, Math.max(room.size.width, room.size.depth) * 0.38))
   }));
+}
+
+function shouldRenderRoomProps(room: FacilityBlueprint["rooms"][number], nearbyRoom?: string): boolean {
+  return room.priority === "core" || room.roomId === nearbyRoom;
 }
 
 function getWorldBounds(blueprint: FacilityBlueprint): { minX: number; maxX: number; minZ: number; maxZ: number } {

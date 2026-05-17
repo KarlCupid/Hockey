@@ -1,22 +1,25 @@
 import { Html } from "@react-three/drei";
 import type { Vector3Tuple } from "three";
 import type { RoomId } from "../../game/types";
+import type { FacilityRoomPriority } from "../../game/facility/facilityTypes";
 
 export interface RoomZoneConfig {
   id: RoomId;
   label: string;
   position: Vector3Tuple;
   color: string;
+  priority: FacilityRoomPriority;
   radius?: number;
 }
 
 export function RoomZone({ zone, active, onOpen }: { zone: RoomZoneConfig; active: boolean; onOpen: (room: RoomId) => void }) {
   const radius = zone.radius ?? 1.15;
+  const showLabel = active || zone.priority === "core";
   return (
     <group position={zone.position}>
       <mesh position={[0, 0.03, 0]} onClick={() => onOpen(zone.id)}>
         <cylinderGeometry args={[radius, radius, 0.06, 40]} />
-        <meshStandardMaterial color={zone.color} emissive={zone.color} emissiveIntensity={active ? 1.8 : 0.8} transparent opacity={active ? 0.62 : 0.36} />
+        <meshStandardMaterial color={zone.color} emissive={zone.color} emissiveIntensity={active ? 1.8 : 0.55} transparent opacity={active ? 0.62 : zone.priority === "core" ? 0.34 : 0.18} />
       </mesh>
       {active && (
         <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -24,13 +27,17 @@ export function RoomZone({ zone, active, onOpen }: { zone: RoomZoneConfig; activ
           <meshStandardMaterial color={zone.color} emissive={zone.color} emissiveIntensity={1.4} transparent opacity={0.9} />
         </mesh>
       )}
-      <mesh position={[0, 1.2, 0]}>
-        <boxGeometry args={[2.35, 0.42, 0.08]} />
-        <meshStandardMaterial color="#f5fbff" emissive={active ? zone.color : "#0d2035"} emissiveIntensity={active ? 0.45 : 0.12} />
-      </mesh>
-      <Html position={[0, 1.22, 0.12]} center distanceFactor={9}>
-        <span className={`room-zone-label${active ? " room-zone-label--active" : ""}`}>{zone.label}</span>
-      </Html>
+      {showLabel && (
+        <>
+          <mesh position={[0, 1.2, 0]}>
+            <boxGeometry args={[2.35, 0.42, 0.08]} />
+            <meshStandardMaterial color="#f5fbff" emissive={active ? zone.color : "#0d2035"} emissiveIntensity={active ? 0.45 : 0.12} />
+          </mesh>
+          <Html position={[0, 1.22, 0.12]} center distanceFactor={9}>
+            <span className={`room-zone-label${active ? " room-zone-label--active" : ""}`}>{zone.label}</span>
+          </Html>
+        </>
+      )}
       {active && (
         <Html position={[0, 1.62, 0.12]} center distanceFactor={9}>
           <span className="room-zone-label room-zone-label--prompt">PRESS E</span>

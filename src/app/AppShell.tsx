@@ -46,6 +46,7 @@ const FeedbackPanel = lazy(() => import("../components/rooms/FeedbackPanel").the
 export function AppShell() {
   const activeRoom = useUiStore((state) => state.activeRoom);
   const nearbyRoom = useUiStore((state) => state.nearbyRoom);
+  const operationsMapOpen = useUiStore((state) => state.operationsMapOpen);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
   const toggleOperationsMap = useUiStore((state) => state.toggleOperationsMap);
   const settings = useSettingsStore((state) => state.settings);
@@ -89,6 +90,7 @@ export function AppShell() {
   }, []);
 
   const displayMode = getRecommendedDisplayMode(viewport.width, viewport.height);
+  const suppressPassiveHud = Boolean(activeRoom || operationsMapOpen);
 
   return (
     <main
@@ -106,10 +108,10 @@ export function AppShell() {
       <OperationsMap />
       <FirstDayChecklist />
       <TutorialOverlay />
-      <ContextualHint roomId={activeRoom ?? nearbyRoom} />
+      {!suppressPassiveHud && <ContextualHint roomId={nearbyRoom} />}
       <HelpOverlay />
-      <RoomPrompt room={nearbyRoom} />
-      {settings.keyboardHints && <div className="control-hint">WASD move | mouse orbit | E enter | G GM | R roster | C coach | A arena | S saves | M map | H help | Esc close</div>}
+      {!suppressPassiveHud && <RoomPrompt room={nearbyRoom} />}
+      {settings.keyboardHints && !suppressPassiveHud && <div className="control-hint">WASD move | mouse orbit | E enter | G GM | R roster | C coach | A arena | S saves | M map | H help | Esc close</div>}
       {activeRoom && (
         <ModalShell title={roomLabel(activeRoom)} subtitle={subtitleFor(activeRoom)} onClose={() => setActiveRoom(undefined)}>
           <ErrorBoundary>

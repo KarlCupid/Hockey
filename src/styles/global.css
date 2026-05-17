@@ -1583,6 +1583,52 @@ textarea {
   bottom: 72px;
 }
 
+.tutorial-overlay--docked {
+  z-index: 8;
+  bottom: 0.75rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  width: min(320px, calc(100vw - 32px));
+  padding: 10px 12px;
+}
+
+.tutorial-overlay--map-docked {
+  right: auto;
+  left: 16px;
+}
+
+.tutorial-overlay__dock-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.tutorial-overlay__dock-copy small,
+.tutorial-overlay__dock-copy strong,
+.tutorial-overlay__dock-copy span {
+  display: block;
+}
+
+.tutorial-overlay__dock-copy span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tutorial-overlay__dock-actions {
+  margin: 0;
+  gap: 0.35rem;
+}
+
+.tutorial-overlay__dock-actions button {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+}
+
 .contextual-hint {
   left: 16px;
   bottom: 72px;
@@ -1707,6 +1753,15 @@ textarea {
 
   .contextual-hint {
     bottom: 236px;
+  }
+
+  .tutorial-overlay--docked {
+    bottom: 0.75rem;
+  }
+
+  .tutorial-overlay--map-docked {
+    left: 12px;
+    right: 12px;
   }
 }
 
@@ -1973,6 +2028,23 @@ textarea {
 .save-row small {
   color: var(--muted);
   font-size: 0.74rem;
+}
+
+.save-row small.save-row__feedback {
+  color: #d7e8ff;
+  font-weight: 800;
+}
+
+.save-row small.save-row__feedback--saving {
+  color: #9ee7ff;
+}
+
+.save-row small.save-row__feedback--saved {
+  color: #9ff0bf;
+}
+
+.save-row small.save-row__feedback--error {
+  color: #ffb7bf;
 }
 
 .preset-grid {
@@ -2559,9 +2631,31 @@ textarea {
 
 @media (max-height: 700px) {
   .tutorial-overlay,
-  .contextual-hint,
+  .contextual-hint {
+    max-height: calc(100vh - 6rem);
+    overflow: auto;
+    padding: 10px;
+  }
+
+  .tutorial-overlay:not(.tutorial-overlay--docked) {
+    bottom: 52px;
+    width: min(320px, calc(100vw - 24px));
+  }
+
+  .tutorial-overlay--docked {
+    bottom: 0.75rem;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .contextual-hint {
+    bottom: 52px;
+    width: min(300px, calc(100vw - 24px));
+  }
+
   .first-day {
-    display: none;
+    max-height: calc(100vh - 6.5rem);
+    overflow: auto;
   }
 
   .modal-backdrop {

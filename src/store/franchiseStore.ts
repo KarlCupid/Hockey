@@ -147,7 +147,7 @@ interface FranchiseStore {
   copyDiagnosticSummary: () => string | undefined;
   refreshSaves: () => Promise<void>;
   refreshSnapshots: (slotId: string) => Promise<void>;
-  saveToSlot: (slotId: string) => Promise<void>;
+  saveToSlot: (slotId: string) => Promise<boolean>;
   loadFromSlot: (slotId: string) => Promise<void>;
   deleteSlot: (slotId: string) => Promise<void>;
   restoreSnapshot: (snapshotId: string) => Promise<void>;
@@ -314,14 +314,15 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
   },
   saveToSlot: async (slotId) => {
     const franchise = get().franchise;
-    if (!franchise) return;
+    if (!franchise) return false;
     set({ franchise: { ...franchise, saveStatus: "saving" } });
     try {
       const readyToSave = completeTutorialStepPure(franchise, "save-franchise");
       await writeSaveWithBackup(slotId, { ...readyToSave, updatedAt: new Date().toISOString() }, slotId === AUTOSAVE_SLOT_ID ? "autosave" : "manual save");
       const saves = await listSaveMetadata();
       const saveSnapshots = await listSaveSnapshots(slotId).catch(() => get().saveSnapshots);
-      set({ franchise: { ...readyToSave, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves, saveSnapshots });
+      set({ franchise: { ...readyToSave, saveStatus: "saved", updatedAt: new Date().toISOString() }, saves, saveSnapshots, loadError: undefined });
+      return true;
     } catch (error) {
       useRuntimeHealthStore.getState().addRuntimeEvent({
         type: "warning",
@@ -332,6 +333,7 @@ export const useFranchiseStore = create<FranchiseStore>((set, get) => ({
         phase: franchise.seasonPhase
       });
       set({ franchise: { ...franchise, saveStatus: "error" }, loadError: error instanceof Error ? error.message : "Save failed" });
+      return false;
     }
   },
   loadFromSlot: async (slotId) => {

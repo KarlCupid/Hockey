@@ -11,6 +11,11 @@ import { Button } from "../ui/Button";
 import { WarningCallout } from "../ui/WarningCallout";
 import { DataPackLibrary } from "../editors/DataPackLibrary";
 
+type SlotFeedback = {
+  status: "saving" | "saved" | "error";
+  message: string;
+};
+
 export function SaveLoadPanel() {
   const {
     franchise,
@@ -43,6 +48,7 @@ export function SaveLoadPanel() {
   const [includeFullSave, setIncludeFullSave] = useState(false);
   const [selectedSlotId, setSelectedSlotId] = useState("slot-1");
   const [snapshotExportText, setSnapshotExportText] = useState("");
+  const [slotFeedback, setSlotFeedback] = useState<Record<string, SlotFeedback>>({});
   const integrity = useMemo(() => (franchise ? validateSaveIntegrity(franchise) : undefined), [franchise]);
 
   useEffect(() => {
@@ -56,10 +62,34 @@ export function SaveLoadPanel() {
   const slots = Array.from({ length: SAVE_SLOT_COUNT }, (_, index) => `slot-${index + 1}`);
   async function confirmSave(slotId: string, occupied: boolean) {
     if (occupied && !window.confirm("Overwrite this manual save slot?")) return;
-    await saveToSlot(slotId);
     setSelectedSlotId(slotId);
-    await refreshSnapshots(slotId);
-    markChecklistItem("saveFranchise");
+    setSlotFeedback((current) => ({
+      ...current,
+      [slotId]: {
+        status: "saving",
+        message: occupied ? "Overwriting this slot..." : "Saving this slot..."
+      }
+    }));
+    const saved = await saveToSlot(slotId);
+    if (saved) {
+      setSlotFeedback((current) => ({
+        ...current,
+        [slotId]: {
+          status: "saved",
+          message: `Saved ${new Date().toLocaleTimeString()}`
+        }
+      }));
+      markChecklistItem("saveFranchise");
+      void refreshSnapshots(slotId);
+      return;
+    }
+    setSlotFeedback((current) => ({
+      ...current,
+      [slotId]: {
+        status: "error",
+        message: "Save failed. Check diagnostics and try again."
+      }
+    }));
   }
 
   async function confirmDelete(slotId: string) {
@@ -92,6 +122,8 @@ export function SaveLoadPanel() {
         )}
         {slots.map((slotId) => {
           const metadata = saves.find((save) => save.slotId === slotId);
+          const feedback = slotFeedback[slotId];
+          const isSaving = feedback?.status === "saving";
           return (
             <article className="save-row" key={slotId}>
               <div>
@@ -102,13 +134,18 @@ export function SaveLoadPanel() {
                     : "Empty slot"}
                 </span>
                 {metadata && <small className="muted">Season {metadata.seasonYear} | schema v{metadata.schemaVersion}</small>}
+                {feedback && (
+                  <small className={`save-row__feedback save-row__feedback--${feedback.status}`} role={feedback.status === "error" ? "alert" : "status"}>
+                    {feedback.message}
+                  </small>
+                )}
               </div>
               <div className="button-row">
                 <button type="button" className={selectedSlotId === slotId ? "is-active" : ""} onClick={() => setSelectedSlotId(slotId)}>
                   Snapshots
                 </button>
-                <button type="button" onClick={() => void confirmSave(slotId, Boolean(metadata))}>
-                  {metadata ? "Overwrite" : "Save"}
+                <button type="button" disabled={isSaving} onClick={() => void confirmSave(slotId, Boolean(metadata))}>
+                  {isSaving ? "Saving..." : metadata ? "Overwrite" : "Save"}
                 </button>
                 <button type="button" disabled={!metadata} onClick={() => void loadFromSlot(slotId)}>
                   Load

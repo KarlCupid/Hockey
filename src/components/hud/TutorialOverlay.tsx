@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { getCurrentTutorialStep, getTutorialCompletionMessage, getTutorialSteps } from "../../game/systems/tutorial";
+import type { RoomId } from "../../game/types";
 import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore } from "../../store/uiStore";
 import { ProgressBar } from "../ui/ProgressBar";
@@ -8,12 +10,53 @@ export function TutorialOverlay() {
   const completeTutorialStep = useFranchiseStore((state) => state.completeTutorialStep);
   const dismissTutorialStep = useFranchiseStore((state) => state.dismissTutorialStep);
   const skipTutorial = useFranchiseStore((state) => state.skipTutorial);
+  const activeRoom = useUiStore((state) => state.activeRoom);
+  const operationsMapOpen = useUiStore((state) => state.operationsMapOpen);
   const setActiveRoom = useUiStore((state) => state.setActiveRoom);
+  const setOperationsMapOpen = useUiStore((state) => state.setOperationsMapOpen);
+  const [expandedFromDock, setExpandedFromDock] = useState(false);
+  const dockTutorial = Boolean(activeRoom || operationsMapOpen);
+
+  useEffect(() => {
+    if (!dockTutorial) setExpandedFromDock(false);
+  }, [dockTutorial]);
+
   if (!franchise?.tutorialState.active) return null;
   const steps = getTutorialSteps(franchise);
   const step = getCurrentTutorialStep(franchise);
   if (!step) return null;
   const completed = steps.filter((item) => item.completed).length;
+  const stepRoomId = step.roomId;
+
+  function openStepRoom(roomId: RoomId) {
+    setOperationsMapOpen(false);
+    setActiveRoom(roomId);
+    setExpandedFromDock(false);
+  }
+
+  if (dockTutorial && !expandedFromDock) {
+    const dockClassName = operationsMapOpen && !activeRoom
+      ? "tutorial-overlay tutorial-overlay--docked tutorial-overlay--map-docked"
+      : "tutorial-overlay tutorial-overlay--docked";
+    return (
+      <aside className={dockClassName} aria-label="Guided tutorial" aria-live="polite">
+        <div className="tutorial-overlay__dock-copy">
+          <small>Guided Start</small>
+          <strong>{completed}/{steps.length}</strong>
+          <span>{step.title}</span>
+        </div>
+        <div className="button-row tutorial-overlay__dock-actions">
+          <button type="button" onClick={() => setExpandedFromDock(true)}>
+            Show
+          </button>
+          <button type="button" onClick={() => completeTutorialStep(step.id)}>
+            Done
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <aside className="tutorial-overlay" aria-label="Guided tutorial">
       <small>Guided Start</small>
@@ -22,8 +65,8 @@ export function TutorialOverlay() {
       <p className="muted">{getTutorialCompletionMessage(franchise)}</p>
       <ProgressBar value={completed} max={steps.length} label={`${completed}/${steps.length} steps`} />
       <div className="button-row">
-        {step.roomId && (
-          <button type="button" onClick={() => setActiveRoom(step.roomId)}>
+        {stepRoomId && (
+          <button type="button" onClick={() => openStepRoom(stepRoomId)}>
             Open room
           </button>
         )}
@@ -33,6 +76,11 @@ export function TutorialOverlay() {
         <button type="button" onClick={() => dismissTutorialStep(step.id)}>
           Dismiss
         </button>
+        {dockTutorial && (
+          <button type="button" onClick={() => setExpandedFromDock(false)}>
+            Dock
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {

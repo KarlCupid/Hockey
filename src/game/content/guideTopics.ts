@@ -47,7 +47,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     category: "basics",
     summary: "Rooms are grouped by hockey-operations purpose instead of scattered around one big square.",
     body:
-      "The Central Concourse is your orientation point. Front Office holds GM, cap, owner, staff, and agent work. Hockey Ops groups roster, coaching, trades, and free agency. Team Wing leads through meetings, locker, medical, and the Arena Bowl. Media sits near the arena concourse. Development Wing groups scouting, development, and the draft stage. Utility and Customization keep settings, feedback, saves, data packs, and dev tools off the main hockey path.",
+      "The Command Atrium is your orientation point, with the GM Computer at the center and local app kiosks close to spawn. Private Office Wing holds owner and agent pressure. Hockey Ops Suite groups roster, coaching, contracts, trades, free agency, and staff app bays. Development Pipeline branches west for scouting, player growth, and the draft board. Team Corridor leads through meetings, locker, medical, and the Arena Bowl, while Media Bridge keeps press work near the public arena edge. Local Utility Stack and Data Lab keep saves, standings, settings, feedback, data-pack support, and dev tools off the main hockey path.",
     relatedRoomIds: ["saves", "gm", "roster", "coach", "arena", "press", "scouting", "settings", "feedback", "devTools"],
     relatedActions: ["moveFacility", "openMap", "wayfinding"]
   },
@@ -71,7 +71,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     relatedRoomIds: ["gm"],
     relatedActions: ["assistantReport", "actionQueue", "roomBadges"]
   },
-  roomGuide("room-gm-office", "GM Office", "gm", "Your command center.", "Read the inbox, Assistant GM reports, owner pressure, action queue, tutorial progress, recent milestones, and next-phase guidance here.", [
+  roomGuide("room-gm-office", "GM Computer", "gm", "Your command center.", "Read the inbox, Assistant GM reports, owner pressure, action queue, tutorial progress, recent milestones, and next-phase guidance here.", [
     "assistantReport",
     "advancePhase"
   ]),
@@ -270,7 +270,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
     category: "basics",
     summary: "Local-only rewards and timeline entries help playtests feel complete.",
     body:
-      "Achievements celebrate first wins, trades, draft picks, playoff progress, owner success, development, and dynasty depth. Milestones create a franchise timeline in the Trophy Hall and GM Office.",
+      "Achievements celebrate first wins, trades, draft picks, playoff progress, owner success, development, and dynasty depth. Milestones create a franchise timeline in the Trophy Hall and GM Computer.",
     relatedRoomIds: ["gm", "standings"],
     relatedActions: ["viewAchievements", "viewMilestones"]
   },

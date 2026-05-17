@@ -42,7 +42,7 @@ export function HelpOverlay() {
           <div className="help-grid">
             <article>
               <h3>Start Here</h3>
-              <p>Open the GM Office, read the Assistant GM report, check the Roster Office, review lines in Coach's Office, then sim from the Arena Bowl.</p>
+              <p>Open the GM Computer, read the Assistant GM report, check the Roster Office, review lines in Coach's Office, then sim from the Arena Bowl.</p>
             </article>
             <article>
               <h3>Guided Tutorial</h3>

@@ -122,7 +122,7 @@ export function getOperationsMapGoToRoomLabel(blueprint: FacilityBlueprint, room
 }
 
 export function getCurrentDistrictLabel(blueprint: FacilityBlueprint, roomId?: RoomId): string {
-  return roomId ? getDistrictForRoom(blueprint, roomId).label : "Central Concourse";
+  return roomId ? getDistrictForRoom(blueprint, roomId).label : (blueprint.districts.find((district) => district.id === "entry")?.label ?? "Facility Hub");
 }
 
 export function createFacilitySummary(blueprint: FacilityBlueprint): string {

@@ -49,7 +49,7 @@ export function TopBar() {
   const nextGame = playoffOpponent ? `Playoffs: ${team.fullName} vs ${playoffOpponent.fullName}` : opponent ? `Next: ${team.fullName} vs ${opponent.fullName}` : `${getPhaseLabel(franchise.seasonPhase)} phase`;
   const guidedStartActive = franchise.tutorialState.active && !activeRoom;
   const nextHeadline = guidedStartActive ? "First shift: get oriented" : nextGame;
-  const nextAction = guidedStartActive ? "Open the GM Office, then follow roster, coach, arena, and save." : getRecommendedNextAction(franchise);
+  const nextAction = guidedStartActive ? "Open the GM Computer, then follow roster, coach, arena, and save." : getRecommendedNextAction(franchise);
   const lastSaved = [...saves].sort((a, b) => Date.parse(b.lastSaved) - Date.parse(a.lastSaved))[0];
   const roster = validateRosterForGame(team);
   const rosterHealth = roster.healthyGoalieCount < 2 ? "Needs goalie" : roster.activeCount > team.activeRosterLimit ? "Too many active" : roster.errors.length ? "Invalid lineup" : "Ready";

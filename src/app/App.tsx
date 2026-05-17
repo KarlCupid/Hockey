@@ -197,7 +197,7 @@ export function App() {
       <div className="start-screen__intro">
         <span className="brand-mark">FI</span>
         <h1>Franchise Ice</h1>
-        <p>Start with one guided first day: GM Office, roster check, lines, first game, then a local save.</p>
+        <p>Start with one guided first day: GM Computer, roster check, lines, first game, then a local save.</p>
         <div className="button-row">
           <button type="button" onClick={startDemoFranchise}>Start Guided Demo</button>
           <button type="button" onClick={() => setSelectingTeam(true)}>New Franchise</button>
@@ -269,7 +269,7 @@ export function App() {
           <article className="start-guide-card">
             <small>Recommended first run</small>
             <strong>Start with the guided demo.</strong>
-            <span>A fictional save is already set up, so the first choice is simple: read the GM Office, check the roster, set lines, sim one game, then save locally.</span>
+            <span>A fictional save is already set up, so the first choice is simple: read the GM Computer, check the roster, set lines, sim one game, then save locally.</span>
             <button type="button" onClick={startDemoFranchise}>Start Guided Demo</button>
           </article>
         )}

@@ -26,7 +26,7 @@ export function getFirstHourChecklist(franchise: FranchiseState): OnboardingChec
     title: "First Hour Checklist",
     available: true,
     steps: [
-      step("open-gm", "Open the GM Office and read the day", "gm", completedTutorial.has("open-gm-office"), "Start with inbox, owner pressure, and Assistant GM guidance."),
+      step("open-gm", "Open the GM Computer and read the day", "gm", completedTutorial.has("open-gm-office"), "Start with inbox, owner pressure, and Assistant GM guidance."),
       step("check-roster", "Check roster health", "roster", completedTutorial.has("open-roster-office"), "Make sure the active group can play before game day."),
       step("set-lines", "Set lines and goalie", "coach", completedTutorial.has("open-coach-office"), "Confirm the top line, special teams, and starter."),
       step("sim-game", "Sim one game", "arena", hasResult, "Use instant, period, or broadcast mode to create the first result."),
@@ -113,13 +113,13 @@ export function createFirstHourAssistantGmReport(franchise: FranchiseState): Ass
         priority: nextIncomplete.roomId === "arena" ? "high" : "medium",
         title: nextIncomplete.label,
         body: nextIncomplete.helperText,
-        actionLabel: `Open ${nextIncomplete.roomId === "gm" ? "GM Office" : nextIncomplete.roomId}`,
+        actionLabel: `Open ${nextIncomplete.roomId === "gm" ? "GM Computer" : nextIncomplete.roomId}`,
         targetRoomId: nextIncomplete.roomId,
         estimatedImpact: "medium"
       }
     ],
     riskFlags: [],
-    opportunityFlags: ["First-hour checklist is available from GM Office and Help."],
+    opportunityFlags: ["First-hour checklist is available from GM Computer and Help."],
     linkedRoomIds: Array.from(new Set(checklist.steps.map((item) => item.roomId))).slice(0, 5)
   };
 }

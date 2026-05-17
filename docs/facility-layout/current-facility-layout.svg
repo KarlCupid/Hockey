@@ -1,0 +1,419 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1823" height="1088" viewBox="0 0 1823 1088" role="img" aria-label="Franchise Ice current facility layout floorplan">
+  <defs>
+    <filter id="label-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#07111f" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="#0d1524" />
+  <rect x="84" y="84" width="1375" height="919.6" fill="none" stroke="#c9d8ef" stroke-width="1.4" stroke-dasharray="8 6" opacity="0.7" />
+  <g id="districts">
+    <g id="district-entry">
+      <rect x="429.4" y="295.2" width="413.6" height="378.4" rx="14" fill="#61c9ff" fill-opacity="0.16" stroke="#61c9ff" stroke-width="2.4" />
+      <text x="636.2" y="315.2" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Command Atrium</text>
+      <text x="636.2" y="332.2" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">entry - 1 room</text>
+    </g>
+    <g id="district-frontOffice">
+      <rect x="145.6" y="150" width="303.6" height="343.2" rx="14" fill="#f5c65b" fill-opacity="0.16" stroke="#f5c65b" stroke-width="2.4" />
+      <text x="297.4" y="170" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Private Office Wing</text>
+      <text x="297.4" y="187" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">frontOffice - 2 rooms</text>
+    </g>
+    <g id="district-hockeyOps">
+      <rect x="579" y="145.6" width="360.8" height="466.4" rx="14" fill="#8ee7d1" fill-opacity="0.16" stroke="#8ee7d1" stroke-width="2.4" />
+      <text x="759.4" y="165.6" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Hockey Ops Suite</text>
+      <text x="759.4" y="182.6" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">hockeyOps - 6 rooms</text>
+    </g>
+    <g id="district-teamWing">
+      <rect x="706.6" y="590" width="316.8" height="211.2" rx="14" fill="#c8e9ff" fill-opacity="0.16" stroke="#c8e9ff" stroke-width="2.4" />
+      <text x="865" y="610" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Team Corridor</text>
+      <text x="865" y="627" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">teamWing - 3 rooms</text>
+    </g>
+    <g id="district-arena">
+      <rect x="966.2" y="466.8" width="431.2" height="475.2" rx="14" fill="#dff6ff" fill-opacity="0.16" stroke="#dff6ff" stroke-width="2.4" />
+      <text x="1181.8" y="486.8" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Arena Bowl</text>
+      <text x="1181.8" y="503.8" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">arena - 1 room</text>
+    </g>
+    <g id="district-media">
+      <rect x="961.8" y="268.8" width="272.8" height="193.6" rx="14" fill="#d7e8ff" fill-opacity="0.16" stroke="#d7e8ff" stroke-width="2.4" />
+      <text x="1098.2" y="288.8" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Media Bridge</text>
+      <text x="1098.2" y="305.8" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">media - 1 room</text>
+    </g>
+    <g id="district-development">
+      <rect x="147.8" y="374.4" width="255.2" height="396" rx="14" fill="#a9c6ff" fill-opacity="0.16" stroke="#a9c6ff" stroke-width="2.4" />
+      <text x="275.4" y="394.4" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Development Pipeline</text>
+      <text x="275.4" y="411.4" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">development - 3 rooms</text>
+    </g>
+    <g id="district-customization">
+      <rect x="359" y="623" width="158.4" height="118.8" rx="14" fill="#b58cff" fill-opacity="0.16" stroke="#b58cff" stroke-width="2.4" />
+      <text x="438.2" y="643" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Data Lab</text>
+      <text x="438.2" y="660" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">customization - 1 room</text>
+    </g>
+    <g id="district-utility">
+      <rect x="359" y="354.6" width="158.4" height="277.2" rx="14" fill="#76e3a5" fill-opacity="0.16" stroke="#76e3a5" stroke-width="2.4" />
+      <text x="438.2" y="374.6" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="15" font-weight="700" text-anchor="middle" filter="url(#label-shadow)">Local Utility Stack</text>
+      <text x="438.2" y="391.6" fill="#d8e6f7" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" text-anchor="middle" opacity="0.86">utility - 4 rooms</text>
+    </g>
+  </g>
+  <g id="branch-corridors">
+    <line x1="636.2" y1="440.4" x2="488.8" y2="409.6" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="636.2" y1="440.4" x2="451.4" y2="387.6" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="636.2" y1="440.4" x2="488.8" y2="502" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="451.4" y1="387.6" x2="315" y2="330.4" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="451.4" y1="387.6" x2="488.8" y2="634" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="315" y1="330.4" x2="266.6" y2="233.6" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="315" y1="330.4" x2="301.8" y2="400.8" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="759.4" y1="405.2" x2="407.4" y2="510.8" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="759.4" y1="405.2" x2="772.6" y2="590" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="741.8" y1="242.4" x2="728.6" y2="198.4" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="741.8" y1="242.4" x2="812.2" y2="466.8" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="741.8" y1="242.4" x2="407.4" y2="510.8" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="407.4" y1="510.8" x2="279.8" y2="572.4" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="279.8" y1="572.4" x2="279.8" y2="510.8" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="279.8" y1="572.4" x2="279.8" y2="669.2" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="873.8" y1="695.6" x2="807.8" y2="656" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="873.8" y1="695.6" x2="891.4" y2="739.6" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="1005.8" y1="695.6" x2="1045.4" y2="462.4" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="1063" y1="695.6" x2="1045.4" y2="462.4" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="1045.4" y1="462.4" x2="1098.2" y2="374.4" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="1045.4" y1="462.4" x2="488.8" y2="634" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="488.8" y1="634" x2="488.8" y2="502" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="488.8" y1="634" x2="488.8" y2="678" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+    <line x1="488.8" y1="502" x2="488.8" y2="568" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.55" />
+  </g>
+  <g id="main-corridor">
+    <line x1="636.2" y1="440.4" x2="759.4" y2="405.2" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+    <line x1="759.4" y1="405.2" x2="741.8" y2="242.4" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+    <line x1="741.8" y1="242.4" x2="772.6" y2="590" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+    <line x1="772.6" y1="590" x2="873.8" y2="695.6" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+    <line x1="873.8" y1="695.6" x2="1005.8" y2="695.6" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+    <line x1="1005.8" y1="695.6" x2="1063" y2="695.6" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+    <line x1="1063" y1="695.6" x2="1181.8" y2="770.4" stroke="#ffd166" stroke-width="7" stroke-linecap="round" opacity="0.95" />
+  </g>
+  <g id="rooms">
+    <g id="room-gm">
+      <rect x="565.8" y="427.2" width="140.8" height="101.2" rx="7" fill="#f8fbff" stroke="#61c9ff" stroke-width="2.2" />
+      <rect x="569.8" y="431.2" width="132.8" height="93.2" rx="4" fill="#61c9ff" fill-opacity="0.12" />
+      <text x="636.2" y="477.8" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">GM Computer</text>
+      <text x="636.2" y="521.4" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">gm</text>
+      <circle cx="636.2" cy="427.2" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-contracts">
+      <rect x="803.4" y="360.1" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#f5c65b" stroke-width="2.2" />
+      <rect x="807.4" y="364.1" width="88.8" height="47" rx="4" fill="#f5c65b" fill-opacity="0.12" />
+      <text x="851.8" y="381.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Contracts App</text>
+      <text x="851.8" y="393.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Bay</text>
+      <text x="851.8" y="408.1" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">contracts</text>
+      <circle cx="803.4" cy="387.6" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-ownerSuite">
+      <rect x="205" y="165.4" width="114.4" height="101.2" rx="7" fill="#f8fbff" stroke="#f8d070" stroke-width="2.2" />
+      <rect x="209" y="169.4" width="106.4" height="93.2" rx="4" fill="#f8d070" fill-opacity="0.12" />
+      <text x="262.2" y="216" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Owner Suite</text>
+      <text x="262.2" y="259.6" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">ownerSuite</text>
+      <circle cx="262.2" cy="266.6" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-staff">
+      <rect x="803.4" y="551.5" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#76e3a5" stroke-width="2.2" />
+      <rect x="807.4" y="555.5" width="88.8" height="47" rx="4" fill="#76e3a5" fill-opacity="0.12" />
+      <text x="851.8" y="579" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Staff App Bay</text>
+      <text x="851.8" y="599.5" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">staff</text>
+      <circle cx="803.4" cy="579" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-agents">
+      <rect x="191.8" y="339.2" width="114.4" height="88" rx="7" fill="#f8fbff" stroke="#b58cff" stroke-width="2.2" />
+      <rect x="195.8" y="343.2" width="106.4" height="80" rx="4" fill="#b58cff" fill-opacity="0.12" />
+      <text x="249" y="383.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Agent Call Booth</text>
+      <text x="249" y="420.2" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">agents</text>
+      <circle cx="306.2" cy="383.2" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-roster">
+      <rect x="603.2" y="154.4" width="123.2" height="92.4" rx="7" fill="#f8fbff" stroke="#76e3a5" stroke-width="2.2" />
+      <rect x="607.2" y="158.4" width="115.2" height="84.4" rx="4" fill="#76e3a5" fill-opacity="0.12" />
+      <text x="664.8" y="200.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Roster Office</text>
+      <text x="664.8" y="239.8" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">roster</text>
+      <circle cx="726.4" cy="200.6" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-coach">
+      <rect x="737.4" y="154.4" width="123.2" height="92.4" rx="7" fill="#f8fbff" stroke="#8ee7d1" stroke-width="2.2" />
+      <rect x="741.4" y="158.4" width="115.2" height="84.4" rx="4" fill="#8ee7d1" fill-opacity="0.12" />
+      <text x="799" y="200.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Coach's Office</text>
+      <text x="799" y="239.8" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">coach</text>
+      <circle cx="737.4" cy="200.6" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-trades">
+      <rect x="803.4" y="423.9" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#ff9f6e" stroke-width="2.2" />
+      <rect x="807.4" y="427.9" width="88.8" height="47" rx="4" fill="#ff9f6e" fill-opacity="0.12" />
+      <text x="851.8" y="445.4" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Trade Board App</text>
+      <text x="851.8" y="457.4" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Bay</text>
+      <text x="851.8" y="471.9" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">trades</text>
+      <circle cx="803.4" cy="451.4" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-freeAgency">
+      <rect x="803.4" y="487.7" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#d7e8ff" stroke-width="2.2" />
+      <rect x="807.4" y="491.7" width="88.8" height="47" rx="4" fill="#d7e8ff" fill-opacity="0.12" />
+      <text x="851.8" y="509.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Free Agency App</text>
+      <text x="851.8" y="521.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Bay</text>
+      <text x="851.8" y="535.7" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">freeAgency</text>
+      <circle cx="803.4" cy="515.2" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-playerMeetings">
+      <rect x="715.4" y="605.4" width="123.2" height="83.6" rx="7" fill="#f8fbff" stroke="#8ee7d1" stroke-width="2.2" />
+      <rect x="719.4" y="609.4" width="115.2" height="75.6" rx="4" fill="#8ee7d1" fill-opacity="0.12" />
+      <text x="777" y="647.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Player Meeting Room</text>
+      <text x="777" y="682" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">playerMeetings</text>
+      <circle cx="838.6" cy="647.2" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-locker">
+      <rect x="757.2" y="693.4" width="140.8" height="96.8" rx="7" fill="#f8fbff" stroke="#c8e9ff" stroke-width="2.2" />
+      <rect x="761.2" y="697.4" width="132.8" height="88.8" rx="4" fill="#c8e9ff" fill-opacity="0.12" />
+      <text x="827.6" y="741.8" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Locker Room</text>
+      <text x="827.6" y="783.2" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">locker</text>
+      <circle cx="898" cy="741.8" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-medical">
+      <rect x="895.8" y="697.8" width="110" height="88" rx="7" fill="#f8fbff" stroke="#ff7e8a" stroke-width="2.2" />
+      <rect x="899.8" y="701.8" width="102" height="80" rx="4" fill="#ff7e8a" fill-opacity="0.12" />
+      <text x="950.8" y="741.8" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Medical Room</text>
+      <text x="950.8" y="778.8" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">medical</text>
+      <circle cx="895.8" cy="741.8" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-arena">
+      <rect x="992.6" y="532.8" width="378.4" height="378.4" rx="7" fill="#f8fbff" stroke="#ffffff" stroke-width="2.2" />
+      <rect x="996.6" y="536.8" width="370.4" height="370.4" rx="4" fill="#ffffff" fill-opacity="0.12" />
+      <text x="1181.8" y="722" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Arena Bowl</text>
+      <text x="1181.8" y="904.2" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">arena</text>
+      <circle cx="992.6" cy="722" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-press">
+      <rect x="1027.8" y="284.2" width="140.8" height="92.4" rx="7" fill="#f8fbff" stroke="#d7e8ff" stroke-width="2.2" />
+      <rect x="1031.8" y="288.2" width="132.8" height="84.4" rx="4" fill="#d7e8ff" fill-opacity="0.12" />
+      <text x="1098.2" y="330.4" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Press Room</text>
+      <text x="1098.2" y="369.6" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">press</text>
+      <circle cx="1098.2" cy="376.6" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-scouting">
+      <rect x="220.4" y="407.4" width="114.4" height="96.8" rx="7" fill="#f8fbff" stroke="#a9c6ff" stroke-width="2.2" />
+      <rect x="224.4" y="411.4" width="106.4" height="88.8" rx="4" fill="#a9c6ff" fill-opacity="0.12" />
+      <text x="277.6" y="449.8" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Scouting</text>
+      <text x="277.6" y="461.8" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Department</text>
+      <text x="277.6" y="497.2" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">scouting</text>
+      <circle cx="334.8" cy="455.8" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-development">
+      <rect x="220.4" y="524" width="114.4" height="96.8" rx="7" fill="#f8fbff" stroke="#76e3a5" stroke-width="2.2" />
+      <rect x="224.4" y="528" width="106.4" height="88.8" rx="4" fill="#76e3a5" fill-opacity="0.12" />
+      <text x="277.6" y="572.4" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Development Office</text>
+      <text x="277.6" y="613.8" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">development</text>
+      <circle cx="277.6" cy="620.8" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-draft">
+      <rect x="209.4" y="634" width="136.4" height="101.2" rx="7" fill="#f8fbff" stroke="#f5c65b" stroke-width="2.2" />
+      <rect x="213.4" y="638" width="128.4" height="93.2" rx="4" fill="#f5c65b" fill-opacity="0.12" />
+      <text x="277.6" y="684.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Draft Board</text>
+      <text x="277.6" y="728.2" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">draft</text>
+      <circle cx="277.6" cy="634" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-saves">
+      <rect x="387.6" y="417.3" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#b58cff" stroke-width="2.2" />
+      <rect x="391.6" y="421.3" width="88.8" height="47" rx="4" fill="#b58cff" fill-opacity="0.12" />
+      <text x="436" y="444.8" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Save App Kiosk</text>
+      <text x="436" y="465.3" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">saves</text>
+      <circle cx="484.4" cy="444.8" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-standings">
+      <rect x="387.6" y="349.1" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#f5c65b" stroke-width="2.2" />
+      <rect x="391.6" y="353.1" width="88.8" height="47" rx="4" fill="#f5c65b" fill-opacity="0.12" />
+      <text x="436" y="370.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Standings App</text>
+      <text x="436" y="382.6" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Kiosk</text>
+      <text x="436" y="397.1" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">standings</text>
+      <circle cx="484.4" cy="376.6" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-settings">
+      <rect x="387.6" y="485.5" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#61c9ff" stroke-width="2.2" />
+      <rect x="391.6" y="489.5" width="88.8" height="47" rx="4" fill="#61c9ff" fill-opacity="0.12" />
+      <text x="436" y="507" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Settings App</text>
+      <text x="436" y="519" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Kiosk</text>
+      <text x="436" y="533.5" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">settings</text>
+      <circle cx="484.4" cy="513" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-feedback">
+      <rect x="387.6" y="553.7" width="96.8" height="55" rx="7" fill="#f8fbff" stroke="#8ee7d1" stroke-width="2.2" />
+      <rect x="391.6" y="557.7" width="88.8" height="47" rx="4" fill="#8ee7d1" fill-opacity="0.12" />
+      <text x="436" y="575.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Feedback App</text>
+      <text x="436" y="587.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Kiosk</text>
+      <text x="436" y="601.7" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">feedback</text>
+      <circle cx="484.4" cy="581.2" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+    <g id="room-devTools">
+      <rect x="378.8" y="636.2" width="114.4" height="88" rx="7" fill="#f8fbff" stroke="#b58cff" stroke-width="2.2" />
+      <rect x="382.8" y="640.2" width="106.4" height="80" rx="4" fill="#b58cff" fill-opacity="0.12" />
+      <text x="436" y="680.2" fill="#152033" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle" dominant-baseline="middle">Dev Tools Lab</text>
+      <text x="436" y="717.2" fill="#4a5d78" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="8.5" text-anchor="middle">devTools</text>
+      <circle cx="493.2" cy="680.2" r="4" fill="#0d1524" stroke="#ffffff" stroke-width="1.5" />
+    </g>
+  </g>
+  <g id="path-nodes">
+    <g id="path-node-spawn-concourse">
+      <circle cx="636.2" cy="440.4" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="636.2" y="428.4" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Command Atrium</text>
+    </g>
+    <g id="path-node-trophy-hall-cross">
+      <circle cx="488.8" cy="409.6" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-front-office-gate">
+      <circle cx="451.4" cy="387.6" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+      <text x="451.4" y="378.1" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Front Office Threshold</text>
+    </g>
+    <g id="path-node-front-office-hub">
+      <circle cx="315" cy="330.4" r="5" fill="#f8fbff" stroke="#0d1524" stroke-width="1.5" />
+      <text x="315" y="319.4" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Front Office Hub</text>
+    </g>
+    <g id="path-node-owner-contracts">
+      <circle cx="266.6" cy="233.6" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-agents-staff">
+      <circle cx="301.8" cy="400.8" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-hockey-ops-gate">
+      <circle cx="759.4" cy="405.2" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="759.4" y="393.2" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Hockey Ops Threshold</text>
+    </g>
+    <g id="path-node-hockey-ops-hub">
+      <circle cx="741.8" cy="242.4" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="741.8" y="230.4" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Hockey Ops Hub</text>
+    </g>
+    <g id="path-node-roster-coach">
+      <circle cx="728.6" cy="198.4" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-trade-market-cross">
+      <circle cx="812.2" cy="466.8" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-development-gate">
+      <circle cx="407.4" cy="510.8" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+      <text x="407.4" y="501.3" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Development Threshold</text>
+    </g>
+    <g id="path-node-pipeline-hub">
+      <circle cx="279.8" cy="572.4" r="5" fill="#f8fbff" stroke="#0d1524" stroke-width="1.5" />
+      <text x="279.8" y="561.4" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Development Pipeline Hub</text>
+    </g>
+    <g id="path-node-scouting-development">
+      <circle cx="279.8" cy="510.8" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-draft-stage">
+      <circle cx="279.8" cy="669.2" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-team-gate">
+      <circle cx="772.6" cy="590" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="772.6" y="578" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Team Wing Threshold</text>
+    </g>
+    <g id="path-node-team-hub">
+      <circle cx="873.8" cy="695.6" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="873.8" y="683.6" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Team Wing Hub</text>
+    </g>
+    <g id="path-node-player-meetings">
+      <circle cx="807.8" cy="656" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-locker-medical">
+      <circle cx="891.4" cy="739.6" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-arena-tunnel">
+      <circle cx="1005.8" cy="695.6" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="1005.8" y="683.6" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Arena Tunnel</text>
+    </g>
+    <g id="path-node-arena-gate">
+      <circle cx="1063" cy="695.6" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="1063" y="683.6" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Rink Gate</text>
+    </g>
+    <g id="path-node-arena-bowl-hub">
+      <circle cx="1181.8" cy="770.4" r="6" fill="#ffd166" stroke="#0d1524" stroke-width="1.5" />
+      <text x="1181.8" y="758.4" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Arena Bowl</text>
+    </g>
+    <g id="path-node-media-gate">
+      <circle cx="1045.4" cy="462.4" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+      <text x="1045.4" y="452.9" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Media Threshold</text>
+    </g>
+    <g id="path-node-press-row">
+      <circle cx="1098.2" cy="374.4" r="5" fill="#f8fbff" stroke="#0d1524" stroke-width="1.5" />
+      <text x="1098.2" y="363.4" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Press Backdrop Row</text>
+    </g>
+    <g id="path-node-customization-gate">
+      <circle cx="488.8" cy="634" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+      <text x="488.8" y="624.5" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Customization Threshold</text>
+    </g>
+    <g id="path-node-dev-tools-door">
+      <circle cx="488.8" cy="678" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+    <g id="path-node-utility-kiosk">
+      <circle cx="488.8" cy="502" r="5" fill="#f8fbff" stroke="#0d1524" stroke-width="1.5" />
+      <text x="488.8" y="491" fill="#dfe9f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="9" font-weight="600" text-anchor="middle" filter="url(#label-shadow)">Utility Kiosks</text>
+    </g>
+    <g id="path-node-support-kiosks">
+      <circle cx="488.8" cy="568" r="3.5" fill="#9aa8be" stroke="#0d1524" stroke-width="1.5" />
+    </g>
+  </g>
+  <g id="landmarks">
+    <g id="landmark-map-kiosk">
+      <path d="M 636.2 400.4 L 643.2 407.4 L 636.2 414.4 L 629.2 407.4 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="646.2" y="410.4" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Operations Map Kiosk</text>
+    </g>
+    <g id="landmark-trophy-wall">
+      <path d="M 488.8 402.6 L 495.8 409.6 L 488.8 416.6 L 481.8 409.6 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="498.8" y="412.6" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Trophy Wall</text>
+    </g>
+    <g id="landmark-owner-overlook">
+      <path d="M 262.2 209 L 269.2 216 L 262.2 223 L 255.2 216 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="272.2" y="219" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Owner Overlook</text>
+    </g>
+    <g id="landmark-tactical-junction">
+      <path d="M 741.8 235.4 L 748.8 242.4 L 741.8 249.4 L 734.8 242.4 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="751.8" y="245.4" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Tactical Junction</text>
+    </g>
+    <g id="landmark-draft-board">
+      <path d="M 279.8 662.2 L 286.8 669.2 L 279.8 676.2 L 272.8 669.2 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="289.8" y="672.2" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Draft Board</text>
+    </g>
+    <g id="landmark-team-tunnel">
+      <path d="M 873.8 688.6 L 880.8 695.6 L 873.8 702.6 L 866.8 695.6 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="883.8" y="698.6" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Team Tunnel</text>
+    </g>
+    <g id="landmark-rink-gate">
+      <path d="M 1063 688.6 L 1070 695.6 L 1063 702.6 L 1056 695.6 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="1073" y="698.6" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Rink Gate</text>
+    </g>
+    <g id="landmark-press-backdrop">
+      <path d="M 1098.2 367.4 L 1105.2 374.4 L 1098.2 381.4 L 1091.2 374.4 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="1108.2" y="377.4" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Press Backdrop Row</text>
+    </g>
+    <g id="landmark-data-lab-terminal">
+      <path d="M 436 673.2 L 443 680.2 L 436 687.2 L 429 680.2 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="446" y="683.2" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Data Lab Terminal</text>
+    </g>
+    <g id="landmark-support-kiosks">
+      <path d="M 488.8 561 L 495.8 568 L 488.8 575 L 481.8 568 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+      <text x="498.8" y="571" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="10" font-weight="700" filter="url(#label-shadow)">Support Kiosks</text>
+    </g>
+  </g>
+  <g id="spawn-point">
+    <circle cx="636.2" cy="440.4" r="11" fill="#61c9ff" stroke="#ffffff" stroke-width="2.5" />
+    <path d="M 636.2 424.4 L 643.2 436.4 L 629.2 436.4 Z" fill="#ffffff" />
+    <text x="651.2" y="444.4" fill="#ffffff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12" font-weight="800" filter="url(#label-shadow)">Spawn</text>
+  </g>
+  <g id="title">
+    <text x="84" y="38" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="24" font-weight="800">Franchise Ice Facility Layout Export</text>
+    <text x="84" y="59" fill="#b8c8dc" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="12">Phase 13 Facility Masterplan v13 - 22 rooms - 9 districts - 27 path nodes</text>
+    <text x="1587" y="38" fill="#b8c8dc" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">Generated from src/game/facility/facilityBlueprint.ts</text>
+  </g>
+  <g id="legend" transform="translate(1587 72)">
+    <rect x="0" y="0" width="196" height="178" rx="12" fill="#111c2e" stroke="#33435b" stroke-width="1.5" />
+    <text x="16" y="25" fill="#f7fbff" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="14" font-weight="800">Legend</text>
+    <rect x="16" y="42" width="24" height="16" rx="4" fill="#61c9ff" fill-opacity="0.18" stroke="#61c9ff" stroke-width="2" />
+    <text x="50" y="55" fill="#dbe8f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">District bounds</text>
+    <rect x="16" y="68" width="24" height="16" rx="4" fill="#f8fbff" stroke="#8ee7d1" stroke-width="2" />
+    <text x="50" y="81" fill="#dbe8f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">Room shell</text>
+    <line x1="16" y1="105" x2="42" y2="105" stroke="#ffd166" stroke-width="7" stroke-linecap="round" />
+    <text x="50" y="109" fill="#dbe8f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">Main corridor</text>
+    <line x1="16" y1="129" x2="42" y2="129" stroke="#9aa8be" stroke-width="3.5" stroke-linecap="round" opacity="0.7" />
+    <text x="50" y="133" fill="#dbe8f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">Branch corridor</text>
+    <path d="M 28 143 L 36 151 L 28 159 L 20 151 Z" fill="#ffffff" stroke="#ffd166" stroke-width="2" />
+    <text x="50" y="155" fill="#dbe8f8" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="11">Landmark</text>
+  </g>
+</svg>

@@ -86,7 +86,7 @@ export function createPostGameSummary(franchise: FranchiseState, result: GameRes
     subhead: "Post-game office readout",
     cards: cards.map((card) => ({ ...card, body: scrubIds(card.body) })),
     nextRecommendation: {
-      label: nextAction?.label ?? "Return to GM Office",
+      label: nextAction?.label ?? "Return to GM Computer",
       body: nextAction?.description ?? "Review the inbox, save locally, and choose the next room with intent.",
       roomId: nextAction?.roomId ?? "gm"
     },

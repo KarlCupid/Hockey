@@ -6,15 +6,15 @@ export const TUTORIAL_STEP_DEFINITIONS: Omit<TutorialStep, "completed">[] = [
   {
     id: "move-facility",
     title: "Walk the facility",
-    body: "Start in the Central Concourse, then use WASD to move through the wings. The nearest room marker will light up when you are close.",
+    body: "Start in the Command Atrium, then use WASD to move through the wings. The nearest room marker will light up when you are close.",
     targetAction: "movement",
     optional: false,
     category: "movement"
   },
   {
     id: "open-gm-office",
-    title: "Open the GM Office",
-    body: "The GM Office is the command center. Press E near it or open it from the map.",
+    title: "Open the GM Computer",
+    body: "The GM Computer is the command center. Press E near it or open it from the map.",
     roomId: "gm",
     targetAction: "openRoom",
     optional: false,
@@ -140,7 +140,7 @@ export const TUTORIAL_STEP_DEFINITIONS: Omit<TutorialStep, "completed">[] = [
   {
     id: "understand-next-phase",
     title: "Understand the next step",
-    body: "The GM Office phase card and Master Action Queue explain what must happen before the calendar advances.",
+    body: "The GM Computer phase card and Master Action Queue explain what must happen before the calendar advances.",
     roomId: "gm",
     targetAction: "phaseGuidanceRead",
     optional: false,
@@ -277,7 +277,7 @@ export function normalizeTutorialState(state?: TutorialState): TutorialState {
 }
 
 const ROOM_HINTS: Partial<Record<RoomId, string>> = {
-  gm: "The GM Office is the safest place to ask: what matters next?",
+  gm: "The GM Computer is the safest place to ask: what matters next?",
   roster: "Roster health tells you if the club can actually play tonight.",
   coach: "Auto-fill lines first, then tune one tactic if you want a clearer identity.",
   arena: "Choose a sim mode here. Broadcast mode is slower but easier to read.",

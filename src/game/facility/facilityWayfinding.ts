@@ -35,7 +35,8 @@ export function getWayfindingLabel(
 export function getBreadcrumbForRoom(blueprint: FacilityBlueprint, roomId: RoomId): string[] {
   const room = getRoomDefinition(blueprint, roomId);
   const district = getDistrictForRoom(blueprint, roomId);
-  return ["Central Concourse", district.label, room.label];
+  const entryDistrict = blueprint.districts.find((candidate) => candidate.id === "entry");
+  return [entryDistrict?.label ?? "Facility Hub", district.label, room.label];
 }
 
 export function getRoomEntrancePrompt(room: FacilityRoomDefinition): string {

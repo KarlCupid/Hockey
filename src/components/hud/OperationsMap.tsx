@@ -41,6 +41,7 @@ export function OperationsMap() {
   const routeFrom = currentRoom ?? nearestRoom?.roomId ?? "saves";
   const routeNodes = targetRoom && routeFrom !== targetRoom ? getSuggestedRoomRoute(blueprint, routeFrom, targetRoom) : [];
   const youPosition = currentRoom ? getRoomMapBadgePosition(blueprint, currentRoom) : mapWorldToFloorplan(blueprint, facilityPosition);
+  const entryDistrict = blueprint.districts.find((district) => district.id === "entry");
 
   if (!open) {
     if (activeRoom) return null;
@@ -57,7 +58,7 @@ export function OperationsMap() {
         <div>
           <small>Operations Map</small>
           <strong>{currentRoom ? `In ${roomLabel(currentRoom)}` : currentDistrict ? currentDistrict.label : "Facility Hub"}</strong>
-          <span>{currentDistrict?.landmarkLabel ?? "Central Concourse"}</span>
+          <span>{currentDistrict?.landmarkLabel ?? entryDistrict?.landmarkLabel ?? "Command Atrium"}</span>
         </div>
         <button className="icon-button" type="button" onClick={() => setOpen(false)} aria-label="Close operations map">
           X
@@ -148,7 +149,7 @@ export function OperationsMap() {
         <span>
           {targetRoom
             ? getBreadcrumbForRoom(blueprint, targetRoom).join(" -> ")
-            : "Central Concourse -> choose a room"}
+            : `${entryDistrict?.label ?? "Command Atrium"} -> choose a room`}
         </span>
         <span>{routeNodes.length ? `Walk there: ${routeNodes.map((node) => node.label).join(" -> ")}` : "Walk there: already nearby or choose a destination."}</span>
       </section>

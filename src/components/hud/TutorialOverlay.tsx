@@ -28,7 +28,7 @@ export function TutorialOverlay() {
   const completed = steps.filter((item) => item.completed).length;
   const stepRoomId = step.roomId;
   const isOpeningStep = step.id === "move-facility";
-  const title = isOpeningStep ? "Start in the GM Office" : step.title;
+  const title = isOpeningStep ? "Start at the GM Computer" : step.title;
   const body = isOpeningStep
     ? "Begin with the command center. The GM Computer keeps most desk work in one place, then sends you out only for roster, lines, the game, and a save."
     : step.body;
@@ -69,7 +69,7 @@ export function TutorialOverlay() {
       <p>{body}</p>
       {isOpeningStep && (
         <ol className="tutorial-route" aria-label="First day route">
-          <li>GM Office</li>
+          <li>GM Computer</li>
           <li>Roster Office</li>
           <li>Coach's Office</li>
           <li>Arena Bowl</li>
@@ -87,7 +87,7 @@ export function TutorialOverlay() {
               openStepRoom("gm");
             }}
           >
-            Open GM Office
+            Open GM Computer
           </button>
         )}
         {stepRoomId && (

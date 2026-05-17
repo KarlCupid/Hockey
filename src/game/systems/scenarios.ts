@@ -226,7 +226,7 @@ function createScenarioDecisionEvent(franchise: FranchiseState, scenario: Scenar
         ? "Medical Room"
         : scenario.scenarioType === "rebuild"
           ? "Owner Suite"
-          : "GM Office";
+          : "GM Computer";
   return {
     id: `scenario-event-${scenario.id}-${teamId}`,
     type: scenario.scenarioType === "injuryCrisis" ? "injuryConcern" : scenario.scenarioType === "capCrunch" ? "contractStandoff" : "ownerMeeting",

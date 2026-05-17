@@ -10,6 +10,7 @@ import {
   getOperationsMapGoToRoomLabel,
   getOperationsMapPinLabel,
   getOperationsMapRooms,
+  getRoomDistance,
   getRoomDefinition,
   getRoomMapBadgePosition,
   getSuggestedRoomRoute
@@ -101,13 +102,31 @@ describe("Phase 13 facility blueprint", () => {
     expect(report.mainCorridorIssues).toEqual([]);
   });
 
-  it("uses the main corridor as a hockey spine from concourse to arena", () => {
+  it("uses the main corridor as a hockey spine from command atrium to arena", () => {
     const corridorDistricts = blueprint.mainCorridorNodes
       .map((nodeId) => blueprint.pathNodes.find((node) => node.id === nodeId)?.districtId)
       .filter(Boolean);
     expect(corridorDistricts.indexOf("entry")).toBeLessThan(corridorDistricts.indexOf("hockeyOps"));
     expect(corridorDistricts.indexOf("hockeyOps")).toBeLessThan(corridorDistricts.indexOf("teamWing"));
     expect(corridorDistricts.indexOf("teamWing")).toBeLessThan(corridorDistricts.indexOf("arena"));
+  });
+
+  it("implements the approved GM Computer facility hierarchy", () => {
+    const district = (id: string) => blueprint.districts.find((candidate) => candidate.id === id)!;
+    expect(district("entry").label).toBe("Command Atrium");
+    expect(getRoomDefinition(blueprint, "gm").label).toBe("GM Computer");
+    expect(getRoomDefinition(blueprint, "gm").districtId).toBe("entry");
+    expect(district("frontOffice").bounds.x).toBeLessThan(district("entry").bounds.x);
+    expect(district("hockeyOps").bounds.x).toBeGreaterThan(district("entry").bounds.x);
+    expect(district("development").bounds.x).toBeLessThan(district("entry").bounds.x);
+    expect(district("teamWing").bounds.z).toBeGreaterThan(district("hockeyOps").bounds.z);
+    expect(district("arena").bounds.x).toBeGreaterThan(district("teamWing").bounds.x);
+    expect(district("frontOffice").roomIds).toEqual(["ownerSuite", "agents"]);
+    expect(district("hockeyOps").roomIds).toEqual(expect.arrayContaining(["roster", "coach", "contracts", "trades", "freeAgency", "staff"]));
+    expect(getRoomDefinition(blueprint, "arena").size.width).toBeGreaterThan(getRoomDefinition(blueprint, "locker").size.width);
+    expect(getRoomDistance(blueprint, "gm", "saves")).toBeLessThanOrEqual(5);
+    expect(getRoomDistance(blueprint, "locker", "medical")).toBeLessThanOrEqual(3);
+    expect(getRoomDistance(blueprint, "saves", "standings")).toBeLessThanOrEqual(4);
   });
 
   it("has a core first-hour route from GM to roster, coach, arena, and saves", () => {
@@ -155,12 +174,12 @@ describe("Phase 13 wayfinding", () => {
   });
 
   it("generates room breadcrumbs", () => {
-    expect(getBreadcrumbForRoom(blueprint, "coach")).toEqual(["Central Concourse", "Hockey Ops Wing", "Coach's Office"]);
+    expect(getBreadcrumbForRoom(blueprint, "coach")).toEqual(["Command Atrium", "Hockey Ops Suite", "Coach's Office"]);
   });
 
   it("generates room entrance prompts", () => {
     expect(getRoomEntrancePrompt(getRoomDefinition(blueprint, "coach"))).toBe("Enter Coach's Office");
-    expect(getRoomEntrancePrompt(getRoomDefinition(blueprint, "settings"))).toBe("Open Settings");
+    expect(getRoomEntrancePrompt(getRoomDefinition(blueprint, "settings"))).toBe("Open Settings App Kiosk");
   });
 
   it("keeps nearest landmark lookup safe", () => {
@@ -175,11 +194,9 @@ describe("Phase 13 wayfinding", () => {
 
 describe("Phase 13 Operations Map helpers", () => {
   it("filters district rooms", () => {
-    expect(getOperationsMapRooms(blueprint, "frontOffice").map((room) => room.roomId)).toEqual(
-      expect.arrayContaining(["gm", "contracts", "ownerSuite", "staff", "agents"])
-    );
+    expect(getOperationsMapRooms(blueprint, "frontOffice").map((room) => room.roomId)).toEqual(expect.arrayContaining(["ownerSuite", "agents"]));
     expect(getOperationsMapRooms(blueprint, "hockeyOps").map((room) => room.roomId)).toEqual(
-      expect.arrayContaining(["roster", "coach", "trades", "freeAgency"])
+      expect.arrayContaining(["roster", "coach", "contracts", "trades", "freeAgency", "staff"])
     );
   });
 
@@ -191,21 +208,21 @@ describe("Phase 13 Operations Map helpers", () => {
 
   it("returns room badge positions", () => {
     const arenaPin = getRoomMapBadgePosition(blueprint, "arena");
-    expect(arenaPin.x).toBeGreaterThan(45);
-    expect(arenaPin.x).toBeLessThan(60);
-    expect(arenaPin.y).toBeGreaterThan(80);
-    expect(arenaPin.y).toBeLessThan(90);
+    expect(arenaPin.x).toBeGreaterThan(80);
+    expect(arenaPin.x).toBeLessThan(90);
+    expect(arenaPin.y).toBeGreaterThan(70);
+    expect(arenaPin.y).toBeLessThan(80);
   });
 
   it("returns current district labels", () => {
-    expect(getCurrentDistrictLabel(blueprint, "coach")).toBe("Hockey Ops Wing");
+    expect(getCurrentDistrictLabel(blueprint, "coach")).toBe("Hockey Ops Suite");
   });
 
   it("labels map controls with destination-specific accessible names", () => {
     const gm = getRoomDefinition(blueprint, "gm");
     const badges = [{ id: "news", label: "News", tone: "info" as const, count: 4 }];
-    expect(getOperationsMapPinLabel(blueprint, gm, badges)).toBe("Select GM Office. Front Office Wing. Status: News 4");
-    expect(getOperationsMapGoToRoomLabel(blueprint, gm, badges)).toBe("Go to GM Office. Front Office Wing. Status: News 4");
+    expect(getOperationsMapPinLabel(blueprint, gm, badges)).toBe("Select GM Computer. Command Atrium. Status: News 4");
+    expect(getOperationsMapGoToRoomLabel(blueprint, gm, badges)).toBe("Go to GM Computer. Command Atrium. Status: News 4");
   });
 
   it("keeps Custom League Lab discoverable without adding a facility room", () => {
@@ -228,20 +245,20 @@ describe("Phase 13 tutorial, Assistant GM, and docs helpers", () => {
       .filter((recommendation) => recommendation.targetRoomId)
       .forEach((recommendation) => {
         expect(recommendation.targetDistrictLabel).toBeTruthy();
-        expect(recommendation.navigationHint).toContain("Central Concourse");
+        expect(recommendation.navigationHint).toContain("Command Atrium");
       });
   });
 
   it("explains facility districts in the guide", () => {
     const topic = getGuideTopics().find((candidate) => candidate.id === "basics-facility-districts");
-    expect(topic?.body).toContain("Central Concourse");
-    expect(topic?.body).toContain("Development Wing");
+    expect(topic?.body).toContain("Command Atrium");
+    expect(topic?.body).toContain("Development Pipeline");
   });
 
   it("includes current district in feedback and bug report context", () => {
     const franchise = createFranchise("harbor-city", { seed: "phase13-feedback" });
     const feedback = createFeedbackEntry({ headline: "Map helped me navigate", roomId: "coach" }, franchise);
-    expect(feedback.districtLabel).toBe("Hockey Ops Wing");
+    expect(feedback.districtLabel).toBe("Hockey Ops Suite");
     const bugReport = createBugReport(franchise, { lastRoom: "arena" });
     expect(bugReport.lastDistrictLabel).toBe("Arena Bowl");
   });
@@ -250,5 +267,35 @@ describe("Phase 13 tutorial, Assistant GM, and docs helpers", () => {
     expect(createFacilitySummary(blueprint)).toContain("Phase 13 Facility Masterplan");
     expect(JSON.parse(exportFacilityBlueprintJson(blueprint)).rooms.length).toBe(FACILITY_ROOM_IDS.length);
     expect(createFacilityDevToolsReport(blueprint, FACILITY_ROOM_IDS)).toContain("Facility blueprint validation report");
+  });
+
+  it("documents the image-guided layout export workflow", async () => {
+    // @ts-expect-error Node built-ins are available in Vitest, but app typecheck intentionally omits Node types.
+    const fs = await import("node:fs");
+    const cwd = (globalThis as unknown as { process: { cwd: () => string } }).process.cwd();
+    const readArtifact = (artifactPath: string) => fs.readFileSync(`${cwd}/${artifactPath}`, "utf8") as string;
+    const requiredArtifacts = [
+      "docs/facility-layout/README.md",
+      "docs/facility-layout/IMAGE_PROMPTS.md",
+      "docs/facility-layout/LAYOUT_SPEC_TEMPLATE.md",
+      "docs/facility-layout/CODEX_IMPLEMENTATION_PROMPT.md",
+      "docs/facility-layout/approved-facility-layout-spec.md",
+      "docs/facility-layout/current-facility-layout.svg",
+      "scripts/export-facility-layout.mjs"
+    ];
+    requiredArtifacts.forEach((artifactPath) => {
+      expect(fs.existsSync(`${cwd}/${artifactPath}`)).toBe(true);
+    });
+
+    const packageJson = JSON.parse(readArtifact("package.json")) as { scripts: Record<string, string> };
+    expect(packageJson.scripts["export:facility-layout"]).toBe("node scripts/export-facility-layout.mjs");
+    expect(readArtifact("FACILITY_BLUEPRINT.md")).toContain("Image-Guided Layout Workflow");
+    expect(readArtifact("docs/facility-layout/README.md")).toContain("Concept images, prompt outputs");
+    expect(readArtifact("docs/facility-layout/IMAGE_PROMPTS.md")).toContain("Final Implementation-Spec Extraction From Approved Image");
+    expect(readArtifact("docs/facility-layout/LAYOUT_SPEC_TEMPLATE.md")).toContain("JSON-Like Implementation Data");
+    expect(readArtifact("docs/facility-layout/CODEX_IMPLEMENTATION_PROMPT.md")).toContain("Do not create duplicate layout data outside the blueprint");
+    expect(readArtifact("docs/facility-layout/approved-facility-layout-spec.md")).toContain("Current status: Approved implementation spec");
+    expect(readArtifact("scripts/export-facility-layout.mjs")).toContain("createDefaultFacilityBlueprint");
+    expect(readArtifact("docs/facility-layout/current-facility-layout.svg")).toContain("Franchise Ice Facility Layout Export");
   });
 });

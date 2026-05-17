@@ -201,7 +201,7 @@ function validateMainCorridor(blueprint: FacilityBlueprint): string[] {
   const knownNodes = nodes.filter(Boolean) as FacilityPathNode[];
   const repeated = knownNodes.filter((node, index) => knownNodes.findIndex((candidate) => candidate.id === node.id) !== index);
   if (repeated.length) issues.push(`Main corridor repeats path nodes: ${repeated.map((node) => node.id).join(", ")}.`);
-  if (knownNodes[0]?.id !== "spawn-concourse") issues.push("Main corridor must start at the Central Concourse spawn node.");
+  if (knownNodes[0]?.id !== "spawn-concourse") issues.push("Main corridor must start at the Command Atrium spawn node.");
   const requiredDistricts: FacilityDistrictId[] = ["entry", "hockeyOps", "teamWing", "arena"];
   for (const districtId of requiredDistricts) {
     if (!knownNodes.some((node) => node.districtId === districtId)) issues.push(`Main corridor must include ${districtId}.`);
@@ -214,7 +214,7 @@ function validateMainCorridor(blueprint: FacilityBlueprint): string[] {
   const first = knownNodes[0];
   const last = knownNodes[knownNodes.length - 1];
   if (first && last && last.position.z <= first.position.z + 6) {
-    issues.push("Main corridor must visibly progress from the concourse toward the arena bowl.");
+    issues.push("Main corridor must visibly progress from the Command Atrium toward the arena bowl.");
   }
   return issues;
 }

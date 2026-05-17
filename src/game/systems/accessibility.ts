@@ -13,7 +13,7 @@ export function getKeyboardShortcuts(): KeyboardShortcut[] {
     { key: "H", label: "Help", action: "Open help and Learn the Game." },
     { key: "M", label: "Map", action: "Toggle operations map." },
     { key: "Esc", label: "Close", action: "Close the active panel or overlay." },
-    { key: "G", label: "GM Office", action: "Open GM Office.", roomId: "gm" },
+    { key: "G", label: "GM Computer", action: "Open GM Computer.", roomId: "gm" },
     { key: "R", label: "Roster Office", action: "Open Roster Office.", roomId: "roster" },
     { key: "C", label: "Coach Office", action: "Open Coach's Office.", roomId: "coach" },
     { key: "A", label: "Arena", action: "Open Arena Bowl.", roomId: "arena" },

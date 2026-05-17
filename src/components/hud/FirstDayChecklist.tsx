@@ -4,7 +4,7 @@ import { useFranchiseStore } from "../../store/franchiseStore";
 import { useUiStore, type FirstDayChecklistId } from "../../store/uiStore";
 
 const ITEMS: Array<{ id: FirstDayChecklistId; label: string }> = [
-  { id: "visitGm", label: "Visit GM Office" },
+  { id: "visitGm", label: "Visit GM Computer" },
   { id: "readInbox", label: "Read the inbox" },
   { id: "visitLocker", label: "Visit Locker Room" },
   { id: "openPlayerCard", label: "Open a player card" },
@@ -52,7 +52,7 @@ export function FirstDayChecklist() {
                   </li>
                 ))}
               </ol>
-              <p>Use the GM Office phase card when an action would permanently advance the dynasty calendar.</p>
+              <p>Use the GM Computer phase card when an action would permanently advance the dynasty calendar.</p>
             </>
           ) : (
             <>

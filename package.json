@@ -15,6 +15,7 @@
     "test:release": "npm run test:smoke && npm run test:phase11 && npm run test:phase12",
     "test:smoke": "vitest run --config vitest.config.ts src/tests/phase8ReleaseCandidate.test.ts src/tests/phase9Customization.test.ts src/tests/phase10LeagueRules.test.ts src/tests/phase11PublicBeta.test.ts src/tests/phase12ClosedBetaPolish.test.ts src/tests/phase13FacilityLayout.test.ts",
     "typecheck": "tsc --noEmit",
+    "export:facility-layout": "node scripts/export-facility-layout.mjs",
     "test:watch": "vitest"
   },
   "dependencies": {

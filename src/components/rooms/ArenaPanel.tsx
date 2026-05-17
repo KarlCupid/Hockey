@@ -185,7 +185,7 @@ export function ArenaPanel() {
               <Compare label="Form" home={avg(preview.home.roster, "form")} away={avg(preview.away.roster, "form")} />
             </div>
           ) : (
-            <p className="empty-state">{activeFranchise.seasonPhase === "playoffs" ? "Your club is not on the playoff schedule right now. Sim from the GM Office or Trophy Hall." : "The regular season is complete."}</p>
+            <p className="empty-state">{activeFranchise.seasonPhase === "playoffs" ? "Your club is not on the playoff schedule right now. Sim from the GM Computer or Trophy Hall." : "The regular season is complete."}</p>
           )}
           <h3>Period-by-Period Bench Controls</h3>
           {periods.length > 0 && (

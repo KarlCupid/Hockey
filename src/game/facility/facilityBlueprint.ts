@@ -53,79 +53,82 @@ export function getFacilityDistrictAdjacency(): Record<FacilityDistrictId, Facil
 }
 
 const DISTRICT_BOUNDS = {
-  entry: { x: 0, z: -0.4, width: 8.8, depth: 7.8 },
-  frontOffice: { x: -10.1, z: -0.2, width: 9.6, depth: 8.2 },
-  hockeyOps: { x: 8.6, z: 0.2, width: 8.4, depth: 7.8 },
-  teamWing: { x: 8.8, z: 6.1, width: 9, depth: 5.8 },
-  arena: { x: 0, z: 11.6, width: 12.8, depth: 7.2 },
-  media: { x: -6.9, z: 6.8, width: 5, depth: 4.2 },
-  development: { x: 8.4, z: -7.5, width: 10, depth: 6.8 },
-  customization: { x: -5.3, z: 4.6, width: 4.4, depth: 3.7 },
-  utility: { x: -2, z: 2.8, width: 4.8, depth: 3.6 }
+  entry: { x: 0, z: 1, width: 9.4, depth: 8.6 },
+  frontOffice: { x: -7.7, z: -2.7, width: 6.9, depth: 7.8 },
+  hockeyOps: { x: 2.8, z: -1.4, width: 8.2, depth: 10.6 },
+  teamWing: { x: 5.2, z: 5.8, width: 7.2, depth: 4.8 },
+  arena: { x: 12.4, z: 6, width: 9.8, depth: 10.8 },
+  media: { x: 10.5, z: -1.7, width: 6.2, depth: 4.4 },
+  development: { x: -8.2, z: 3, width: 5.8, depth: 9 },
+  customization: { x: -4.5, z: 5.5, width: 3.6, depth: 2.7 },
+  utility: { x: -4.5, z: 1.2, width: 3.6, depth: 6.3 }
 } satisfies Record<FacilityDistrictId, FacilityDistrict["bounds"]>;
 
 const HUBS = {
   spawn: point(0, 0),
-  trophyHall: point(0, -3),
-  frontOfficeGate: point(-4.4, 0),
-  frontOfficeHub: point(-8.6, 0),
-  ownerContracts: point(-11.4, -1.5),
-  agentsStaff: point(-9.4, 1.9),
-  hockeyOpsGate: point(4.2, 0),
-  hockeyOpsHub: point(8.4, 0),
-  rosterCoach: point(8.4, -1.8),
-  tradeMarket: point(8.4, 2),
-  developmentGate: point(6.3, -3.8),
-  pipelineHub: point(8.6, -6),
-  scoutingDevelopment: point(7.2, -7.2),
-  draftStage: point(10.8, -8),
-  teamGate: point(6.2, 3.6),
-  teamHub: point(8.7, 5.8),
-  playerMeetings: point(6.7, 4.8),
-  lockerMedical: point(10, 7),
-  arenaTunnel: point(5.1, 8.1),
-  arenaGate: point(0, 8.8),
-  arenaBowl: point(0, 11.2),
-  mediaGate: point(-4.2, 7.3),
-  pressRow: point(-6.4, 6.8),
-  customizationGate: point(-4, 3.4),
-  devTools: point(-3.8, 4.6),
-  utilityKiosk: point(-2.1, 2.1),
-  supportKiosks: point(-2, 2.9)
+  gmComputer: point(0, 0.8),
+  trophyHall: point(-3.35, -0.7),
+  frontOfficeGate: point(-4.2, -1.2),
+  frontOfficeHub: point(-7.3, -2.5),
+  ownerContracts: point(-8.4, -4.7),
+  agentsStaff: point(-7.6, -0.9),
+  hockeyOpsGate: point(2.8, -0.8),
+  hockeyOpsHub: point(2.4, -4.5),
+  rosterCoach: point(2.1, -5.5),
+  tradeMarket: point(4, 0.6),
+  developmentGate: point(-5.2, 1.6),
+  pipelineHub: point(-8.1, 3),
+  scoutingDevelopment: point(-8.1, 1.6),
+  draftStage: point(-8.1, 5.2),
+  teamGate: point(3.1, 3.4),
+  teamHub: point(5.4, 5.8),
+  playerMeetings: point(3.9, 4.9),
+  lockerMedical: point(5.8, 6.8),
+  arenaTunnel: point(8.4, 5.8),
+  arenaGate: point(9.7, 5.8),
+  arenaBowl: point(12.4, 7.5),
+  mediaGate: point(9.3, 0.5),
+  pressRow: point(10.5, -1.5),
+  customizationGate: point(-3.35, 4.4),
+  devTools: point(-3.35, 5.4),
+  utilityKiosk: point(-3.35, 1.4),
+  supportKiosks: point(-3.35, 2.9)
 } satisfies Record<string, FacilityPoint>;
 
 const ROOM_SIZES = {
+  command: { width: 3.2, depth: 2.3 },
   office: { width: 2.8, depth: 2.1 },
   compactOffice: { width: 2.6, depth: 2 },
   kiosk: { width: 2.2, depth: 1.6 },
+  appTile: { width: 2.2, depth: 1.25 },
   meeting: { width: 2.8, depth: 1.9 },
   locker: { width: 3.2, depth: 2.2 },
-  arena: { width: 9.6, depth: 5.3 }
+  arena: { width: 8.6, depth: 8.6 }
 };
 
 const ROOM_POSITIONS = {
-  gm: offset(HUBS.frontOfficeHub, 1.7, -1.5),
-  contracts: offset(HUBS.frontOfficeHub, -2.2, -2.5),
-  ownerSuite: offset(HUBS.frontOfficeHub, -4.6, -2.5),
-  staff: offset(HUBS.frontOfficeHub, 1.7, 1.8),
-  agents: offset(HUBS.frontOfficeHub, -2.2, 1.8),
-  roster: offset(HUBS.hockeyOpsHub, -1.7, -1.6),
-  coach: offset(HUBS.hockeyOpsHub, 1.8, -1.6),
-  trades: offset(HUBS.hockeyOpsHub, -1.7, 1.8),
-  freeAgency: offset(HUBS.hockeyOpsHub, 1.8, 1.8),
-  playerMeetings: point(6.4, 4.6),
-  locker: point(8.6, 7.1),
-  medical: point(11.7, 7.1),
-  arena: point(0, 11.3),
-  press: point(-6.9, 6.8),
-  scouting: offset(HUBS.pipelineHub, -2.9, -1.2),
-  development: offset(HUBS.pipelineHub, 0.1, -1.2),
-  draft: offset(HUBS.pipelineHub, 2.2, -3.2),
-  saves: offset(HUBS.spawn, 0, 0.85),
-  standings: point(0, -3.15),
-  settings: offset(HUBS.supportKiosks, -1.1, -0.1),
-  feedback: offset(HUBS.supportKiosks, 1, -0.1),
-  devTools: point(-5.3, 4.6)
+  gm: point(0, 0.85),
+  contracts: point(4.9, -1.2),
+  trades: point(4.9, 0.25),
+  freeAgency: point(4.9, 1.7),
+  ownerSuite: point(-8.5, -5.1),
+  staff: point(4.9, 3.15),
+  agents: point(-8.8, -1.3),
+  roster: point(0.65, -5.45),
+  coach: point(3.7, -5.45),
+  playerMeetings: point(3.2, 4.7),
+  locker: point(4.35, 6.85),
+  medical: point(7.15, 6.85),
+  arena: point(12.4, 6.4),
+  press: point(10.5, -2.5),
+  scouting: point(-8.15, 0.35),
+  development: point(-8.15, 3),
+  draft: point(-8.15, 5.55),
+  saves: point(-4.55, 0.1),
+  standings: point(-4.55, -1.45),
+  settings: point(-4.55, 1.65),
+  feedback: point(-4.55, 3.2),
+  devTools: point(-4.55, 5.45)
 } satisfies Record<RoomId, FacilityPoint>;
 
 const DISTRICT_META: Record<
@@ -133,35 +136,35 @@ const DISTRICT_META: Record<
   Pick<FacilityDistrict, "label" | "description" | "floor" | "colorToken" | "landmarkLabel" | "landmarkPosition" | "roomIds">
 > = {
   entry: {
-    label: "Central Concourse",
-    description: "The orientation hub for the whole building: spawn, Save Desk, trophy landmark, and the first view of the hockey spine.",
+    label: "Command Atrium",
+    description: "The playable hub: spawn, GM Computer, quick-look utilities, and the first sightline into every operational wing.",
     floor: "main",
     colorToken: "#61c9ff",
-    landmarkLabel: "Operations Map Kiosk",
-    landmarkPosition: point(0, -0.75),
-    roomIds: ["saves", "standings"]
+    landmarkLabel: "GM Computer",
+    landmarkPosition: HUBS.gmComputer,
+    roomIds: ["gm"]
   },
   frontOffice: {
-    label: "Front Office Wing",
-    description: "A west-side decision wing for GM work, cap planning, ownership, staff, and agent pressure around a shared office hub.",
+    label: "Private Office Wing",
+    description: "A west-side private suite for ownership pressure, agent calls, and staff conversations beside the GM Computer hub.",
     floor: "main",
     colorToken: "#f5c65b",
     landmarkLabel: "Owner Overlook",
-    landmarkPosition: point(-12.9, -2.2),
-    roomIds: ["gm", "contracts", "staff", "agents", "ownerSuite"]
+    landmarkPosition: ROOM_POSITIONS.ownerSuite,
+    roomIds: ["ownerSuite", "agents"]
   },
   hockeyOps: {
-    label: "Hockey Ops Wing",
-    description: "The east-side hockey spine groups roster, coaching, trade, and free-agency work before the corridor turns toward the team wing.",
+    label: "Hockey Ops Suite",
+    description: "The upper planning suite combines physical roster and coach rooms with GM Computer app bays for cap, trade, and market work.",
     floor: "main",
     colorToken: "#8ee7d1",
-    landmarkLabel: "Tactical Junction",
+    landmarkLabel: "Planning Wall",
     landmarkPosition: HUBS.hockeyOpsHub,
-    roomIds: ["roster", "coach", "trades", "freeAgency"]
+    roomIds: ["roster", "coach", "contracts", "trades", "freeAgency", "staff"]
   },
   teamWing: {
-    label: "Team Wing",
-    description: "Player-facing spaces form the lead-in to the arena tunnel: meetings first, then locker and medical support beside the route.",
+    label: "Team Corridor",
+    description: "Player-facing spaces form the arena lead-in: meetings first, then locker and medical support beside the team route.",
     floor: "arena",
     colorToken: "#c8e9ff",
     landmarkLabel: "Team Tunnel",
@@ -170,7 +173,7 @@ const DISTRICT_META: Record<
   },
   arena: {
     label: "Arena Bowl",
-    description: "The large game-day destination beyond the tunnel, with the rink footprint intentionally larger than the office rooms.",
+    description: "The oversized game-day destination beside the operations center, larger than every office, app bay, or support room.",
     floor: "arena",
     colorToken: "#dff6ff",
     landmarkLabel: "Rink Gate",
@@ -178,8 +181,8 @@ const DISTRICT_META: Record<
     roomIds: ["arena"]
   },
   media: {
-    label: "Media Wing",
-    description: "Public-facing pressure sits beside the arena concourse, close to the rink but outside the private team corridor.",
+    label: "Media Bridge",
+    description: "Public-facing pressure sits above the arena concourse, close to the rink but outside private team spaces.",
     floor: "arena",
     colorToken: "#d7e8ff",
     landmarkLabel: "Backdrop Row",
@@ -187,8 +190,8 @@ const DISTRICT_META: Record<
     roomIds: ["press"]
   },
   development: {
-    label: "Development Wing",
-    description: "A separate pipeline branch north of Hockey Ops for scouting, development plans, and draft execution.",
+    label: "Development Pipeline",
+    description: "A west-side vertical pipeline for scouting, development plans, and draft execution, connected back to the GM Computer.",
     floor: "main",
     colorToken: "#a9c6ff",
     landmarkLabel: "Draft Board",
@@ -196,8 +199,8 @@ const DISTRICT_META: Record<
     roomIds: ["scouting", "development", "draft"]
   },
   customization: {
-    label: "Customization Lab",
-    description: "A short side branch for local data-pack and developer inspection tools, connected to spawn without cutting across the hockey route.",
+    label: "Data Lab",
+    description: "A small local-only side room for developer inspection, validation, and future data-pack review tools.",
     floor: "main",
     colorToken: "#b58cff",
     landmarkLabel: "Data Lab Terminal",
@@ -205,13 +208,13 @@ const DISTRICT_META: Record<
     roomIds: ["devTools"]
   },
   utility: {
-    label: "Utility Kiosks",
-    description: "Settings and closed-beta feedback stay close to spawn in a side alcove, quick to reach but off the main arena path.",
+    label: "Local Utility Stack",
+    description: "Save, standings, settings, and feedback live as quick app kiosks beside the GM Computer, close to spawn and off the main route.",
     floor: "main",
     colorToken: "#76e3a5",
-    landmarkLabel: "Support Kiosks",
+    landmarkLabel: "Local App Stack",
     landmarkPosition: HUBS.supportKiosks,
-    roomIds: ["settings", "feedback"]
+    roomIds: ["standings", "saves", "settings", "feedback"]
   }
 };
 
@@ -269,29 +272,31 @@ function room(
 }
 
 const rooms: FacilityRoomDefinition[] = [
-  room("gm", "GM Office", "GM", "frontOffice", ROOM_POSITIONS.gm, {
-    width: ROOM_SIZES.office.width,
-    depth: ROOM_SIZES.office.depth,
+  room("gm", "GM Computer", "GM", "entry", ROOM_POSITIONS.gm, {
+    width: ROOM_SIZES.command.width,
+    depth: ROOM_SIZES.command.depth,
     icon: "GM",
     colorToken: "#61c9ff",
     priority: "core",
     relatedRoomIds: ["contracts", "roster", "ownerSuite", "saves"],
     tutorialWeight: 1,
-    description: "Command office for inbox, Assistant GM reports, ownership pressure, and phase guidance.",
-    signage: "GM OFFICE",
-    propTheme: "gmOffice"
+    description: "Central command computer for inbox, Assistant GM reports, owner pressure, phase guidance, and room handoffs.",
+    signage: "GM COMPUTER",
+    propTheme: "gmOffice",
+    entranceFacing: "north"
   }),
-  room("contracts", "Contract & Cap Office", "Cap", "frontOffice", ROOM_POSITIONS.contracts, {
-    width: ROOM_SIZES.compactOffice.width,
-    depth: ROOM_SIZES.compactOffice.depth,
+  room("contracts", "Contracts App Bay", "Cap", "hockeyOps", ROOM_POSITIONS.contracts, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "$",
     colorToken: "#f5c65b",
     priority: "support",
     relatedRoomIds: ["gm", "agents", "trades", "freeAgency"],
     tutorialWeight: 0.7,
-    description: "Cap, contracts, expiries, promises, and pick inventory live beside the GM and agent desks.",
-    signage: "CAP OFFICE",
-    propTheme: "contracts"
+    description: "GM Computer app bay for cap, contracts, expiries, promises, and pick inventory.",
+    signage: "CONTRACTS APP",
+    propTheme: "contracts",
+    entranceFacing: "west"
   }),
   room("ownerSuite", "Owner Suite", "Owner", "frontOffice", ROOM_POSITIONS.ownerSuite, {
     width: ROOM_SIZES.compactOffice.width,
@@ -305,22 +310,22 @@ const rooms: FacilityRoomDefinition[] = [
     description: "A slightly removed suite for trust, goals, job security, and private ownership pressure.",
     signage: "OWNER SUITE",
     propTheme: "ownerSuite",
-    entranceFacing: "east"
+    entranceFacing: "south"
   }),
-  room("staff", "Staff Office", "Staff", "frontOffice", ROOM_POSITIONS.staff, {
-    width: ROOM_SIZES.compactOffice.width,
-    depth: ROOM_SIZES.compactOffice.depth,
+  room("staff", "Staff App Bay", "Staff", "hockeyOps", ROOM_POSITIONS.staff, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "ST",
     colorToken: "#76e3a5",
     priority: "support",
     relatedRoomIds: ["gm", "coach", "scouting", "development"],
     tutorialWeight: 0.5,
-    description: "Staff hiring stays near the GM but points toward scouting, development, and coaching.",
-    signage: "STAFF OFFICE",
+    description: "GM Computer app bay for staff hiring, department ratings, and operational support.",
+    signage: "STAFF APP",
     propTheme: "staff",
-    entranceFacing: "north"
+    entranceFacing: "west"
   }),
-  room("agents", "Agent Desk", "Agents", "frontOffice", ROOM_POSITIONS.agents, {
+  room("agents", "Agent Call Booth", "Agents", "frontOffice", ROOM_POSITIONS.agents, {
     width: ROOM_SIZES.compactOffice.width,
     depth: ROOM_SIZES.compactOffice.depth,
     icon: "AG",
@@ -328,10 +333,10 @@ const rooms: FacilityRoomDefinition[] = [
     priority: "support",
     relatedRoomIds: ["contracts", "playerMeetings", "gm"],
     tutorialWeight: 0.4,
-    description: "Agent calls sit beside contracts so money, role, and relationship pressure feel connected.",
-    signage: "AGENT DESK",
+    description: "A private call booth beside the command atrium for agent pressure, client asks, and negotiation tone.",
+    signage: "AGENT BOOTH",
     propTheme: "agents",
-    entranceFacing: "north"
+    entranceFacing: "east"
   }),
   room("roster", "Roster Office", "Roster", "hockeyOps", ROOM_POSITIONS.roster, {
     width: ROOM_SIZES.office.width,
@@ -343,7 +348,8 @@ const rooms: FacilityRoomDefinition[] = [
     tutorialWeight: 1,
     description: "Active roster, scratches, affiliate depth, injured reserve, and roster repair.",
     signage: "ROSTER OFFICE",
-    propTheme: "roster"
+    propTheme: "roster",
+    entranceFacing: "east"
   }),
   room("coach", "Coach's Office", "Coach", "hockeyOps", ROOM_POSITIONS.coach, {
     width: ROOM_SIZES.office.width,
@@ -355,33 +361,34 @@ const rooms: FacilityRoomDefinition[] = [
     tutorialWeight: 1,
     description: "Lines, goalie decisions, and tactics sit between roster work and the team wing.",
     signage: "COACH OFFICE",
-    propTheme: "coach"
+    propTheme: "coach",
+    entranceFacing: "west"
   }),
-  room("trades", "Trade War Room", "Trades", "hockeyOps", ROOM_POSITIONS.trades, {
-    width: ROOM_SIZES.office.width,
-    depth: ROOM_SIZES.office.depth,
+  room("trades", "Trade Board App Bay", "Trades", "hockeyOps", ROOM_POSITIONS.trades, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "TR",
     colorToken: "#ff9f6e",
     priority: "advanced",
     relatedRoomIds: ["contracts", "roster", "freeAgency", "scouting"],
     tutorialWeight: 0.55,
-    description: "Trade package work connects roster needs, cap math, and market options.",
-    signage: "TRADE WAR ROOM",
+    description: "GM Computer app bay for trade packages, team needs, market fit, and cap math.",
+    signage: "TRADE APP",
     propTheme: "trades",
-    entranceFacing: "north"
+    entranceFacing: "west"
   }),
-  room("freeAgency", "Free Agency Office", "Market", "hockeyOps", ROOM_POSITIONS.freeAgency, {
-    width: ROOM_SIZES.office.width,
-    depth: ROOM_SIZES.office.depth,
+  room("freeAgency", "Free Agency App Bay", "Market", "hockeyOps", ROOM_POSITIONS.freeAgency, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "FA",
     colorToken: "#d7e8ff",
     priority: "advanced",
     relatedRoomIds: ["contracts", "trades", "roster", "staff"],
     tutorialWeight: 0.5,
-    description: "Open-market signings sit beside trade and cap planning.",
-    signage: "FREE AGENCY",
+    description: "GM Computer app bay for offers, rumors, market days, and open-market signings.",
+    signage: "MARKET APP",
     propTheme: "freeAgency",
-    entranceFacing: "north"
+    entranceFacing: "west"
   }),
   room("playerMeetings", "Player Meeting Room", "Meet", "teamWing", ROOM_POSITIONS.playerMeetings, {
     width: ROOM_SIZES.meeting.width,
@@ -408,7 +415,7 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "LOCKER ROOM",
     propTheme: "locker",
     floor: "arena",
-    entranceFacing: "north"
+    entranceFacing: "east"
   }),
   room("medical", "Medical Room", "Medical", "teamWing", ROOM_POSITIONS.medical, {
     width: 2.5,
@@ -436,7 +443,7 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "ARENA BOWL",
     propTheme: "arena",
     floor: "arena",
-    entranceFacing: "north"
+    entranceFacing: "west"
   }),
   room("press", "Press Room", "Press", "media", ROOM_POSITIONS.press, {
     width: 3.2,
@@ -450,7 +457,7 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "PRESS ROOM",
     propTheme: "press",
     floor: "arena",
-    entranceFacing: "east"
+    entranceFacing: "south"
   }),
   room("scouting", "Scouting Department", "Scout", "development", ROOM_POSITIONS.scouting, {
     width: ROOM_SIZES.compactOffice.width,
@@ -477,7 +484,7 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "DEVELOPMENT",
     propTheme: "development"
   }),
-  room("draft", "Draft Stage", "Draft", "development", ROOM_POSITIONS.draft, {
+  room("draft", "Draft Board", "Draft", "development", ROOM_POSITIONS.draft, {
     width: 3.1,
     depth: 2.3,
     icon: "DF",
@@ -485,78 +492,80 @@ const rooms: FacilityRoomDefinition[] = [
     priority: "advanced",
     relatedRoomIds: ["scouting", "development", "gm"],
     tutorialWeight: 0.45,
-    description: "A boardroom podium for draft execution and prospect selection pressure.",
-    signage: "DRAFT STAGE",
-    propTheme: "draft"
+    description: "A pipeline board for draft execution, owned picks, and prospect selection pressure.",
+    signage: "DRAFT BOARD",
+    propTheme: "draft",
+    entranceFacing: "north"
   }),
-  room("saves", "Save Desk", "Save", "entry", ROOM_POSITIONS.saves, {
-    width: 2.4,
-    depth: 1.8,
+  room("saves", "Save App Kiosk", "Save", "utility", ROOM_POSITIONS.saves, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "SV",
     colorToken: "#b58cff",
     priority: "core",
     relatedRoomIds: ["gm", "settings", "feedback", "devTools"],
     tutorialWeight: 1,
-    description: "Local saves, snapshots, diagnostics, bug reports, and the in-franchise data-pack library are anchored at spawn.",
-    signage: "SAVE DESK",
+    description: "Local-save app kiosk for snapshots, diagnostics, bug reports, and in-franchise data-pack library access.",
+    signage: "SAVE APP",
     propTheme: "save",
-    entranceFacing: "north"
+    entranceFacing: "east"
   }),
-  room("standings", "Standings/Trophy Hall", "Trophy", "entry", ROOM_POSITIONS.standings, {
-    width: 3.4,
-    depth: 2,
+  room("standings", "Standings App Kiosk", "Trophy", "utility", ROOM_POSITIONS.standings, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "TH",
     colorToken: "#f5c65b",
     priority: "core",
     relatedRoomIds: ["gm", "arena", "ownerSuite"],
     tutorialWeight: 0.75,
-    description: "A concourse landmark for standings, achievements, milestones, and history.",
-    signage: "TROPHY HALL",
-    propTheme: "standings"
+    description: "Quick standings, achievements, milestones, and history app beside the GM Computer.",
+    signage: "STANDINGS APP",
+    propTheme: "standings",
+    entranceFacing: "east"
   }),
-  room("settings", "Settings", "Settings", "utility", ROOM_POSITIONS.settings, {
-    width: ROOM_SIZES.kiosk.width,
-    depth: ROOM_SIZES.kiosk.depth,
+  room("settings", "Settings App Kiosk", "Settings", "utility", ROOM_POSITIONS.settings, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "SET",
     colorToken: "#61c9ff",
     priority: "utility",
     relatedRoomIds: ["saves", "feedback", "devTools"],
     tutorialWeight: 0.35,
-    description: "Accessibility, presentation, controls, and low-spec settings are a short walk from spawn.",
-    signage: "SETTINGS",
+    description: "Accessibility, presentation, controls, and low-spec settings app beside the GM Computer.",
+    signage: "SETTINGS APP",
     propTheme: "settings",
-    entranceFacing: "north"
+    entranceFacing: "east"
   }),
-  room("feedback", "Feedback Desk", "Feedback", "utility", ROOM_POSITIONS.feedback, {
-    width: ROOM_SIZES.kiosk.width,
-    depth: ROOM_SIZES.kiosk.depth,
+  room("feedback", "Feedback App Kiosk", "Feedback", "utility", ROOM_POSITIONS.feedback, {
+    width: ROOM_SIZES.appTile.width,
+    depth: ROOM_SIZES.appTile.depth,
     icon: "FB",
     colorToken: "#8ee7d1",
     priority: "utility",
     relatedRoomIds: ["saves", "settings", "devTools"],
     tutorialWeight: 0.35,
-    description: "Closed-beta notes and export-only feedback live beside the support kiosks.",
-    signage: "FEEDBACK",
+    description: "Closed-beta notes and export-only feedback app beside the GM Computer.",
+    signage: "FEEDBACK APP",
     propTheme: "feedback",
-    entranceFacing: "north"
+    entranceFacing: "east"
   }),
-  room("devTools", "Dev Tools", "Tools", "customization", ROOM_POSITIONS.devTools, {
-    width: 2.8,
+  room("devTools", "Dev Tools Lab", "Tools", "customization", ROOM_POSITIONS.devTools, {
+    width: 2.6,
     depth: ROOM_SIZES.compactOffice.depth,
     icon: "DT",
     colorToken: "#b58cff",
     priority: "utility",
     relatedRoomIds: ["saves", "settings", "feedback", "scouting"],
     tutorialWeight: 0.2,
-    description: "Developer-only QA, validation, layout export, and future data-lab review tools. Player-facing Custom League Lab remains a title-screen setup flow.",
-    signage: "DEV TOOLS",
+    description: "Developer-only QA, validation, layout export, and future data-lab review tools off the local utility stack.",
+    signage: "DATA LAB",
     propTheme: "devTools",
     entranceFacing: "east"
   })
 ];
 
 const pathNodes: FacilityPathNode[] = [
-  node("spawn-concourse", "Central Concourse", HUBS.spawn, ["trophy-hall-cross", "front-office-gate", "hockey-ops-gate", "utility-kiosk"], "entry", true),
+  node("spawn-concourse", "Command Atrium", HUBS.spawn, ["trophy-hall-cross", "front-office-gate", "hockey-ops-gate", "utility-kiosk"], "entry", true),
   node("trophy-hall-cross", "Trophy Hall Cross", HUBS.trophyHall, ["spawn-concourse"], "entry"),
   node("front-office-gate", "Front Office Threshold", HUBS.frontOfficeGate, ["spawn-concourse", "front-office-hub", "customization-gate"], "frontOffice"),
   node("front-office-hub", "Front Office Hub", HUBS.frontOfficeHub, ["front-office-gate", "owner-contracts", "agents-staff"], "frontOffice", true),
@@ -606,7 +615,7 @@ const defaultBlueprint: FacilityBlueprint = {
   ],
   landmarks: [
     { id: "map-kiosk", label: "Operations Map Kiosk", position: point(0, -0.75), districtId: "entry" },
-    { id: "trophy-wall", label: "Trophy Wall", position: point(0, -4.05), districtId: "entry" },
+    { id: "trophy-wall", label: "Trophy Wall", position: HUBS.trophyHall, districtId: "entry" },
     { id: "owner-overlook", label: "Owner Overlook", position: DISTRICT_META.frontOffice.landmarkPosition, districtId: "frontOffice" },
     { id: "tactical-junction", label: "Tactical Junction", position: HUBS.hockeyOpsHub, districtId: "hockeyOps" },
     { id: "draft-board", label: "Draft Board", position: HUBS.draftStage, districtId: "development" },
@@ -619,8 +628,8 @@ const defaultBlueprint: FacilityBlueprint = {
   notes: [
     "Add new rooms here first.",
     "District bounds, hubs, room offsets, map pins, path nodes, 3D markers, and wayfinding all read from this typed blueprint.",
-    "The layout is a stylized hockey operations complex: a central concourse, west front-office wing, east hockey-ops spine, team tunnel, arena bowl, public media edge, and separate development pipeline.",
-    "Custom League Lab is currently surfaced through the start screen; Save Desk hosts the in-franchise data-pack library, and the customization district reserves a physical lab branch for future room expansion."
+    "The layout follows the approved GM Computer concept: a command atrium at spawn, local app kiosks on the west side, private owner/agent rooms beyond them, Hockey Ops app bays to the east, a west development pipeline, and a clear team corridor into the large Arena Bowl.",
+    "Custom League Lab is currently surfaced through the start screen; Save App Kiosk hosts the in-franchise data-pack library, and the Data Lab district reserves a physical branch for future room expansion."
   ]
 };
 

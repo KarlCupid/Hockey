@@ -1,6 +1,6 @@
 # Codex Closed-Beta QA Agent Army
 
-This folder is the reusable QA harness for Franchise Ice closed-beta passes. It turns Codex into a sequence of focused testers: first-time user, demo franchise, facility navigation, Operations Map, custom league, data-pack safety, accessibility, save/recovery, balance, living-ops, release verifier, and fix-prompt writer.
+This folder is the reusable QA harness for Franchise Ice closed-beta passes. It turns Codex into a sequence of focused testers: human-style manual playtester, first-time user, demo franchise, facility navigation, Operations Map, custom league, data-pack safety, accessibility, save/recovery, balance, living-ops, release verifier, and fix-prompt writer.
 
 ## Current Build Context
 
@@ -11,23 +11,45 @@ This folder is the reusable QA harness for Franchise Ice closed-beta passes. It 
 
 ## Recommended Sequential Run
 
-1. `qa/agents/first_time_user_tester.md`
-2. `qa/agents/demo_franchise_tester.md`
-3. `qa/agents/facility_navigation_tester.md`
-4. `qa/agents/operations_map_tester.md`
-5. `qa/agents/custom_league_tester.md`
-6. `qa/agents/data_pack_safety_tester.md`
-7. `qa/agents/ui_ux_tester.md`
-8. `qa/agents/accessibility_tester.md`
-9. `qa/agents/save_recovery_tester.md`
-10. `qa/agents/gm_systems_tester.md`
-11. `qa/agents/first_season_tester.md`
-12. `qa/agents/narrative_living_ops_tester.md`
-13. `qa/agents/balance_tester.md`
-14. `qa/agents/release_verifier.md`
-15. `qa/agents/fix_prompt_writer.md`
+1. `qa/agents/human_playtester.md`
+2. `qa/agents/first_time_user_tester.md`
+3. `qa/agents/demo_franchise_tester.md`
+4. `qa/agents/facility_navigation_tester.md`
+5. `qa/agents/operations_map_tester.md`
+6. `qa/agents/custom_league_tester.md`
+7. `qa/agents/data_pack_safety_tester.md`
+8. `qa/agents/ui_ux_tester.md`
+9. `qa/agents/accessibility_tester.md`
+10. `qa/agents/save_recovery_tester.md`
+11. `qa/agents/gm_systems_tester.md`
+12. `qa/agents/first_season_tester.md`
+13. `qa/agents/narrative_living_ops_tester.md`
+14. `qa/agents/balance_tester.md`
+15. `qa/agents/release_verifier.md`
+16. `qa/agents/fix_prompt_writer.md`
 
 Each agent writes one report under `qa/playtest-runs/current/`. Summary files at the root of `qa/` collect cross-agent issues and fix prompts.
+
+## Spawnable Human Pass
+
+When you want one agent to act like a player, spawn a worker with this instruction:
+
+```text
+Read `qa/agents/human_playtester.md` and follow it exactly. Do not implement fixes. Use browser, screenshots, visible UI, keyboard/pointer interactions, and console notes as evidence. Write `qa/playtest-runs/current/human_playtester_report.md`.
+```
+
+The human playtester should start from the UI rather than source knowledge, then inspect source only after reproducing a finding.
+
+## Browser Automation Dependency
+
+Human-style browser passes use Playwright for repeatable Chromium launch, viewport control, screenshots, DOM checks, and console capture. The repo includes `@playwright/test` as a dev dependency. On a fresh machine, run:
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+Then start the app with `npm run dev` or a Vite preview server before running the spawned tester.
 
 ## Verification Commands
 
@@ -58,4 +80,3 @@ Use evidence from tests, source, docs, browser/DOM/screenshots when available, a
 - `CUSTOM_LEAGUE_FINDINGS.md`: rules, data packs, scenario/custom-start QA notes.
 - `FIRST_HOUR_FINDINGS.md`: first-hour onboarding and demo flow notes.
 - `FIX_PROMPT_QUEUE.md`: implementation-ready prompts for future fixing passes.
-

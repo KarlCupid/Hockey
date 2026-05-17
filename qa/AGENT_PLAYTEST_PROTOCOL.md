@@ -40,6 +40,19 @@ Agents focused on a specific system should then read the relevant source and tes
 7. Do not implement fixes.
 8. Note manual/browser limitations honestly.
 
+## Human-Style Browser Pass
+
+Use `qa/agents/human_playtester.md` when the goal is one spawned agent that behaves like a real player instead of a source reviewer. That role reads only guardrails and beta-facing docs before testing, drives the game through visible UI, records screenshots and console notes, and inspects source only after reproducing issues.
+
+Minimum evidence for a human-style pass:
+
+- browser target and viewport
+- commands run
+- screenshots for major tested states
+- visible route through the UI
+- console warnings or errors
+- manual limitations and skipped flows
+
 ## Standard Finding Format
 
 ```text
@@ -66,4 +79,3 @@ Acceptance Criteria:
 - If no defects are found, the report says so and lists residual risks.
 - The report does not claim unperformed browser/manual testing.
 - No gameplay, facility, balance, or UI fix is implemented during the QA run.
-

@@ -256,6 +256,9 @@ npm run check
 - `PLAYTEST_REPORT.md`: deterministic Phase 4 through Phase 10 playtest and balance report summary
 - `RELEASE_NOTES.md`: Phase 10 playtest notes, run instructions, known limitations, and safety/licensing notes
 - `BETA_TESTING.md`: Phase 11 public beta testing guide, diagnostics instructions, compatibility notes, privacy note, and playtest checklists
+- `qa/README.md`: reusable Codex QA-agent harness and recommended spawned-agent sequence
+- `qa/AGENT_PLAYTEST_PROTOCOL.md`: shared evidence, report, and browser/manual playtest protocol
+- `qa/agents/human_playtester.md`: spawnable human-style browser tester prompt for hands-on closed-beta passes
 
 ## Current Playable Flow
 

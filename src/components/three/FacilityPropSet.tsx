@@ -35,7 +35,7 @@ function renderTheme(room: FacilityRoomDefinition, reducedDetail: boolean) {
     case "playerMeetings":
       return <MeetingTable accent={room.colorToken} reducedDetail={reducedDetail} />;
     case "arena":
-      return <ArenaProps reducedDetail={reducedDetail} />;
+      return <ArenaProps room={room} reducedDetail={reducedDetail} />;
     case "press":
       return <PressProps accent={room.colorToken} reducedDetail={reducedDetail} />;
     case "scouting":
@@ -198,18 +198,38 @@ function MeetingTable({ accent, reducedDetail }: { accent: string; reducedDetail
   );
 }
 
-function ArenaProps({ reducedDetail }: { reducedDetail: boolean }) {
+function ArenaProps({ room, reducedDetail }: { room: FacilityRoomDefinition; reducedDetail: boolean }) {
+  const rinkWidth = Math.max(5.4, room.size.width - 1.45);
+  const rinkDepth = Math.max(2.8, room.size.depth - 1.25);
   return (
     <group>
       <mesh position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[5.4, 2.8]} />
+        <planeGeometry args={[rinkWidth, rinkDepth]} />
         <meshStandardMaterial color="#dff6ff" roughness={0.25} metalness={0.05} />
       </mesh>
       <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.45, 0.48, 48]} />
+        <ringGeometry args={[0.48, 0.52, 48]} />
         <meshStandardMaterial color="#d9475f" />
       </mesh>
-      {!reducedDetail && [-2.4, 2.4].map((x) => <GoalLight key={x} x={x} />)}
+      <mesh position={[0, 0.09, -rinkDepth / 2 + 0.58]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[rinkWidth - 0.7, 0.04]} />
+        <meshStandardMaterial color="#1e7dd7" />
+      </mesh>
+      <mesh position={[0, 0.09, rinkDepth / 2 - 0.58]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[rinkWidth - 0.7, 0.04]} />
+        <meshStandardMaterial color="#d9475f" />
+      </mesh>
+      {!reducedDetail && (
+        <>
+          {[-rinkWidth / 2 + 0.7, rinkWidth / 2 - 0.7].map((x) => <GoalLight key={x} x={x} />)}
+          {[-room.size.depth / 2 + 0.35, room.size.depth / 2 - 0.35].map((z) => (
+            <mesh key={z} position={[0, 0.46, z]}>
+              <boxGeometry args={[room.size.width - 0.55, 0.54, 0.22]} />
+              <meshStandardMaterial color="#20324c" emissive="#61c9ff" emissiveIntensity={0.08} transparent opacity={0.72} />
+            </mesh>
+          ))}
+        </>
+      )}
     </group>
   );
 }

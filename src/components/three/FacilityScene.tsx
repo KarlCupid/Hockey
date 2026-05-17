@@ -47,7 +47,7 @@ export function FacilityScene() {
         <ambientLight intensity={0.42} />
         <directionalLight position={[5, 12, 6]} intensity={1.35} castShadow />
         <pointLight position={[0, 3, 0]} intensity={1.1} color="#60c9ff" />
-        <FacilityGeometry blueprint={blueprint} selectedTeamId={selectedTeamId} reducedDetail={reduced3DDetail} />
+        <FacilityGeometry blueprint={blueprint} selectedTeamId={selectedTeamId} nearbyRoom={nearbyRoom} reducedDetail={reduced3DDetail} />
         <Grid args={[42, 34]} cellSize={1} sectionSize={4} cellColor="#17304d" sectionColor="#6ecbff" fadeDistance={36} fadeStrength={1.3} />
         {zones.map((zone) => (
           <RoomZone key={zone.id} zone={zone} active={nearbyRoom === zone.id} onOpen={setActiveRoom} />
@@ -67,10 +67,12 @@ export function FacilityScene() {
 function FacilityGeometry({
   blueprint,
   selectedTeamId,
+  nearbyRoom,
   reducedDetail
 }: {
   blueprint: FacilityBlueprint;
   selectedTeamId: string;
+  nearbyRoom?: string;
   reducedDetail: boolean;
 }) {
   const bounds = getWorldBounds(blueprint);
@@ -90,7 +92,7 @@ function FacilityGeometry({
       ))}
       <FacilityCorridor blueprint={blueprint} reducedDetail={reducedDetail} />
       {blueprint.rooms.map((room) => (
-        <FacilityRoomShell key={room.roomId} room={room} active={false} reducedDetail={reducedDetail} />
+        <FacilityRoomShell key={room.roomId} room={room} active={nearbyRoom === room.roomId} reducedDetail={reducedDetail} />
       ))}
       {blueprint.rooms.map((room) => (
         <FacilityPropSet key={`${room.roomId}-props`} room={room} reducedDetail={reducedDetail || !room.reducedDetailSafe} />
@@ -99,7 +101,7 @@ function FacilityGeometry({
         blueprint.landmarks.map((landmark) => (
           <FacilityLandmark key={landmark.id} landmark={landmark} blueprint={blueprint} reducedDetail={reducedDetail} />
         ))}
-      <TeamBrandingWall teamId={selectedTeamId} />
+      <TeamBrandingWall teamId={selectedTeamId} blueprint={blueprint} />
       {shouldRenderFacilityAtmosphere(reducedDetail) && <AtmosphereLights blueprint={blueprint} selectedTeamId={selectedTeamId} />}
     </group>
   );
@@ -133,10 +135,12 @@ function getWorldBounds(blueprint: FacilityBlueprint): { minX: number; maxX: num
   };
 }
 
-function TeamBrandingWall({ teamId }: { teamId: string }) {
+function TeamBrandingWall({ teamId, blueprint }: { teamId: string; blueprint: FacilityBlueprint }) {
   const brand = getTeamBranding(teamId);
+  const trophyWall = blueprint.landmarks.find((landmark) => landmark.id === "trophy-wall");
+  const position = trophyWall?.position ?? { x: 0, z: -4.4 };
   return (
-    <group position={[0, 0, -5.85]}>
+    <group position={[position.x, 0, position.z - 0.28]}>
       <mesh position={[0, 1.25, 0]}>
         <boxGeometry args={[3.4, 1.35, 0.08]} />
         <meshStandardMaterial color={brand.secondaryColor} emissive={brand.primaryColor} emissiveIntensity={0.1} />

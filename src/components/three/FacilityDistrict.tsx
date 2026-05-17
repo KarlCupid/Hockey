@@ -13,6 +13,16 @@ export function FacilityDistrict({ district, reducedDetail }: { district: Facili
       <DistrictCurb x={x} z={z + depth / 2} width={width} depth={0.12} color={district.colorToken} />
       <DistrictCurb x={x - width / 2} z={z} width={0.12} depth={depth} color={district.colorToken} />
       <DistrictCurb x={x + width / 2} z={z} width={0.12} depth={depth} color={district.colorToken} />
+      <mesh position={[district.landmarkPosition.x, 0.005, district.landmarkPosition.z]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.9, 36]} />
+        <meshStandardMaterial color={district.colorToken} emissive={district.colorToken} emissiveIntensity={0.08} transparent opacity={0.2} />
+      </mesh>
+      {!reducedDetail && (
+        <>
+          <DistrictCurb x={x} z={z} width={Math.max(1.6, width * 0.38)} depth={0.08} color={district.colorToken} />
+          <DistrictCurb x={x} z={z} width={0.08} depth={Math.max(1.6, depth * 0.38)} color={district.colorToken} />
+        </>
+      )}
       {!reducedDetail && (
         <pointLight position={[district.landmarkPosition.x, 2.4, district.landmarkPosition.z]} intensity={0.18} color={district.colorToken} />
       )}

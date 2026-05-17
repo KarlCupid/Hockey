@@ -147,6 +147,11 @@ export function createFacilityDevToolsReport(blueprint: FacilityBlueprint, allRo
     `duplicates=${report.duplicateRooms.join(", ") || "none"}`,
     `overlaps=${report.overlappingRooms.map((item) => item.roomIds.join("+")).join(", ") || "none"}`,
     `disconnected=${report.disconnectedRooms.join(", ") || "none"}`,
+    `districts=${report.disconnectedDistricts.join(", ") || "none"}`,
+    `outsideDistrict=${report.outOfDistrictRooms.join(", ") || "none"}`,
+    `entrances=${report.misalignedEntrances.join(", ") || "none"}`,
+    `mapCollisions=${report.collidingMapPins.map((item) => item.roomIds.join("+")).join(", ") || "none"}`,
+    `pathIssues=${report.invalidPathConnections.length + report.mainCorridorIssues.length}`,
     `warnings=${report.warnings.length}`,
     `errors=${report.errors.length}`
   ].join("\n");

@@ -91,6 +91,18 @@ export function OperationsMap() {
             <span>{district.label}</span>
           </div>
         ))}
+        {getMapPathSegments(blueprint).map((segment) => (
+          <span
+            key={segment.id}
+            className={segment.main ? "ops-map__path ops-map__path--main" : "ops-map__path"}
+            style={{
+              left: `${segment.left}%`,
+              top: `${segment.top}%`,
+              width: `${segment.length}%`,
+              transform: `translateY(-50%) rotate(${segment.angle}deg)`
+            }}
+          />
+        ))}
         <span className="ops-map__you" style={{ left: `${youPosition.x}%`, top: `${youPosition.y}%` }}>
           You
         </span>
@@ -208,6 +220,41 @@ function districtToMapRect(blueprint: ReturnType<typeof createDefaultFacilityBlu
     width: bottomRight.x - topLeft.x,
     height: bottomRight.y - topLeft.y
   };
+}
+
+function getMapPathSegments(blueprint: ReturnType<typeof createDefaultFacilityBlueprint>) {
+  const byId = new Map(blueprint.pathNodes.map((node) => [node.id, node]));
+  const seen = new Set<string>();
+  return blueprint.pathNodes.flatMap((node) =>
+    node.connectedNodeIds.flatMap((connectedId) => {
+      const connected = byId.get(connectedId);
+      if (!connected) return [];
+      const key = [node.id, connected.id].sort().join(":");
+      if (seen.has(key)) return [];
+      seen.add(key);
+      const from = mapWorldToFloorplan(blueprint, node.position);
+      const to = mapWorldToFloorplan(blueprint, connected.position);
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      return [
+        {
+          id: key,
+          left: from.x,
+          top: from.y,
+          length: Math.hypot(dx, dy),
+          angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+          main: isMainPathSegment(blueprint, node.id, connected.id)
+        }
+      ];
+    })
+  );
+}
+
+function isMainPathSegment(blueprint: ReturnType<typeof createDefaultFacilityBlueprint>, a: string, b: string): boolean {
+  return blueprint.mainCorridorNodes.some((nodeId, index) => {
+    const next = blueprint.mainCorridorNodes[index + 1];
+    return (nodeId === a && next === b) || (nodeId === b && next === a);
+  });
 }
 
 function clamp(value: number): number {

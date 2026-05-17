@@ -1868,7 +1868,7 @@ textarea {
   color: var(--ink);
   font-size: 0.68rem;
   font-weight: 900;
-  z-index: 2;
+  z-index: 5;
 }
 
 .ops-map__directory {
@@ -2924,6 +2924,7 @@ textarea {
 
 .ops-map__district {
   position: absolute;
+  z-index: 1;
   border: 1px solid;
   border-radius: 7px;
   background: color-mix(in srgb, currentColor 10%, transparent);
@@ -2939,6 +2940,27 @@ textarea {
   font-weight: 900;
   letter-spacing: 0;
   text-transform: uppercase;
+}
+
+.ops-map__path {
+  position: absolute;
+  z-index: 2;
+  height: 0.32rem;
+  border-radius: 999px;
+  background: rgba(110, 203, 255, 0.26);
+  box-shadow: 0 0 10px rgba(97, 201, 255, 0.16);
+  pointer-events: none;
+  transform-origin: 0 50%;
+}
+
+.ops-map__path--main {
+  height: 0.48rem;
+  background: rgba(245, 251, 255, 0.34);
+  box-shadow: 0 0 14px rgba(142, 231, 209, 0.24);
+}
+
+.ops-map__pin {
+  z-index: 4;
 }
 
 .ops-map__pin.is-selected {

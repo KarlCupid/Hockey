@@ -126,6 +126,12 @@ export interface FacilityValidationReport {
   duplicateRooms: RoomId[];
   overlappingRooms: Array<{ roomIds: [RoomId, RoomId]; overlapRatio: number }>;
   disconnectedRooms: RoomId[];
+  disconnectedDistricts: FacilityDistrictId[];
+  outOfDistrictRooms: RoomId[];
+  misalignedEntrances: RoomId[];
+  collidingMapPins: Array<{ roomIds: [RoomId, RoomId]; distance: number }>;
+  invalidPathConnections: string[];
+  mainCorridorIssues: string[];
   unmappedRooms: RoomId[];
   invalidRelatedRooms: Array<{ roomId: RoomId; relatedRoomId: RoomId }>;
 }

@@ -3,6 +3,10 @@ import type {
   FacilityBlueprint,
   FacilityDistrict,
   FacilityDistrictId,
+  FacilityFloor,
+  FacilityMapPoint,
+  FacilityPathNode,
+  FacilityPoint,
   FacilityPropTheme,
   FacilityRoomDefinition
 } from "./facilityTypes";
@@ -33,14 +37,14 @@ export const FACILITY_ROOM_IDS: RoomId[] = [
 ];
 
 const districtAdjacency: Record<FacilityDistrictId, FacilityDistrictId[]> = {
-  entry: ["frontOffice", "hockeyOps", "arena", "media", "development", "customization", "utility", "teamWing"],
-  frontOffice: ["entry", "hockeyOps", "utility"],
+  entry: ["frontOffice", "hockeyOps", "customization", "utility"],
+  frontOffice: ["entry", "hockeyOps", "customization", "utility"],
   hockeyOps: ["entry", "frontOffice", "development", "teamWing", "arena"],
-  teamWing: ["hockeyOps", "arena", "media", "entry"],
-  arena: ["teamWing", "media", "entry", "hockeyOps"],
-  media: ["arena", "teamWing", "entry"],
-  development: ["hockeyOps", "entry", "customization"],
-  customization: ["entry", "development", "utility"],
+  teamWing: ["hockeyOps", "arena", "media"],
+  arena: ["hockeyOps", "teamWing", "media"],
+  media: ["teamWing", "arena", "customization"],
+  development: ["hockeyOps"],
+  customization: ["entry", "frontOffice", "media", "utility"],
   utility: ["entry", "frontOffice", "customization"]
 };
 
@@ -48,117 +52,183 @@ export function getFacilityDistrictAdjacency(): Record<FacilityDistrictId, Facil
   return districtAdjacency;
 }
 
-const districts: FacilityDistrict[] = [
-  {
-    id: "entry",
+const DISTRICT_BOUNDS = {
+  entry: { x: 0, z: -0.4, width: 8.8, depth: 7.8 },
+  frontOffice: { x: -10.1, z: -0.2, width: 9.6, depth: 8.2 },
+  hockeyOps: { x: 8.6, z: 0.2, width: 8.4, depth: 7.8 },
+  teamWing: { x: 8.8, z: 6.1, width: 9, depth: 5.8 },
+  arena: { x: 0, z: 11.6, width: 12.8, depth: 7.2 },
+  media: { x: -6.9, z: 6.8, width: 5, depth: 4.2 },
+  development: { x: 8.4, z: -7.5, width: 10, depth: 6.8 },
+  customization: { x: -5.3, z: 4.6, width: 4.4, depth: 3.7 },
+  utility: { x: -2, z: 2.8, width: 4.8, depth: 3.6 }
+} satisfies Record<FacilityDistrictId, FacilityDistrict["bounds"]>;
+
+const HUBS = {
+  spawn: point(0, 0),
+  trophyHall: point(0, -3),
+  frontOfficeGate: point(-4.4, 0),
+  frontOfficeHub: point(-8.6, 0),
+  ownerContracts: point(-11.4, -1.5),
+  agentsStaff: point(-9.4, 1.9),
+  hockeyOpsGate: point(4.2, 0),
+  hockeyOpsHub: point(8.4, 0),
+  rosterCoach: point(8.4, -1.8),
+  tradeMarket: point(8.4, 2),
+  developmentGate: point(6.3, -3.8),
+  pipelineHub: point(8.6, -6),
+  scoutingDevelopment: point(7.2, -7.2),
+  draftStage: point(10.8, -8),
+  teamGate: point(6.2, 3.6),
+  teamHub: point(8.7, 5.8),
+  playerMeetings: point(6.7, 4.8),
+  lockerMedical: point(10, 7),
+  arenaTunnel: point(5.1, 8.1),
+  arenaGate: point(0, 8.8),
+  arenaBowl: point(0, 11.2),
+  mediaGate: point(-4.2, 7.3),
+  pressRow: point(-6.4, 6.8),
+  customizationGate: point(-4, 3.4),
+  devTools: point(-3.8, 4.6),
+  utilityKiosk: point(-2.1, 2.1),
+  supportKiosks: point(-2, 2.9)
+} satisfies Record<string, FacilityPoint>;
+
+const ROOM_SIZES = {
+  office: { width: 2.8, depth: 2.1 },
+  compactOffice: { width: 2.6, depth: 2 },
+  kiosk: { width: 2.2, depth: 1.6 },
+  meeting: { width: 2.8, depth: 1.9 },
+  locker: { width: 3.2, depth: 2.2 },
+  arena: { width: 9.6, depth: 5.3 }
+};
+
+const ROOM_POSITIONS = {
+  gm: offset(HUBS.frontOfficeHub, 1.7, -1.5),
+  contracts: offset(HUBS.frontOfficeHub, -2.2, -2.5),
+  ownerSuite: offset(HUBS.frontOfficeHub, -4.6, -2.5),
+  staff: offset(HUBS.frontOfficeHub, 1.7, 1.8),
+  agents: offset(HUBS.frontOfficeHub, -2.2, 1.8),
+  roster: offset(HUBS.hockeyOpsHub, -1.7, -1.6),
+  coach: offset(HUBS.hockeyOpsHub, 1.8, -1.6),
+  trades: offset(HUBS.hockeyOpsHub, -1.7, 1.8),
+  freeAgency: offset(HUBS.hockeyOpsHub, 1.8, 1.8),
+  playerMeetings: point(6.4, 4.6),
+  locker: point(8.6, 7.1),
+  medical: point(11.7, 7.1),
+  arena: point(0, 11.3),
+  press: point(-6.9, 6.8),
+  scouting: offset(HUBS.pipelineHub, -2.9, -1.2),
+  development: offset(HUBS.pipelineHub, 0.1, -1.2),
+  draft: offset(HUBS.pipelineHub, 2.2, -3.2),
+  saves: offset(HUBS.spawn, 0, 0.85),
+  standings: point(0, -3.15),
+  settings: offset(HUBS.supportKiosks, -1.1, -0.1),
+  feedback: offset(HUBS.supportKiosks, 1, -0.1),
+  devTools: point(-5.3, 4.6)
+} satisfies Record<RoomId, FacilityPoint>;
+
+const DISTRICT_META: Record<
+  FacilityDistrictId,
+  Pick<FacilityDistrict, "label" | "description" | "floor" | "colorToken" | "landmarkLabel" | "landmarkPosition" | "roomIds">
+> = {
+  entry: {
     label: "Central Concourse",
-    description: "The orientation spine for the whole building, with the map kiosk, trophy landmark, and save access close to spawn.",
+    description: "The orientation hub for the whole building: spawn, Save Desk, trophy landmark, and the first view of the hockey spine.",
     floor: "main",
     colorToken: "#61c9ff",
-    bounds: { x: 0, z: -1.8, width: 8.2, depth: 7.2 },
     landmarkLabel: "Operations Map Kiosk",
-    landmarkPosition: { x: 0, z: -0.8 },
+    landmarkPosition: point(0, -0.75),
     roomIds: ["saves", "standings"]
   },
-  {
-    id: "frontOffice",
+  frontOffice: {
     label: "Front Office Wing",
-    description: "Decision rooms for ownership, cap planning, staff, agents, and the GM's daily command desk.",
+    description: "A west-side decision wing for GM work, cap planning, ownership, staff, and agent pressure around a shared office hub.",
     floor: "main",
     colorToken: "#f5c65b",
-    bounds: { x: -11, z: -1, width: 8.5, depth: 7 },
     landmarkLabel: "Owner Overlook",
-    landmarkPosition: { x: -13.2, z: -2.4 },
+    landmarkPosition: point(-12.9, -2.2),
     roomIds: ["gm", "contracts", "staff", "agents", "ownerSuite"]
   },
-  {
-    id: "hockeyOps",
+  hockeyOps: {
     label: "Hockey Ops Wing",
-    description: "The coaching, roster, trade, and free-agency workrooms sit together so game-day and market decisions stay connected.",
+    description: "The east-side hockey spine groups roster, coaching, trade, and free-agency work before the corridor turns toward the team wing.",
     floor: "main",
     colorToken: "#8ee7d1",
-    bounds: { x: 8.8, z: -1.05, width: 8, depth: 7.1 },
     landmarkLabel: "Tactical Junction",
-    landmarkPosition: { x: 8.1, z: -1.2 },
+    landmarkPosition: HUBS.hockeyOpsHub,
     roomIds: ["roster", "coach", "trades", "freeAgency"]
   },
-  {
-    id: "teamWing",
+  teamWing: {
     label: "Team Wing",
-    description: "Player-facing spaces lead toward the arena tunnel: meetings first, then locker and medical rooms.",
-    floor: "main",
+    description: "Player-facing spaces form the lead-in to the arena tunnel: meetings first, then locker and medical support beside the route.",
+    floor: "arena",
     colorToken: "#c8e9ff",
-    bounds: { x: 9.5, z: 5.45, width: 8.6, depth: 5.5 },
     landmarkLabel: "Team Tunnel",
-    landmarkPosition: { x: 8.7, z: 4.9 },
+    landmarkPosition: HUBS.teamHub,
     roomIds: ["playerMeetings", "locker", "medical"]
   },
-  {
-    id: "arena",
+  arena: {
     label: "Arena Bowl",
-    description: "The game-day destination at the end of the tunnel, visually larger than the office rooms.",
+    description: "The large game-day destination beyond the tunnel, with the rink footprint intentionally larger than the office rooms.",
     floor: "arena",
     colorToken: "#dff6ff",
-    bounds: { x: 0, z: 10.2, width: 9.5, depth: 5.6 },
     landmarkLabel: "Rink Gate",
-    landmarkPosition: { x: 0, z: 8.6 },
+    landmarkPosition: HUBS.arenaGate,
     roomIds: ["arena"]
   },
-  {
-    id: "media",
+  media: {
     label: "Media Wing",
-    description: "Public-facing pressure sits near the arena concourse instead of deep inside the team spaces.",
+    description: "Public-facing pressure sits beside the arena concourse, close to the rink but outside the private team corridor.",
     floor: "arena",
     colorToken: "#d7e8ff",
-    bounds: { x: -5.5, z: 6.7, width: 4.6, depth: 3.6 },
     landmarkLabel: "Backdrop Row",
-    landmarkPosition: { x: -4.2, z: 6.2 },
+    landmarkPosition: HUBS.pressRow,
     roomIds: ["press"]
   },
-  {
-    id: "development",
+  development: {
     label: "Development Wing",
-    description: "Long-range roster building groups scouting, development, and draft execution near hockey ops but on its own branch.",
+    description: "A separate pipeline branch north of Hockey Ops for scouting, development plans, and draft execution.",
     floor: "main",
     colorToken: "#a9c6ff",
-    bounds: { x: 5.8, z: -8.1, width: 8.8, depth: 6.6 },
     landmarkLabel: "Draft Board",
-    landmarkPosition: { x: 4.8, z: -9.5 },
+    landmarkPosition: HUBS.draftStage,
     roomIds: ["scouting", "development", "draft"]
   },
-  {
-    id: "customization",
+  customization: {
     label: "Customization Lab",
-    description: "Local data-pack and rule-review wayfinding points back to Save Desk while developer inspection tools sit off the daily hockey path.",
+    description: "A short side branch for local data-pack and developer inspection tools, connected to spawn without cutting across the hockey route.",
     floor: "main",
     colorToken: "#b58cff",
-    bounds: { x: -5.8, z: 4.8, width: 5, depth: 4.6 },
     landmarkLabel: "Data Lab Terminal",
-    landmarkPosition: { x: -5.8, z: 4.8 },
+    landmarkPosition: ROOM_POSITIONS.devTools,
     roomIds: ["devTools"]
   },
-  {
-    id: "utility",
+  utility: {
     label: "Utility Kiosks",
-    description: "Settings and closed-beta feedback are easy to reach from spawn without interrupting the office wings.",
+    description: "Settings and closed-beta feedback stay close to spawn in a side alcove, quick to reach but off the main arena path.",
     floor: "main",
     colorToken: "#76e3a5",
-    bounds: { x: 0, z: 2.5, width: 8.2, depth: 3.4 },
     landmarkLabel: "Support Kiosks",
-    landmarkPosition: { x: 2.2, z: 1.5 },
+    landmarkPosition: HUBS.supportKiosks,
     roomIds: ["settings", "feedback"]
   }
-];
+};
+
+const districts: FacilityDistrict[] = (Object.keys(DISTRICT_META) as FacilityDistrictId[]).map((id) => ({
+  id,
+  ...DISTRICT_META[id],
+  bounds: { ...DISTRICT_BOUNDS[id] },
+  landmarkPosition: { ...DISTRICT_META[id].landmarkPosition },
+  roomIds: [...DISTRICT_META[id].roomIds]
+}));
 
 function room(
   roomId: RoomId,
   label: string,
   shortLabel: string,
   districtId: FacilityDistrictId,
-  x: number,
-  z: number,
-  mapX: number,
-  mapY: number,
+  position: FacilityPoint,
   options: {
     width?: number;
     depth?: number;
@@ -172,7 +242,8 @@ function room(
     signage: string;
     propTheme: FacilityPropTheme;
     reducedDetailSafe?: boolean;
-    floor?: FacilityRoomDefinition["floor"];
+    floor?: FacilityFloor;
+    mapPosition?: FacilityMapPoint;
   }
 ): FacilityRoomDefinition {
   return {
@@ -181,10 +252,10 @@ function room(
     shortLabel,
     districtId,
     floor: options.floor ?? "main",
-    position: { x, z },
-    size: { width: options.width ?? 2.6, depth: options.depth ?? 2 },
+    position,
+    size: { width: options.width ?? ROOM_SIZES.office.width, depth: options.depth ?? ROOM_SIZES.office.depth },
     entranceFacing: options.entranceFacing ?? "south",
-    mapPosition: { x: mapX, y: mapY },
+    mapPosition: options.mapPosition ?? mapPoint(position),
     icon: options.icon,
     colorToken: options.colorToken,
     priority: options.priority,
@@ -198,7 +269,9 @@ function room(
 }
 
 const rooms: FacilityRoomDefinition[] = [
-  room("gm", "GM Office", "GM", "frontOffice", -8.2, -2.7, 22, 36, {
+  room("gm", "GM Office", "GM", "frontOffice", ROOM_POSITIONS.gm, {
+    width: ROOM_SIZES.office.width,
+    depth: ROOM_SIZES.office.depth,
     icon: "GM",
     colorToken: "#61c9ff",
     priority: "core",
@@ -208,7 +281,9 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "GM OFFICE",
     propTheme: "gmOffice"
   }),
-  room("contracts", "Contract & Cap Office", "Cap", "frontOffice", -11.5, -2.7, 12, 36, {
+  room("contracts", "Contract & Cap Office", "Cap", "frontOffice", ROOM_POSITIONS.contracts, {
+    width: ROOM_SIZES.compactOffice.width,
+    depth: ROOM_SIZES.compactOffice.depth,
     icon: "$",
     colorToken: "#f5c65b",
     priority: "support",
@@ -218,9 +293,9 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "CAP OFFICE",
     propTheme: "contracts"
   }),
-  room("ownerSuite", "Owner Suite", "Owner", "frontOffice", -14.5, -2.7, 6, 30, {
-    width: 2.4,
-    depth: 2.2,
+  room("ownerSuite", "Owner Suite", "Owner", "frontOffice", ROOM_POSITIONS.ownerSuite, {
+    width: ROOM_SIZES.compactOffice.width,
+    depth: 2.3,
     floor: "suite",
     icon: "O",
     colorToken: "#f8d070",
@@ -229,9 +304,12 @@ const rooms: FacilityRoomDefinition[] = [
     tutorialWeight: 0.4,
     description: "A slightly removed suite for trust, goals, job security, and private ownership pressure.",
     signage: "OWNER SUITE",
-    propTheme: "ownerSuite"
+    propTheme: "ownerSuite",
+    entranceFacing: "east"
   }),
-  room("staff", "Staff Office", "Staff", "frontOffice", -8.2, 0.6, 22, 48, {
+  room("staff", "Staff Office", "Staff", "frontOffice", ROOM_POSITIONS.staff, {
+    width: ROOM_SIZES.compactOffice.width,
+    depth: ROOM_SIZES.compactOffice.depth,
     icon: "ST",
     colorToken: "#76e3a5",
     priority: "support",
@@ -240,9 +318,11 @@ const rooms: FacilityRoomDefinition[] = [
     description: "Staff hiring stays near the GM but points toward scouting, development, and coaching.",
     signage: "STAFF OFFICE",
     propTheme: "staff",
-    entranceFacing: "east"
+    entranceFacing: "north"
   }),
-  room("agents", "Agent Desk", "Agents", "frontOffice", -11.5, 0.6, 12, 48, {
+  room("agents", "Agent Desk", "Agents", "frontOffice", ROOM_POSITIONS.agents, {
+    width: ROOM_SIZES.compactOffice.width,
+    depth: ROOM_SIZES.compactOffice.depth,
     icon: "AG",
     colorToken: "#b58cff",
     priority: "support",
@@ -251,9 +331,11 @@ const rooms: FacilityRoomDefinition[] = [
     description: "Agent calls sit beside contracts so money, role, and relationship pressure feel connected.",
     signage: "AGENT DESK",
     propTheme: "agents",
-    entranceFacing: "east"
+    entranceFacing: "north"
   }),
-  room("roster", "Roster Office", "Roster", "hockeyOps", 6.4, -2.7, 62, 36, {
+  room("roster", "Roster Office", "Roster", "hockeyOps", ROOM_POSITIONS.roster, {
+    width: ROOM_SIZES.office.width,
+    depth: ROOM_SIZES.office.depth,
     icon: "RO",
     colorToken: "#76e3a5",
     priority: "core",
@@ -263,7 +345,9 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "ROSTER OFFICE",
     propTheme: "roster"
   }),
-  room("coach", "Coach's Office", "Coach", "hockeyOps", 9.8, -2.7, 74, 36, {
+  room("coach", "Coach's Office", "Coach", "hockeyOps", ROOM_POSITIONS.coach, {
+    width: ROOM_SIZES.office.width,
+    depth: ROOM_SIZES.office.depth,
     icon: "C",
     colorToken: "#8ee7d1",
     priority: "core",
@@ -273,7 +357,9 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "COACH OFFICE",
     propTheme: "coach"
   }),
-  room("trades", "Trade War Room", "Trades", "hockeyOps", 6.4, 0.7, 62, 48, {
+  room("trades", "Trade War Room", "Trades", "hockeyOps", ROOM_POSITIONS.trades, {
+    width: ROOM_SIZES.office.width,
+    depth: ROOM_SIZES.office.depth,
     icon: "TR",
     colorToken: "#ff9f6e",
     priority: "advanced",
@@ -284,7 +370,9 @@ const rooms: FacilityRoomDefinition[] = [
     propTheme: "trades",
     entranceFacing: "north"
   }),
-  room("freeAgency", "Free Agency Office", "Market", "hockeyOps", 9.8, 0.7, 74, 48, {
+  room("freeAgency", "Free Agency Office", "Market", "hockeyOps", ROOM_POSITIONS.freeAgency, {
+    width: ROOM_SIZES.office.width,
+    depth: ROOM_SIZES.office.depth,
     icon: "FA",
     colorToken: "#d7e8ff",
     priority: "advanced",
@@ -295,9 +383,9 @@ const rooms: FacilityRoomDefinition[] = [
     propTheme: "freeAgency",
     entranceFacing: "north"
   }),
-  room("playerMeetings", "Player Meeting Room", "Meet", "teamWing", 6.7, 3.7, 68, 60, {
-    width: 2.7,
-    depth: 1.9,
+  room("playerMeetings", "Player Meeting Room", "Meet", "teamWing", ROOM_POSITIONS.playerMeetings, {
+    width: ROOM_SIZES.meeting.width,
+    depth: ROOM_SIZES.meeting.depth,
     icon: "PM",
     colorToken: "#8ee7d1",
     priority: "support",
@@ -306,11 +394,11 @@ const rooms: FacilityRoomDefinition[] = [
     description: "Conversation space between the coach/front-office corridor and player areas.",
     signage: "PLAYER MEETINGS",
     propTheme: "playerMeetings",
-    entranceFacing: "west"
+    entranceFacing: "east"
   }),
-  room("locker", "Locker Room", "Locker", "teamWing", 8.6, 6.3, 76, 68, {
-    width: 2.8,
-    depth: 2,
+  room("locker", "Locker Room", "Locker", "teamWing", ROOM_POSITIONS.locker, {
+    width: ROOM_SIZES.locker.width,
+    depth: ROOM_SIZES.locker.depth,
     icon: "LR",
     colorToken: "#c8e9ff",
     priority: "support",
@@ -319,11 +407,12 @@ const rooms: FacilityRoomDefinition[] = [
     description: "Player pulse, morale, form, fatigue, and relationships live near the arena tunnel.",
     signage: "LOCKER ROOM",
     propTheme: "locker",
-    floor: "arena"
+    floor: "arena",
+    entranceFacing: "north"
   }),
-  room("medical", "Medical Room", "Medical", "teamWing", 12, 6.3, 86, 68, {
-    width: 2.4,
-    depth: 2,
+  room("medical", "Medical Room", "Medical", "teamWing", ROOM_POSITIONS.medical, {
+    width: 2.5,
+    depth: ROOM_SIZES.compactOffice.depth,
     icon: "+",
     colorToken: "#ff7e8a",
     priority: "support",
@@ -332,11 +421,12 @@ const rooms: FacilityRoomDefinition[] = [
     description: "Injury and fatigue review is directly adjacent to the locker room.",
     signage: "MEDICAL",
     propTheme: "medical",
-    floor: "arena"
+    floor: "arena",
+    entranceFacing: "west"
   }),
-  room("arena", "Arena Bowl", "Arena", "arena", 0, 10.5, 50, 86, {
-    width: 7,
-    depth: 4,
+  room("arena", "Arena Bowl", "Arena", "arena", ROOM_POSITIONS.arena, {
+    width: ROOM_SIZES.arena.width,
+    depth: ROOM_SIZES.arena.depth,
     icon: "AR",
     colorToken: "#ffffff",
     priority: "core",
@@ -348,8 +438,8 @@ const rooms: FacilityRoomDefinition[] = [
     floor: "arena",
     entranceFacing: "north"
   }),
-  room("press", "Press Room", "Press", "media", -5.5, 6.6, 35, 70, {
-    width: 3.1,
+  room("press", "Press Room", "Press", "media", ROOM_POSITIONS.press, {
+    width: 3.2,
     depth: 2.1,
     icon: "PR",
     colorToken: "#d7e8ff",
@@ -362,8 +452,8 @@ const rooms: FacilityRoomDefinition[] = [
     floor: "arena",
     entranceFacing: "east"
   }),
-  room("scouting", "Scouting Department", "Scout", "development", 3.3, -7, 56, 20, {
-    width: 2.5,
+  room("scouting", "Scouting Department", "Scout", "development", ROOM_POSITIONS.scouting, {
+    width: ROOM_SIZES.compactOffice.width,
     depth: 2.2,
     icon: "SC",
     colorToken: "#a9c6ff",
@@ -372,10 +462,11 @@ const rooms: FacilityRoomDefinition[] = [
     tutorialWeight: 0.55,
     description: "Draft board and scouting assignments branch off hockey ops for long-range roster building.",
     signage: "SCOUTING",
-    propTheme: "scouting"
+    propTheme: "scouting",
+    entranceFacing: "east"
   }),
-  room("development", "Development Office", "Dev", "development", 6.4, -7, 68, 20, {
-    width: 2.5,
+  room("development", "Development Office", "Dev", "development", ROOM_POSITIONS.development, {
+    width: ROOM_SIZES.compactOffice.width,
     depth: 2.2,
     icon: "DV",
     colorToken: "#76e3a5",
@@ -386,9 +477,9 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "DEVELOPMENT",
     propTheme: "development"
   }),
-  room("draft", "Draft Stage", "Draft", "development", 4.8, -10, 62, 10, {
-    width: 2.9,
-    depth: 2.2,
+  room("draft", "Draft Stage", "Draft", "development", ROOM_POSITIONS.draft, {
+    width: 3.1,
+    depth: 2.3,
     icon: "DF",
     colorToken: "#f5c65b",
     priority: "advanced",
@@ -396,11 +487,10 @@ const rooms: FacilityRoomDefinition[] = [
     tutorialWeight: 0.45,
     description: "A boardroom podium for draft execution and prospect selection pressure.",
     signage: "DRAFT STAGE",
-    propTheme: "draft",
-    entranceFacing: "south"
+    propTheme: "draft"
   }),
-  room("saves", "Save Desk", "Save", "entry", 0, 0, 50, 52, {
-    width: 2.2,
+  room("saves", "Save Desk", "Save", "entry", ROOM_POSITIONS.saves, {
+    width: 2.4,
     depth: 1.8,
     icon: "SV",
     colorToken: "#b58cff",
@@ -409,10 +499,11 @@ const rooms: FacilityRoomDefinition[] = [
     tutorialWeight: 1,
     description: "Local saves, snapshots, diagnostics, bug reports, and the in-franchise data-pack library are anchored at spawn.",
     signage: "SAVE DESK",
-    propTheme: "save"
+    propTheme: "save",
+    entranceFacing: "north"
   }),
-  room("standings", "Standings/Trophy Hall", "Trophy", "entry", 0, -4.2, 50, 38, {
-    width: 3.2,
+  room("standings", "Standings/Trophy Hall", "Trophy", "entry", ROOM_POSITIONS.standings, {
+    width: 3.4,
     depth: 2,
     icon: "TH",
     colorToken: "#f5c65b",
@@ -423,9 +514,9 @@ const rooms: FacilityRoomDefinition[] = [
     signage: "TROPHY HALL",
     propTheme: "standings"
   }),
-  room("settings", "Settings", "Settings", "utility", -3.4, 2.2, 42, 58, {
-    width: 2.2,
-    depth: 1.8,
+  room("settings", "Settings", "Settings", "utility", ROOM_POSITIONS.settings, {
+    width: ROOM_SIZES.kiosk.width,
+    depth: ROOM_SIZES.kiosk.depth,
     icon: "SET",
     colorToken: "#61c9ff",
     priority: "utility",
@@ -436,9 +527,9 @@ const rooms: FacilityRoomDefinition[] = [
     propTheme: "settings",
     entranceFacing: "north"
   }),
-  room("feedback", "Feedback Desk", "Feedback", "utility", 3.4, 2.2, 58, 58, {
-    width: 2.2,
-    depth: 1.8,
+  room("feedback", "Feedback Desk", "Feedback", "utility", ROOM_POSITIONS.feedback, {
+    width: ROOM_SIZES.kiosk.width,
+    depth: ROOM_SIZES.kiosk.depth,
     icon: "FB",
     colorToken: "#8ee7d1",
     priority: "utility",
@@ -449,9 +540,9 @@ const rooms: FacilityRoomDefinition[] = [
     propTheme: "feedback",
     entranceFacing: "north"
   }),
-  room("devTools", "Dev Tools", "Tools", "customization", -5.8, 4.8, 36, 62, {
+  room("devTools", "Dev Tools", "Tools", "customization", ROOM_POSITIONS.devTools, {
     width: 2.8,
-    depth: 2,
+    depth: ROOM_SIZES.compactOffice.depth,
     icon: "DT",
     colorToken: "#b58cff",
     priority: "utility",
@@ -464,6 +555,36 @@ const rooms: FacilityRoomDefinition[] = [
   })
 ];
 
+const pathNodes: FacilityPathNode[] = [
+  node("spawn-concourse", "Central Concourse", HUBS.spawn, ["trophy-hall-cross", "front-office-gate", "hockey-ops-gate", "utility-kiosk"], "entry", true),
+  node("trophy-hall-cross", "Trophy Hall Cross", HUBS.trophyHall, ["spawn-concourse"], "entry"),
+  node("front-office-gate", "Front Office Threshold", HUBS.frontOfficeGate, ["spawn-concourse", "front-office-hub", "customization-gate"], "frontOffice"),
+  node("front-office-hub", "Front Office Hub", HUBS.frontOfficeHub, ["front-office-gate", "owner-contracts", "agents-staff"], "frontOffice", true),
+  node("owner-contracts", "Owner And Contracts", HUBS.ownerContracts, ["front-office-hub"], "frontOffice"),
+  node("agents-staff", "Agents And Staff", HUBS.agentsStaff, ["front-office-hub"], "frontOffice"),
+  node("hockey-ops-gate", "Hockey Ops Threshold", HUBS.hockeyOpsGate, ["spawn-concourse", "hockey-ops-hub", "development-gate", "team-gate"], "hockeyOps"),
+  node("hockey-ops-hub", "Hockey Ops Hub", HUBS.hockeyOpsHub, ["hockey-ops-gate", "roster-coach", "trade-market-cross", "team-gate", "development-gate"], "hockeyOps", true),
+  node("roster-coach", "Roster And Coach", HUBS.rosterCoach, ["hockey-ops-hub"], "hockeyOps"),
+  node("trade-market-cross", "Trade And Market Cross", HUBS.tradeMarket, ["hockey-ops-hub"], "hockeyOps"),
+  node("development-gate", "Development Threshold", HUBS.developmentGate, ["hockey-ops-gate", "hockey-ops-hub", "pipeline-hub"], "development"),
+  node("pipeline-hub", "Development Pipeline Hub", HUBS.pipelineHub, ["development-gate", "scouting-development", "draft-stage"], "development", true),
+  node("scouting-development", "Scouting And Development", HUBS.scoutingDevelopment, ["pipeline-hub"], "development"),
+  node("draft-stage", "Draft Stage", HUBS.draftStage, ["pipeline-hub"], "development"),
+  node("team-gate", "Team Wing Threshold", HUBS.teamGate, ["hockey-ops-gate", "hockey-ops-hub", "team-hub"], "teamWing"),
+  node("team-hub", "Team Wing Hub", HUBS.teamHub, ["team-gate", "player-meetings", "locker-medical", "arena-tunnel"], "teamWing", true),
+  node("player-meetings", "Player Meeting Door", HUBS.playerMeetings, ["team-hub"], "teamWing"),
+  node("locker-medical", "Locker And Medical", HUBS.lockerMedical, ["team-hub"], "teamWing"),
+  node("arena-tunnel", "Arena Tunnel", HUBS.arenaTunnel, ["team-hub", "arena-gate", "media-gate"], "arena", true),
+  node("arena-gate", "Rink Gate", HUBS.arenaGate, ["arena-tunnel", "arena-bowl-hub", "media-gate"], "arena"),
+  node("arena-bowl-hub", "Arena Bowl", HUBS.arenaBowl, ["arena-gate"], "arena", true),
+  node("media-gate", "Media Threshold", HUBS.mediaGate, ["arena-tunnel", "arena-gate", "press-row", "customization-gate"], "media"),
+  node("press-row", "Press Backdrop Row", HUBS.pressRow, ["media-gate"], "media", true),
+  node("customization-gate", "Customization Threshold", HUBS.customizationGate, ["front-office-gate", "media-gate", "utility-kiosk", "dev-tools-door"], "customization"),
+  node("dev-tools-door", "Data Lab Door", HUBS.devTools, ["customization-gate"], "customization"),
+  node("utility-kiosk", "Utility Kiosks", HUBS.utilityKiosk, ["spawn-concourse", "customization-gate", "support-kiosks"], "utility", true),
+  node("support-kiosks", "Settings And Feedback", HUBS.supportKiosks, ["utility-kiosk"], "utility")
+];
+
 const defaultBlueprint: FacilityBlueprint = {
   id: "phase13-facility-masterplan",
   label: "Phase 13 Facility Masterplan",
@@ -471,45 +592,34 @@ const defaultBlueprint: FacilityBlueprint = {
   floors: ["main", "arena", "suite"],
   districts,
   rooms,
-  pathNodes: [
-    { id: "spawn-concourse", label: "Central Concourse", position: { x: 0, z: 0 }, connectedNodeIds: ["trophy-cross", "front-office-gate", "hockey-ops-gate", "utility-kiosk", "arena-gate"], districtId: "entry", isLandmark: true },
-    { id: "trophy-cross", label: "Trophy Hall Cross", position: { x: 0, z: -3.4 }, connectedNodeIds: ["spawn-concourse", "development-gate"], districtId: "entry" },
-    { id: "front-office-gate", label: "Front Office Gate", position: { x: -5.2, z: -1.2 }, connectedNodeIds: ["spawn-concourse", "front-office-hub", "customization-gate"], districtId: "frontOffice" },
-    { id: "front-office-hub", label: "Front Office Wing", position: { x: -10, z: -1.2 }, connectedNodeIds: ["front-office-gate", "owner-lift", "agent-contracts"], districtId: "frontOffice", isLandmark: true },
-    { id: "owner-lift", label: "Owner Suite Lift", position: { x: -13.2, z: -2.4 }, connectedNodeIds: ["front-office-hub"], districtId: "frontOffice" },
-    { id: "agent-contracts", label: "Contracts And Agents", position: { x: -11.5, z: 0.6 }, connectedNodeIds: ["front-office-hub"], districtId: "frontOffice" },
-    { id: "hockey-ops-gate", label: "Hockey Ops Gate", position: { x: 4.7, z: -1.2 }, connectedNodeIds: ["spawn-concourse", "hockey-ops-hub", "team-gate", "development-gate"], districtId: "hockeyOps" },
-    { id: "hockey-ops-hub", label: "Hockey Ops Wing", position: { x: 8.1, z: -1.2 }, connectedNodeIds: ["hockey-ops-gate", "trade-market-cross"], districtId: "hockeyOps", isLandmark: true },
-    { id: "trade-market-cross", label: "Trade And Market Cross", position: { x: 8.1, z: 1.4 }, connectedNodeIds: ["hockey-ops-hub", "team-gate"], districtId: "hockeyOps" },
-    { id: "development-gate", label: "Development Gate", position: { x: 3.6, z: -4.6 }, connectedNodeIds: ["trophy-cross", "hockey-ops-gate", "development-hub"], districtId: "development" },
-    { id: "development-hub", label: "Development Wing", position: { x: 4.8, z: -7.8 }, connectedNodeIds: ["development-gate", "draft-table"], districtId: "development", isLandmark: true },
-    { id: "draft-table", label: "Draft Table", position: { x: 4.8, z: -9.5 }, connectedNodeIds: ["development-hub"], districtId: "development" },
-    { id: "team-gate", label: "Team Wing Gate", position: { x: 5.1, z: 3.4 }, connectedNodeIds: ["hockey-ops-gate", "trade-market-cross", "team-hub", "arena-tunnel"], districtId: "teamWing" },
-    { id: "team-hub", label: "Team Wing", position: { x: 8.7, z: 4.9 }, connectedNodeIds: ["team-gate", "arena-tunnel"], districtId: "teamWing", isLandmark: true },
-    { id: "arena-tunnel", label: "Arena Tunnel", position: { x: 4.2, z: 7.4 }, connectedNodeIds: ["team-gate", "team-hub", "arena-gate", "media-gate"], districtId: "arena", isLandmark: true },
-    { id: "arena-gate", label: "Arena Gate", position: { x: 0, z: 8.6 }, connectedNodeIds: ["spawn-concourse", "arena-tunnel", "media-gate"], districtId: "arena" },
-    { id: "media-gate", label: "Media Gate", position: { x: -3.8, z: 6 }, connectedNodeIds: ["arena-gate", "arena-tunnel", "customization-gate"], districtId: "media" },
-    { id: "customization-gate", label: "Customization Lab", position: { x: -4.2, z: 3.4 }, connectedNodeIds: ["front-office-gate", "media-gate", "utility-kiosk"], districtId: "customization" },
-    { id: "utility-kiosk", label: "Support Kiosks", position: { x: 2.2, z: 1.5 }, connectedNodeIds: ["spawn-concourse", "customization-gate"], districtId: "utility", isLandmark: true }
+  pathNodes,
+  spawnPoint: { x: HUBS.spawn.x, z: HUBS.spawn.z, facing: "north" },
+  mainCorridorNodes: [
+    "spawn-concourse",
+    "hockey-ops-gate",
+    "hockey-ops-hub",
+    "team-gate",
+    "team-hub",
+    "arena-tunnel",
+    "arena-gate",
+    "arena-bowl-hub"
   ],
-  spawnPoint: { x: 0, z: 0, facing: "north" },
-  mainCorridorNodes: ["front-office-gate", "spawn-concourse", "hockey-ops-gate", "team-gate", "arena-tunnel", "arena-gate"],
   landmarks: [
-    { id: "map-kiosk", label: "Operations Map Kiosk", position: { x: 0, z: -0.8 }, districtId: "entry" },
-    { id: "trophy-wall", label: "Trophy Wall", position: { x: 0, z: -4.8 }, districtId: "entry" },
-    { id: "owner-overlook", label: "Owner Overlook", position: { x: -13.2, z: -2.4 }, districtId: "frontOffice" },
-    { id: "tactical-junction", label: "Tactical Junction", position: { x: 8.1, z: -1.2 }, districtId: "hockeyOps" },
-    { id: "draft-board", label: "Draft Board", position: { x: 4.8, z: -9.5 }, districtId: "development" },
-    { id: "team-tunnel", label: "Team Tunnel", position: { x: 8.7, z: 4.9 }, districtId: "teamWing" },
-    { id: "rink-gate", label: "Rink Gate", position: { x: 0, z: 8.6 }, districtId: "arena" },
-    { id: "press-backdrop", label: "Press Backdrop Row", position: { x: -4.2, z: 6.2 }, districtId: "media" },
-    { id: "data-lab-terminal", label: "Data Lab Terminal", position: { x: -5.8, z: 4.8 }, districtId: "customization" },
-    { id: "support-kiosks", label: "Support Kiosks", position: { x: 2.2, z: 1.5 }, districtId: "utility" }
+    { id: "map-kiosk", label: "Operations Map Kiosk", position: point(0, -0.75), districtId: "entry" },
+    { id: "trophy-wall", label: "Trophy Wall", position: point(0, -4.05), districtId: "entry" },
+    { id: "owner-overlook", label: "Owner Overlook", position: DISTRICT_META.frontOffice.landmarkPosition, districtId: "frontOffice" },
+    { id: "tactical-junction", label: "Tactical Junction", position: HUBS.hockeyOpsHub, districtId: "hockeyOps" },
+    { id: "draft-board", label: "Draft Board", position: HUBS.draftStage, districtId: "development" },
+    { id: "team-tunnel", label: "Team Tunnel", position: HUBS.teamHub, districtId: "teamWing" },
+    { id: "rink-gate", label: "Rink Gate", position: HUBS.arenaGate, districtId: "arena" },
+    { id: "press-backdrop", label: "Press Backdrop Row", position: HUBS.pressRow, districtId: "media" },
+    { id: "data-lab-terminal", label: "Data Lab Terminal", position: ROOM_POSITIONS.devTools, districtId: "customization" },
+    { id: "support-kiosks", label: "Support Kiosks", position: HUBS.supportKiosks, districtId: "utility" }
   ],
   notes: [
     "Add new rooms here first.",
-    "Room placement, Operations Map badges, 3D markers, and wayfinding all read from this typed blueprint.",
-    "The layout is a stylized hockey operations complex, not a realistic architectural simulation.",
+    "District bounds, hubs, room offsets, map pins, path nodes, 3D markers, and wayfinding all read from this typed blueprint.",
+    "The layout is a stylized hockey operations complex: a central concourse, west front-office wing, east hockey-ops spine, team tunnel, arena bowl, public media edge, and separate development pipeline.",
     "Custom League Lab is currently surfaced through the start screen; Save Desk hosts the in-franchise data-pack library, and the customization district reserves a physical lab branch for future room expansion."
   ]
 };
@@ -525,7 +635,7 @@ export function createDefaultFacilityBlueprint(): FacilityBlueprint {
       mapPosition: { ...roomDefinition.mapPosition },
       relatedRoomIds: [...roomDefinition.relatedRoomIds]
     })),
-    pathNodes: defaultBlueprint.pathNodes.map((node) => ({ ...node, position: { ...node.position }, connectedNodeIds: [...node.connectedNodeIds] })),
+    pathNodes: defaultBlueprint.pathNodes.map((pathNode) => ({ ...pathNode, position: { ...pathNode.position }, connectedNodeIds: [...pathNode.connectedNodeIds] })),
     spawnPoint: { ...defaultBlueprint.spawnPoint },
     mainCorridorNodes: [...defaultBlueprint.mainCorridorNodes],
     landmarks: defaultBlueprint.landmarks.map((landmark) => ({ ...landmark, position: { ...landmark.position } })),
@@ -534,3 +644,44 @@ export function createDefaultFacilityBlueprint(): FacilityBlueprint {
 }
 
 export const DEFAULT_FACILITY_BLUEPRINT = createDefaultFacilityBlueprint();
+
+function point(x: number, z: number): FacilityPoint {
+  return { x, z };
+}
+
+function offset(origin: FacilityPoint, x: number, z: number): FacilityPoint {
+  return { x: origin.x + x, z: origin.z + z };
+}
+
+function node(
+  id: string,
+  label: string,
+  position: FacilityPoint,
+  connectedNodeIds: string[],
+  districtId: FacilityDistrictId,
+  isLandmark = false
+): FacilityPathNode {
+  return { id, label, position, connectedNodeIds, districtId, isLandmark };
+}
+
+function mapPoint(position: FacilityPoint): FacilityMapPoint {
+  const bounds = getFacilityWorldBounds();
+  return {
+    x: percent((position.x - bounds.minX) / (bounds.maxX - bounds.minX)),
+    y: percent((position.z - bounds.minZ) / (bounds.maxZ - bounds.minZ))
+  };
+}
+
+function getFacilityWorldBounds(): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  const districtBounds = Object.values(DISTRICT_BOUNDS);
+  return {
+    minX: Math.min(...districtBounds.map((bounds) => bounds.x - bounds.width / 2)),
+    maxX: Math.max(...districtBounds.map((bounds) => bounds.x + bounds.width / 2)),
+    minZ: Math.min(...districtBounds.map((bounds) => bounds.z - bounds.depth / 2)),
+    maxZ: Math.max(...districtBounds.map((bounds) => bounds.z + bounds.depth / 2))
+  };
+}
+
+function percent(value: number): number {
+  return Number((Math.max(0, Math.min(1, value)) * 100).toFixed(1));
+}

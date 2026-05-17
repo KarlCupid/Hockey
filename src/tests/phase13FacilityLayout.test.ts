@@ -79,6 +79,37 @@ describe("Phase 13 facility blueprint", () => {
     expect(validateFacilityBlueprint(blueprint, FACILITY_ROOM_IDS).disconnectedRooms).toEqual([]);
   });
 
+  it("keeps every room inside its planned district footprint", () => {
+    expect(validateFacilityBlueprint(blueprint, FACILITY_ROOM_IDS).outOfDistrictRooms).toEqual([]);
+  });
+
+  it("keeps every district connected to the path network", () => {
+    expect(validateFacilityBlueprint(blueprint, FACILITY_ROOM_IDS).disconnectedDistricts).toEqual([]);
+  });
+
+  it("keeps room entrances facing corridor or hub flow", () => {
+    expect(validateFacilityBlueprint(blueprint, FACILITY_ROOM_IDS).misalignedEntrances).toEqual([]);
+  });
+
+  it("keeps Operations Map pins readable", () => {
+    expect(validateFacilityBlueprint(blueprint, FACILITY_ROOM_IDS).collidingMapPins).toEqual([]);
+  });
+
+  it("keeps path graph and main corridor valid", () => {
+    const report = validateFacilityBlueprint(blueprint, FACILITY_ROOM_IDS);
+    expect(report.invalidPathConnections).toEqual([]);
+    expect(report.mainCorridorIssues).toEqual([]);
+  });
+
+  it("uses the main corridor as a hockey spine from concourse to arena", () => {
+    const corridorDistricts = blueprint.mainCorridorNodes
+      .map((nodeId) => blueprint.pathNodes.find((node) => node.id === nodeId)?.districtId)
+      .filter(Boolean);
+    expect(corridorDistricts.indexOf("entry")).toBeLessThan(corridorDistricts.indexOf("hockeyOps"));
+    expect(corridorDistricts.indexOf("hockeyOps")).toBeLessThan(corridorDistricts.indexOf("teamWing"));
+    expect(corridorDistricts.indexOf("teamWing")).toBeLessThan(corridorDistricts.indexOf("arena"));
+  });
+
   it("has a core first-hour route from GM to roster, coach, arena, and saves", () => {
     const routePairs = [
       ["gm", "roster"],
@@ -89,6 +120,20 @@ describe("Phase 13 facility blueprint", () => {
     routePairs.forEach(([from, to]) => {
       expect(getSuggestedRoomRoute(blueprint, from, to).length).toBeGreaterThan(0);
     });
+  });
+
+  it("routes coach to the Arena Bowl through the team wing and tunnel", () => {
+    const route = getSuggestedRoomRoute(blueprint, "coach", "arena");
+    expect(route.map((node) => node.districtId)).toContain("teamWing");
+    expect(route.map((node) => node.id)).toEqual(expect.arrayContaining(["arena-tunnel", "arena-gate"]));
+  });
+
+  it("keeps every room routable back to the Save Desk", () => {
+    blueprint.rooms
+      .filter((room) => room.roomId !== "saves")
+      .forEach((room) => {
+        expect(getSuggestedRoomRoute(blueprint, room.roomId, "saves").length).toBeGreaterThan(0);
+      });
   });
 
   it("keeps related room IDs valid", () => {
@@ -145,7 +190,11 @@ describe("Phase 13 Operations Map helpers", () => {
   });
 
   it("returns room badge positions", () => {
-    expect(getRoomMapBadgePosition(blueprint, "arena")).toEqual({ x: 50, y: 86 });
+    const arenaPin = getRoomMapBadgePosition(blueprint, "arena");
+    expect(arenaPin.x).toBeGreaterThan(45);
+    expect(arenaPin.x).toBeLessThan(60);
+    expect(arenaPin.y).toBeGreaterThan(80);
+    expect(arenaPin.y).toBeLessThan(90);
   });
 
   it("returns current district labels", () => {
